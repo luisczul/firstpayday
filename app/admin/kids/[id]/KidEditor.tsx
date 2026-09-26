@@ -63,22 +63,25 @@ export function KidEditor({
         {msg ? <Alert tone={msg.tone}>{msg.text}</Alert> : null}
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={pending}>Save</Button>
-          <Button
-            type="button"
-            variant={kid.archived ? "secondary" : "danger"}
-            disabled={pending}
-            onClick={() =>
-              start(async () => {
-                const r = await setKidArchived(kid.id, !kid.archived);
-                if (!r.ok) setMsg({ tone: "bad", text: r.message });
-                router.refresh();
-              })
-            }
-          >
-            {kid.archived ? "Restore" : "Archive"}
-          </Button>
         </div>
       </fieldset>
+      {/* Outside the fieldset: archiving stays possible while read-only (it's how you get back to free). */}
+      <div className="flex items-start md:ml-auto">
+        <Button
+          type="button"
+          variant={kid.archived ? "secondary" : "danger"}
+          disabled={pending || (kid.archived && readOnly)}
+          onClick={() =>
+            start(async () => {
+              const r = await setKidArchived(kid.id, !kid.archived);
+              if (!r.ok) setMsg({ tone: "bad", text: r.message });
+              router.refresh();
+            })
+          }
+        >
+          {kid.archived ? "Restore" : "Archive"}
+        </Button>
+      </div>
     </form>
   );
 }

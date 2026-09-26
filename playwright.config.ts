@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 // E2E against the local stack: `pnpm db:start`, then `pnpm e2e`.
 // Uses the installed Google Chrome (no browser download needed).
-const PORT = 3100;
+const PORT = Number(process.env.E2E_PORT || 3100);
 
 export default defineConfig({
   testDir: "tests/e2e",

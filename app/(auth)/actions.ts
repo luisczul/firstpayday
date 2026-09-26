@@ -105,7 +105,7 @@ export async function updatePassword(_: AuthState, form: FormData): Promise<Auth
 
 export async function logout() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   (await cookies()).delete(ADMIN_MODE_COOKIE);
   redirect("/");
 }

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 /** Sign the parent out on this tablet and return to Kids Mode. */
 async function exit(request: NextRequest) {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   (await cookies()).delete(ADMIN_MODE_COOKIE);
   return NextResponse.redirect(new URL("/kids", request.url), { status: 303 });
 }

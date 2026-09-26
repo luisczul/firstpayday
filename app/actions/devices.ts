@@ -35,7 +35,7 @@ export async function enableKioskOnThisDevice(name?: string) {
       userId: ctx.user.id,
       name: z.string().trim().min(1).max(60).catch("Kitchen tablet").parse(name ?? "Kitchen tablet"),
     });
-    await ctx.supabase.auth.signOut();
+    await ctx.supabase.auth.signOut({ scope: "local" });
     (await cookies()).delete(ADMIN_MODE_COOKIE);
   });
   if (result.ok) redirect("/kids");

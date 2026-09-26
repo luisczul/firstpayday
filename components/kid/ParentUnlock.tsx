@@ -55,17 +55,17 @@ export function ParentUnlock({ locale, onClose }: { locale: Locale; onClose: () 
   };
 
   const pressDigit = (d: string) => {
-    if (pending || !who) return;
-    const next = (pin + d).slice(0, 6);
-    setPin(next);
+    if (!who) return;
+    setPin((p) => (p + d).slice(0, 6));
     setError(null);
   };
 
   const submitPin = () => {
-    if (!who || pin.length < 4) return;
+    if (!who || pin.length < 4 || pending) return;
+    const attempt = pin;
+    setPin("");
     start(async () => {
-      const r = await unlockWithPin({ userId: who.userId, pin });
-      setPin("");
+      const r = await unlockWithPin({ userId: who.userId, pin: attempt });
       if (r.ok) done();
       else fail(r.reason);
     });

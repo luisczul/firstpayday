@@ -51,7 +51,7 @@ export async function unlockWithPassword(input: { email: string; password: strin
 
   // Only parents of *this* tablet's household may unlock it.
   if (!(await isMember(kiosk.ctx.householdId, data.user.id))) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { ok: false, reason: "wrong" };
   }
   await startAdminMode(data.user.id, kiosk.ctx.householdId);
