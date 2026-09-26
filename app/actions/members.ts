@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ActionError, getParentContext, runAction } from "@/lib/auth/session";
-import { PLAN_LIMITS, withinLimit } from "@/lib/billing/plans";
+import { LIMITS, withinLimit } from "@/lib/billing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { appSecret, hashPin, randomToken, sha256Hex } from "@/lib/crypto";
 import { appUrl } from "@/lib/env";
@@ -35,8 +35,8 @@ export async function inviteMember(input: { email: string; role: "owner" | "pare
         .is("accepted_at", null)
         .gt("expires_at", new Date().toISOString()),
     ]);
-    if (!withinLimit(ctx.plan, "parents", (members ?? 0) + (invites ?? 0))) {
-      throw new ActionError("limit", `Your plan includes ${PLAN_LIMITS[ctx.plan].parents} parents. Upgrade to add more.`);
+    if (!withinLimit("parents", (members ?? 0) + (invites ?? 0))) {
+      throw new ActionError("limit", `Your plan includes ${LIMITS.parents} parents. Remove one first.`);
     }
 
     const token = randomToken(24);

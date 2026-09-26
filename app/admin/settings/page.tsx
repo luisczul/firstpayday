@@ -1,6 +1,5 @@
 import { requireParent } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PLAN_LIMITS } from "@/lib/billing/plans";
 import { PageHeader } from "@/components/ui";
 import { SettingsNav } from "./SettingsNav";
 import { GeneralSettings } from "./GeneralSettings";
@@ -38,8 +37,8 @@ export default async function SettingsPage() {
         hasPin={Boolean(me?.pin_hash)}
         isOwner={ctx.isOwner}
         readOnly={ctx.access !== "full"}
-        canMatch={PLAN_LIMITS[ctx.plan].savingsMatch}
-        canTheme={PLAN_LIMITS[ctx.plan].customThemes}
+        canMatch
+        canTheme
       />
     </>
   );

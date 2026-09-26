@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requirePlatformAdmin } from "@/lib/auth/platform";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mrrCents, PLAN_NAMES, type Interval, type PlanId } from "@/lib/billing/plans";
+import { mrrCents, PLAN_NAMES, type PlanId } from "@/lib/billing/plans";
 import { formatMoney } from "@/lib/money/format";
 import { brand } from "@/lib/brand";
 import { Badge, Card } from "@/components/ui";
@@ -35,10 +35,8 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const all = subs ?? [];
   const activeTrials = all.filter((s) => s.plan === "trial" && s.status === "trialing" && s.trial_ends_at && new Date(s.trial_ends_at) > now).length;
-  const paying = all.filter((s) => (s.plan === "family" || s.plan === "family_plus") && ["active", "past_due", "trialing"].includes(s.status) && s.stripe_subscription_id);
-  const intervalOf = (priceId: string | null): Interval | null =>
-    !priceId ? null : [process.env.STRIPE_PRICE_FAMILY_YEARLY, process.env.STRIPE_PRICE_FAMILY_PLUS_YEARLY].includes(priceId) ? "yearly" : "monthly";
-  const mrr = paying.reduce((sum, s) => sum + mrrCents(s.plan as PlanId, intervalOf(s.stripe_price_id), s.status), 0);
+  const paying = all.filter((s) => s.plan === "family" && ["active", "past_due", "trialing"].includes(s.status) && s.stripe_subscription_id);
+  const mrr = paying.reduce((sum, s) => sum + mrrCents(s.plan, s.quantity, s.status), 0);
   const everPaid = all.filter((s) => s.stripe_subscription_id).length;
   const conversion = all.length ? Math.round((everPaid / all.length) * 100) : 0;
   const churned = all.filter((s) => s.status === "canceled" && s.updated_at && new Date(s.updated_at) >= monthStart).length;
@@ -64,8 +62,8 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
         {[
           ["Households", String(all.length)],
           ["Active trials", String(activeTrials)],
-          ["Paying · Family", String(paying.filter((s) => s.plan === "family").length)],
-          ["Paying · Plus", String(paying.filter((s) => s.plan === "family_plus").length)],
+          ["Paying", String(paying.length)],
+          ["Paid kid seats", String(paying.reduce((n, s) => n + (s.quantity ?? 0), 0))],
           ["MRR", money(mrr)],
           ["Trial → paid", `${conversion}%`],
         ].map(([label, value]) => (

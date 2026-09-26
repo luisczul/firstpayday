@@ -1,65 +1,54 @@
-// Plan limits live here and only here (SPEC §19.1). Enforced server-side.
+// Pricing and limits live here and only here. Enforced server-side.
+//
+// Model: the first kid is free forever. Each additional kid is $5 CAD/month
+// (one Stripe subscription whose quantity = active kids − 1). New households
+// get a 14-day trial where extra kids are free, so onboarding never blocks.
 
 export type PlanId = "trial" | "family" | "family_plus" | "comp" | "free";
-export type PaidPlanId = "family" | "family_plus";
-export type Interval = "monthly" | "yearly";
+
+export const FREE_KIDS = 1;
+export const PRICE_PER_EXTRA_KID_CENTS = 500;
+export const EXTRA_KID_LOOKUP_KEY = "extra_kid_monthly";
+export const MAX_KIDS = 10;
 
 export interface PlanLimits {
-  kids: number;
   devices: number;
   parents: number;
-  csvExport: boolean;
-  savingsMatch: boolean;
-  customThemes: boolean;
 }
 
-const FAMILY: PlanLimits = { kids: 3, devices: 2, parents: 2, csvExport: false, savingsMatch: false, customThemes: false };
-const FAMILY_PLUS: PlanLimits = { kids: 8, devices: 5, parents: 4, csvExport: true, savingsMatch: true, customThemes: true };
-
-export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
-  trial: FAMILY_PLUS,
-  family: FAMILY,
-  family_plus: FAMILY_PLUS,
-  comp: FAMILY_PLUS,
-  free: FAMILY,
-};
+export const LIMITS: PlanLimits = { devices: 5, parents: 4 };
 
 export const PLAN_NAMES: Record<PlanId, string> = {
   trial: "Free trial",
   family: "Family",
-  family_plus: "Family Plus",
+  family_plus: "Family",
   comp: "Complimentary",
-  free: "Free",
+  free: "Free (1 kid)",
 };
 
-/** CAD prices in cents, for display and MRR. Stripe is the source of truth for charging. */
-export const PLAN_PRICES: Record<PaidPlanId, Record<Interval, number>> = {
-  family: { monthly: 499, yearly: 4900 },
-  family_plus: { monthly: 799, yearly: 7900 },
-};
-
-export const LOOKUP_KEYS: Record<PaidPlanId, Record<Interval, string>> = {
-  family: { monthly: "family_monthly", yearly: "family_yearly" },
-  family_plus: { monthly: "family_plus_monthly", yearly: "family_plus_yearly" },
-};
-
-export function planFromLookupKey(lookupKey: string | null | undefined): PaidPlanId | null {
-  if (!lookupKey) return null;
-  if (lookupKey.startsWith("family_plus_")) return "family_plus";
-  if (lookupKey.startsWith("family_")) return "family";
-  return null;
+export function planFromLookupKey(lookupKey: string | null | undefined): PlanId | null {
+  return lookupKey === EXTRA_KID_LOOKUP_KEY ? "family" : null;
 }
 
-export type LimitedResource = "kids" | "devices" | "parents";
-
-export function withinLimit(plan: PlanId, resource: LimitedResource, currentCount: number): boolean {
-  return currentCount < PLAN_LIMITS[plan][resource];
+/** Paid seats for a household with this many active kids (never below 1 while subscribed). */
+export function billableExtraKids(activeKids: number): number {
+  return Math.max(1, activeKids - FREE_KIDS);
 }
 
-/** Monthly recurring revenue contribution in cents. */
-export function mrrCents(plan: PlanId, interval: Interval | null, status: string): number {
-  if ((plan !== "family" && plan !== "family_plus") || !interval) return 0;
+/** Monthly price in cents for this many active kids. */
+export function monthlyPriceCents(activeKids: number): number {
+  return Math.max(0, activeKids - FREE_KIDS) * PRICE_PER_EXTRA_KID_CENTS;
+}
+
+export type LimitedResource = "devices" | "parents";
+
+export function withinLimit(resource: LimitedResource, currentCount: number): boolean {
+  return currentCount < LIMITS[resource];
+}
+
+/** Monthly recurring revenue in cents for one subscription row. */
+export function mrrCents(plan: PlanId | string, quantity: number | null, status: string): number {
+  if (plan !== "family" || !quantity) return 0;
   if (status !== "active" && status !== "past_due") return 0;
-  const price = PLAN_PRICES[plan][interval];
-  return interval === "yearly" ? Math.round(price / 12) : price;
+  return quantity * PRICE_PER_EXTRA_KID_CENTS;
 }

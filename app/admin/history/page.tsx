@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireParent } from "@/lib/auth/session";
 import { loadHistory, type HistoryFilters } from "@/lib/history";
 import { formatMoney } from "@/lib/money/format";
-import { PLAN_LIMITS } from "@/lib/billing/plans";
 import { Badge, EmptyState, PageHeader, buttonClass } from "@/components/ui";
 
 export const metadata = { title: "History" };
@@ -26,7 +25,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   ]);
   const money = (c: number) => formatMoney(c, ctx.household.currency, ctx.locale);
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v) as [string, string][]).toString();
-  const canExport = PLAN_LIMITS[ctx.plan].csvExport || ctx.access !== "full";
+  const canExport = true;
   const select = "min-h-10 rounded-xl border border-line bg-card px-3 text-sm";
 
   return (

@@ -18,6 +18,7 @@ export interface ParentContext {
   membership: Membership;
   subscription: Subscription | null;
   plan: PlanId;
+  activeKids: number;
   access: HouseholdAccess;
   isOwner: boolean;
   locale: Locale;
@@ -45,9 +46,14 @@ export const getParentContext = cache(async (): Promise<ParentContext | null> =>
     .maybeSingle();
   if (!membership) return null;
 
-  const [{ data: household }, { data: subscription }] = await Promise.all([
+  const [{ data: household }, { data: subscription }, { count: activeKids }] = await Promise.all([
     supabase.from("households").select("*").eq("id", membership.household_id).single(),
     supabase.from("subscriptions").select("*").eq("household_id", membership.household_id).maybeSingle(),
+    supabase
+      .from("kids")
+      .select("id", { count: "exact", head: true })
+      .eq("household_id", membership.household_id)
+      .is("archived_at", null),
   ]);
   if (!household) return null;
 
@@ -58,7 +64,8 @@ export const getParentContext = cache(async (): Promise<ParentContext | null> =>
     membership,
     subscription,
     plan: (subscription?.plan ?? "free") as PlanId,
-    access: getHouseholdAccess(subscription, new Date()),
+    activeKids: activeKids ?? 0,
+    access: getHouseholdAccess(subscription, new Date(), activeKids ?? 0),
     isOwner: membership.role === "owner",
     locale: asLocale(household.locale),
   };
@@ -86,7 +93,10 @@ export class ActionError extends Error {
 export async function requireWritableParent(): Promise<ParentContext> {
   const ctx = await getParentContext();
   if (!ctx) throw new ActionError("forbidden", "Please log in again.");
-  if (ctx.access !== "full") throw new ActionError("read_only", "Your board is read-only. Upgrade to make changes.");
+  if (ctx.access !== "full") throw new ActionError(
+      "read_only",
+      "Your board is read-only: extra kids need a subscription ($5/month each). Subscribe or archive kids to keep going.",
+    );
   return ctx;
 }
 

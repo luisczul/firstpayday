@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { brand } from "@/lib/brand";
+import { appUrl } from "@/lib/env";
 import "./globals.css";
 
 // Self-hosted variable fonts (SIL Open Font License): no third-party requests at runtime or build.
@@ -20,8 +21,14 @@ const nunito = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: brand.name, template: `%s · ${brand.name}` },
-  description: brand.tagline,
+  metadataBase: new URL(appUrl()),
+  title: { default: `${brand.name}: chore chart & allowance app for kids`, template: `%s · ${brand.name}` },
+  description:
+    "The chore chart that pays your kids. Kids mark paid chores done on the kitchen tablet, you approve from your phone, and their allowance adds up. First kid free.",
+  keywords: ["chore chart app", "allowance app for kids", "paid chores", "chore tracker", "kids chores tablet", "allowance tracker", "chores for money"],
+  openGraph: { type: "website", siteName: brand.name, locale: "en_CA" },
+  twitter: { card: "summary_large_image" },
+  alternates: { canonical: "/" },
   applicationName: brand.name,
   appleWebApp: { capable: true, title: brand.name, statusBarStyle: "default" },
   icons: { icon: "/icons/192", apple: "/icons/180" },

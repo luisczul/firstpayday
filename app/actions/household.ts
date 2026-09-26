@@ -56,13 +56,6 @@ export async function updateHouseholdSettings(input: z.input<typeof Settings>) {
     const ctx = await requireWritableParent();
     const parsed = Settings.safeParse(input);
     if (!parsed.success) throw new ActionError("invalid", parsed.error.issues[0]?.message ?? "Check the form.");
-    const { PLAN_LIMITS } = await import("@/lib/billing/plans");
-    if (parsed.data.savings_match_percent > 0 && !PLAN_LIMITS[ctx.plan].savingsMatch) {
-      throw new ActionError("limit", "Savings match is part of Family Plus. Upgrade to turn it on.");
-    }
-    if (parsed.data.theme !== "fall" && !PLAN_LIMITS[ctx.plan].customThemes) {
-      throw new ActionError("limit", "Custom themes are part of Family Plus.");
-    }
     const { error } = await ctx.supabase.from("households").update(parsed.data).eq("id", ctx.household.id);
     if (error) throw error;
     revalidatePath("/admin", "layout");

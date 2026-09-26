@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { requireParent } from "@/lib/auth/session";
-import { PLAN_LIMITS } from "@/lib/billing/plans";
+import { LIMITS } from "@/lib/billing/plans";
 import { KIOSK_COOKIE } from "@/lib/auth/adminMode";
 import { PageHeader } from "@/components/ui";
 import { SettingsNav } from "../SettingsNav";
@@ -22,7 +22,7 @@ export default async function DevicesPage() {
       <SettingsNav active="/admin/settings/devices" />
       <DevicesList
         devices={devices ?? []}
-        limit={PLAN_LIMITS[ctx.plan].devices}
+        limit={LIMITS.devices}
         onKiosk={onKiosk}
         locale={ctx.locale}
       />

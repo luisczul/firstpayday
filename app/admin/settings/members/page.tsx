@@ -1,6 +1,6 @@
 import { requireParent } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PLAN_LIMITS } from "@/lib/billing/plans";
+import { LIMITS } from "@/lib/billing/plans";
 import { PageHeader } from "@/components/ui";
 import { SettingsNav } from "../SettingsNav";
 import { MembersList } from "./MembersList";
@@ -32,7 +32,7 @@ export default async function MembersPage() {
         invites={(invites ?? []).filter((i) => new Date(i.expires_at) > new Date())}
         meId={ctx.user.id}
         isOwner={ctx.isOwner}
-        limit={PLAN_LIMITS[ctx.plan].parents}
+        limit={LIMITS.parents}
       />
     </>
   );

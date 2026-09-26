@@ -1,29 +1,26 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { z } from "zod";
 import { getParentContext } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { automaticTax, priceIdFor, stripe } from "@/lib/billing/stripe";
+import { automaticTax, extraKidPriceId, stripe } from "@/lib/billing/stripe";
+import { billableExtraKids } from "@/lib/billing/plans";
 import { appUrl } from "@/lib/env";
 
 export const runtime = "nodejs";
 
-const Body = z.object({ plan: z.enum(["family", "family_plus"]), interval: z.enum(["monthly", "yearly"]) });
-
-/** Owner picks a plan → Stripe Checkout (SPEC §19.3). Access changes only via the webhook. */
+/**
+ * Owner starts the subscription for extra kids ($5/month each) → Stripe
+ * Checkout. Access changes only via the webhook.
+ */
 export async function POST(req: NextRequest) {
   const ctx = await getParentContext();
   if (!ctx) return NextResponse.redirect(new URL("/login", req.url), 303);
   if (!ctx.isOwner) return NextResponse.json({ error: "Only the owner can manage billing." }, { status: 403 });
 
-  const form = await req.formData();
-  const parsed = Body.safeParse({ plan: form.get("plan"), interval: form.get("interval") });
-  if (!parsed.success) return NextResponse.json({ error: "invalid plan" }, { status: 400 });
-
   const s = stripe();
   const admin = createAdminClient();
   const sub = ctx.subscription;
 
-  // Already subscribed: plan changes happen in the Customer Portal.
+  // Already subscribed: manage it in the Customer Portal.
   if (sub?.stripe_subscription_id && ["active", "trialing", "past_due"].includes(sub.status)) {
     const portal = await s.billingPortal.sessions.create({
       customer: sub.stripe_customer_id!,
@@ -43,15 +40,21 @@ export async function POST(req: NextRequest) {
     await admin.from("subscriptions").update({ stripe_customer_id: customerId }).eq("household_id", ctx.household.id);
   }
 
-  // Keep the remaining free days when upgrading mid-trial (Stripe needs ≥48h).
-  const trialEnd = sub?.status === "trialing" && sub.trial_ends_at ? Math.floor(new Date(sub.trial_ends_at).getTime() / 1000) : null;
+  // Keep the remaining free days when subscribing mid-trial (Stripe needs ≥48h).
+  const trialEnd = sub?.plan === "trial" && sub.trial_ends_at ? Math.floor(new Date(sub.trial_ends_at).getTime() / 1000) : null;
   const keepTrial = trialEnd && trialEnd > Date.now() / 1000 + 48 * 3600 ? trialEnd : undefined;
 
   const session = await s.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
     client_reference_id: ctx.household.id,
-    line_items: [{ price: await priceIdFor(parsed.data.plan, parsed.data.interval), quantity: 1 }],
+    line_items: [
+      {
+        price: await extraKidPriceId(),
+        quantity: billableExtraKids(ctx.activeKids),
+        adjustable_quantity: { enabled: true, minimum: 1, maximum: 9 },
+      },
+    ],
     subscription_data: { metadata: { household_id: ctx.household.id }, ...(keepTrial ? { trial_end: keepTrial } : {}) },
     allow_promotion_codes: true,
     automatic_tax: { enabled: automaticTax() },

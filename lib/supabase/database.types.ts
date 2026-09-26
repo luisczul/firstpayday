@@ -309,13 +309,13 @@ isOneToOne: false
                   ]
                 },"subscriptions": {
                   Row: {
-                    "cancel_at_period_end": boolean,"current_period_end": string | null,"household_id": string,"past_due_since": string | null,"plan": string,"status": string,"stripe_customer_id": string | null,"stripe_price_id": string | null,"stripe_subscription_id": string | null,"trial_ended_email_sent_at": string | null,"trial_ends_at": string | null,"trial_reminder_sent_at": string | null,"updated_at": string
+                    "cancel_at_period_end": boolean,"current_period_end": string | null,"household_id": string,"past_due_since": string | null,"plan": string,"quantity": number | null,"status": string,"stripe_customer_id": string | null,"stripe_price_id": string | null,"stripe_subscription_id": string | null,"trial_ended_email_sent_at": string | null,"trial_ends_at": string | null,"trial_reminder_sent_at": string | null,"updated_at": string
                   }
                   Insert: {
-                    "cancel_at_period_end"?: boolean,"current_period_end"?: string | null,"household_id": string,"past_due_since"?: string | null,"plan"?: string,"status"?: string,"stripe_customer_id"?: string | null,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"trial_ended_email_sent_at"?: string | null,"trial_ends_at"?: string | null,"trial_reminder_sent_at"?: string | null,"updated_at"?: string
+                    "cancel_at_period_end"?: boolean,"current_period_end"?: string | null,"household_id": string,"past_due_since"?: string | null,"plan"?: string,"quantity"?: number | null,"status"?: string,"stripe_customer_id"?: string | null,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"trial_ended_email_sent_at"?: string | null,"trial_ends_at"?: string | null,"trial_reminder_sent_at"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "cancel_at_period_end"?: boolean,"current_period_end"?: string | null,"household_id"?: string,"past_due_since"?: string | null,"plan"?: string,"status"?: string,"stripe_customer_id"?: string | null,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"trial_ended_email_sent_at"?: string | null,"trial_ends_at"?: string | null,"trial_reminder_sent_at"?: string | null,"updated_at"?: string
+                    "cancel_at_period_end"?: boolean,"current_period_end"?: string | null,"household_id"?: string,"past_due_since"?: string | null,"plan"?: string,"quantity"?: number | null,"status"?: string,"stripe_customer_id"?: string | null,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"trial_ended_email_sent_at"?: string | null,"trial_ends_at"?: string | null,"trial_reminder_sent_at"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {

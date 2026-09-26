@@ -4,7 +4,7 @@ import { signedAvatarMap } from "@/lib/avatars";
 import { formatMoney } from "@/lib/money/format";
 import { KidAvatar } from "@/components/kid/KidAvatar";
 import { PageHeader } from "@/components/ui";
-import { PLAN_LIMITS } from "@/lib/billing/plans";
+import { monthlyPriceCents } from "@/lib/billing/plans";
 import { AddKidButton } from "./AddKidButton";
 
 export const metadata = { title: "Kids" };
@@ -25,7 +25,7 @@ export default async function KidsPage() {
     <>
       <PageHeader
         title="Kids"
-        subtitle={`${active.length} of ${PLAN_LIMITS[ctx.plan].kids} on your plan`}
+        subtitle={`${active.length} kid${active.length === 1 ? "" : "s"} · first kid free, then ${money(500)}/month each${active.length > 1 ? ` (${money(monthlyPriceCents(active.length))}/month)` : ""}`}
         actions={ctx.access === "full" ? <AddKidButton /> : null}
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -33,7 +33,6 @@
   "kid.recent": "Recent",
   "kid.sound": "Sound",
   "kid.per": "/ {unit}",
-
   "unlock.title": "Parent unlock",
   "unlock.email": "Email",
   "unlock.password": "Password",
@@ -44,7 +43,6 @@
   "unlock.wrong": "That didn't work. Check and try again.",
   "unlock.locked": "Too many tries. Try again in a few minutes.",
   "unlock.cancel": "Cancel",
-
   "nav.approvals": "Approvals",
   "nav.chores": "Chores",
   "nav.kids": "Kids",
@@ -55,13 +53,11 @@
   "nav.backToKidsMode": "Back to Kids Mode",
   "nav.switchToKidsMode": "Switch to Kids Mode",
   "nav.logout": "Log out",
-
   "admin.timeoutBanner": "Switching back to Kids Mode in {seconds}s",
   "admin.stay": "Stay in Admin",
-  "admin.readOnly": "Your board is read-only because the trial ended or the subscription lapsed. Your data is safe.",
+  "admin.readOnly": "Your board is read-only: extra kids need a subscription ($5/month each), or archive down to one kid. Your data is safe.",
   "admin.upgrade": "Upgrade",
   "admin.trialLeft": "{days} days left in your free trial",
-
   "common.save": "Save",
   "common.cancel": "Cancel",
   "common.delete": "Delete",

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
-import { PLAN_PRICES } from "@/lib/billing/plans";
+import { FAQ, JsonLd, landingJsonLd } from "./seo";
 import { SiteFooter, SiteHeader } from "./SiteChrome";
 
 const DEMO_CARDS = [
@@ -41,33 +41,27 @@ function TabletMockup() {
   );
 }
 
-const FAQ = [
-  ["Do my kids need an account or email?", "No. Kids never log in and never type anything. They tap their face on the family tablet. Only parents have accounts."],
-  ["Does it move real money?", "No. It's a ledger: it tracks what each kid earned and what you paid out in cash or to their savings account."],
-  ["What if two kids tap the same chore?", "House chores go to whoever taps first, and the card disappears for everyone else right away."],
-  ["Can my partner approve chores too?", "Yes. Invite a co-parent by email and approve from any phone or computer."],
-  ["What happens after the free trial?", "Nothing is deleted. The board goes read-only until you pick a plan: kids can still see their balances."],
-  ["Where is my data stored?", "In Canada. You can export or delete everything at any time."],
-];
+
 
 export function Landing() {
   return (
     <div className="paper-texture min-h-dvh">
+      <JsonLd data={landingJsonLd()} />
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4">
         <section className="grid items-center gap-10 py-10 lg:grid-cols-2 lg:py-16">
           <div>
             <h1 className="font-display text-5xl leading-[1.05] font-extrabold text-ink md:text-6xl">
-              Paid chores, <span className="text-maple">on the kitchen tablet.</span>
+              The chore chart that <span className="text-maple">pays your kids.</span>
             </h1>
             <p className="mt-5 text-xl text-ink-soft">
-              Kids tap their face, pick a chore card and hit “I did it!”. You approve from your phone. The money lands in their bank. No passwords, no arguments about who did what.
+              A paid-chores and allowance app for families. Kids tap their face on the kitchen tablet, pick a chore card and hit “I did it!”. You approve from your phone and the money lands in their bank. No passwords, no arguing about who did what.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/signup" className="rounded-full bg-maple px-7 py-4 text-lg font-black text-white shadow-[0_4px_0_#8a3217]">Start your free trial</Link>
               <Link href="/pricing" className="rounded-full bg-card px-7 py-4 text-lg font-black text-ink ring-1 ring-line">See pricing</Link>
             </div>
-            <p className="mt-3 text-sm text-ink-soft">14 days free · no credit card · set up in 3 minutes</p>
+            <p className="mt-3 text-sm text-ink-soft">First kid free forever · no credit card · set up in 3 minutes</p>
           </div>
           <TabletMockup />
         </section>
@@ -110,7 +104,7 @@ export function Landing() {
         <section className="py-12 text-center">
           <h2 className="font-display text-4xl font-bold">Simple pricing</h2>
           <p className="mt-3 text-lg text-ink-soft">
-            Family from ${(PLAN_PRICES.family.monthly / 100).toFixed(2)}/month · Family Plus from ${(PLAN_PRICES.family_plus.monthly / 100).toFixed(2)}/month (CAD, + tax)
+            Your first kid is <b>free forever</b>. Each extra kid is <b>$5/month</b> (CAD, + tax). 14 days free with as many kids as you want.
           </p>
           <Link href="/pricing" className="mt-5 inline-block font-black text-maple underline">Compare plans →</Link>
         </section>
@@ -130,7 +124,7 @@ export function Landing() {
         <section className="my-10 rounded-[2rem] bg-maple px-6 py-12 text-center text-white">
           <h2 className="font-display text-4xl font-bold">Turn chores into their first paycheck.</h2>
           <Link href="/signup" className="mt-6 inline-block rounded-full bg-gold px-8 py-4 text-lg font-black text-ink">Start free trial</Link>
-          <p className="mt-3 text-sm text-white/80">{brand.name} · 14 days free</p>
+          <p className="mt-3 text-sm text-white/80">{brand.name} · first kid free forever</p>
         </section>
       </main>
       <SiteFooter />

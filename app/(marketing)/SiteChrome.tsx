@@ -23,7 +23,10 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-8 text-sm text-ink-soft">
         <span>© {new Date().getFullYear()} {brand.legalEntityName}</span>
         <a href={`mailto:${brand.supportEmail}`} className="hover:text-ink">{brand.supportEmail}</a>
-        <span className="ml-auto flex gap-4">
+        <span className="ml-auto flex flex-wrap gap-4">
+          <Link href="/chore-chart-app" className="hover:text-ink">Chore chart app</Link>
+          <Link href="/allowance-app-for-kids" className="hover:text-ink">Allowance app</Link>
+          <Link href="/paid-chores-list" className="hover:text-ink">Paid chores list</Link>
           <Link href="/terms" className="hover:text-ink">Terms</Link>
           <Link href="/privacy" className="hover:text-ink">Privacy</Link>
         </span>

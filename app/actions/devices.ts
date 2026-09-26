@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ActionError, getParentContext, runAction } from "@/lib/auth/session";
-import { PLAN_LIMITS, withinLimit } from "@/lib/billing/plans";
+import { LIMITS, withinLimit } from "@/lib/billing/plans";
 import { registerKioskDevice, clearKioskCookie } from "@/lib/kiosk/auth";
 import { ADMIN_MODE_COOKIE } from "@/lib/auth/adminMode";
 
@@ -23,10 +23,10 @@ export async function enableKioskOnThisDevice(name?: string) {
       .select("id", { count: "exact", head: true })
       .eq("household_id", ctx.household.id)
       .is("revoked_at", null);
-    if (!withinLimit(ctx.plan, "devices", count ?? 0)) {
+    if (!withinLimit("devices", count ?? 0)) {
       throw new ActionError(
         "limit",
-        `Your plan includes ${PLAN_LIMITS[ctx.plan].devices} tablets. Revoke an old one or upgrade.`,
+        `Your plan includes ${LIMITS.devices} tablets. Revoke an old one first.`,
       );
     }
     await clearKioskCookie();

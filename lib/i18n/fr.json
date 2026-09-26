@@ -33,7 +33,6 @@
   "kid.recent": "Récent",
   "kid.sound": "Son",
   "kid.per": "/ {unit}",
-
   "unlock.title": "Accès parent",
   "unlock.email": "Courriel",
   "unlock.password": "Mot de passe",
@@ -44,7 +43,6 @@
   "unlock.wrong": "Ça n'a pas fonctionné. Vérifie et réessaie.",
   "unlock.locked": "Trop d'essais. Réessaie dans quelques minutes.",
   "unlock.cancel": "Annuler",
-
   "nav.approvals": "Approbations",
   "nav.chores": "Tâches",
   "nav.kids": "Enfants",
@@ -55,13 +53,11 @@
   "nav.backToKidsMode": "Retour au mode enfants",
   "nav.switchToKidsMode": "Passer au mode enfants",
   "nav.logout": "Déconnexion",
-
   "admin.timeoutBanner": "Retour au mode enfants dans {seconds} s",
   "admin.stay": "Rester en mode parent",
-  "admin.readOnly": "Votre tableau est en lecture seule, car l'essai est terminé ou l'abonnement a expiré. Vos données sont en sécurité.",
+  "admin.readOnly": "Votre tableau est en lecture seule : les enfants supplémentaires nécessitent un abonnement (5 $/mois chacun), ou archivez jusqu'à un seul enfant. Vos données sont en sécurité.",
   "admin.upgrade": "S'abonner",
   "admin.trialLeft": "{days} jours restants à votre essai gratuit",
-
   "common.save": "Enregistrer",
   "common.cancel": "Annuler",
   "common.delete": "Supprimer",

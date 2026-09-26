@@ -1,7 +1,7 @@
 import "server-only";
 import Stripe from "stripe";
 import { requireEnv } from "@/lib/env";
-import { LOOKUP_KEYS, planFromLookupKey, type Interval, type PaidPlanId } from "./plans";
+import { EXTRA_KID_LOOKUP_KEY, billableExtraKids, planFromLookupKey } from "./plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 let client: Stripe | null = null;
@@ -11,20 +11,32 @@ export function stripe(): Stripe {
   return client;
 }
 
-const ENV_PRICE: Record<string, string | undefined> = {
-  family_monthly: process.env.STRIPE_PRICE_FAMILY_MONTHLY,
-  family_yearly: process.env.STRIPE_PRICE_FAMILY_YEARLY,
-  family_plus_monthly: process.env.STRIPE_PRICE_FAMILY_PLUS_MONTHLY,
-  family_plus_yearly: process.env.STRIPE_PRICE_FAMILY_PLUS_YEARLY,
-};
-
-/** Price id by lookup key (SPEC §19.2: lookup keys first, env ids as a cache/fallback). */
-export async function priceIdFor(plan: PaidPlanId, interval: Interval): Promise<string> {
-  const key = LOOKUP_KEYS[plan][interval];
-  const { data } = await stripe().prices.list({ lookup_keys: [key], active: true, limit: 1 });
-  const id = data[0]?.id ?? ENV_PRICE[key];
-  if (!id) throw new Error(`No Stripe price for ${key}. Run scripts/stripe-setup.ts.`);
+/** The $5/month extra-kid price, by lookup key (env id as fallback). */
+export async function extraKidPriceId(): Promise<string> {
+  const { data } = await stripe().prices.list({ lookup_keys: [EXTRA_KID_LOOKUP_KEY], active: true, limit: 1 });
+  const id = data[0]?.id ?? process.env.STRIPE_PRICE_EXTRA_KID_MONTHLY;
+  if (!id) throw new Error(`No Stripe price for ${EXTRA_KID_LOOKUP_KEY}. Run scripts/stripe-setup.ts.`);
   return id;
+}
+
+/**
+ * Keep the subscription quantity equal to the paid kids (active − 1) after a
+ * kid is added, archived or restored. Prorated. No-op without a subscription.
+ */
+export async function syncKidQuantity(householdId: string): Promise<void> {
+  if (!process.env.STRIPE_SECRET_KEY) return;
+  const admin = createAdminClient();
+  const [{ data: sub }, { count }] = await Promise.all([
+    admin.from("subscriptions").select("*").eq("household_id", householdId).maybeSingle(),
+    admin.from("kids").select("id", { count: "exact", head: true }).eq("household_id", householdId).is("archived_at", null),
+  ]);
+  if (!sub?.stripe_subscription_id || !["active", "trialing", "past_due"].includes(sub.status)) return;
+  const current = await stripe().subscriptions.retrieve(sub.stripe_subscription_id);
+  const item = current.items.data[0];
+  const quantity = billableExtraKids(count ?? 0);
+  if (!item || item.quantity === quantity) return;
+  await stripe().subscriptionItems.update(item.id, { quantity, proration_behavior: "create_prorations" });
+  await admin.from("subscriptions").update({ quantity }).eq("household_id", householdId);
 }
 
 export const automaticTax = () => process.env.STRIPE_AUTOMATIC_TAX !== "false";
@@ -62,6 +74,7 @@ export async function syncSubscription(subscriptionId: string, hintHouseholdId?:
       stripe_customer_id: customerId,
       stripe_subscription_id: sub.id,
       stripe_price_id: price?.id ?? null,
+      quantity: sub.items.data[0]?.quantity ?? null,
       plan: existing?.plan === "comp" ? "comp" : plan,
       status,
       trial_ends_at: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : (existing?.trial_ends_at ?? null),

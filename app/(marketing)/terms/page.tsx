@@ -13,9 +13,10 @@ export default function TermsPage() {
       <p>You must be an adult to create an account. You&apos;re responsible for your account, for the kids&apos; tablets you connect, and for the information you enter about your children.</p>
       <h2>Trial, billing and cancellation</h2>
       <ul>
-        <li>New households get a 14-day free trial with no card required.</li>
-        <li>Paid plans renew monthly or yearly until canceled. Prices are in CAD, plus applicable taxes.</li>
-        <li>You can cancel any time from Settings → Billing; access continues until the end of the paid period, then the household becomes read-only.</li>
+        <li>The first kid in a household is free. Each additional kid is $5 CAD per month, plus applicable taxes, billed monthly until canceled.</li>
+        <li>New households get a 14-day free trial with any number of kids and no card required.</li>
+        <li>Adding or archiving kids changes the subscription quantity, prorated.</li>
+        <li>You can cancel any time from Settings → Billing; access continues until the end of the paid period. After that a household with more than one active kid becomes read-only until it subscribes again or archives down to one kid.</li>
       </ul>
       <h2>Your data</h2>
       <p>You own your data. You can export or delete it at any time. See the Privacy Policy for details.</p>

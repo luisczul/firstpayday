@@ -42,9 +42,10 @@ export interface KioskKid {
 
 async function loadHousehold(ctx: KioskContext): Promise<KioskHousehold> {
   const admin = createAdminClient();
-  const [{ data: h, error }, { data: sub }] = await Promise.all([
+  const [{ data: h, error }, { data: sub }, { count: activeKids }] = await Promise.all([
     admin.from("households").select("*").eq("id", ctx.householdId).single(),
     admin.from("subscriptions").select("*").eq("household_id", ctx.householdId).maybeSingle(),
+    admin.from("kids").select("id", { count: "exact", head: true }).eq("household_id", ctx.householdId).is("archived_at", null),
   ]);
   if (error || !h) throw error ?? new Error("household not found");
   return {
@@ -56,7 +57,7 @@ async function loadHousehold(ctx: KioskContext): Promise<KioskHousehold> {
     weekStartsOn: h.week_starts_on,
     kidIdleSeconds: h.kid_idle_seconds,
     theme: h.theme,
-    paused: getHouseholdAccess(sub, new Date()) !== "full",
+    paused: getHouseholdAccess(sub, new Date(), activeKids ?? 0) !== "full",
   };
 }
 

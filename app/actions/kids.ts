@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ActionError, requireWritableParent, runAction, type ParentContext } from "@/lib/auth/session";
-import { PLAN_LIMITS, withinLimit } from "@/lib/billing/plans";
+import { MAX_KIDS } from "@/lib/billing/plans";
+import { needsPaymentForAnotherKid } from "@/lib/billing/access";
+import { syncKidQuantity } from "@/lib/billing/stripe";
 
 const KID_COLORS = ["#E08A1E", "#B8431F", "#6B7A2E", "#7A3B4A", "#2F6F8F", "#C9962B", "#8A5A9E", "#3C8D6E"];
 const color = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
@@ -14,13 +16,29 @@ async function assertKidRoom(ctx: ParentContext, adding: number) {
     .select("id", { count: "exact", head: true })
     .eq("household_id", ctx.household.id)
     .is("archived_at", null);
-  if (!withinLimit(ctx.plan, "kids", (count ?? 0) + adding - 1)) {
-    throw new ActionError(
-      "limit",
-      `Your plan includes up to ${PLAN_LIMITS[ctx.plan].kids} kids. Upgrade to Family Plus to add more.`,
-    );
+  const current = count ?? 0;
+  if (current + adding > MAX_KIDS) {
+    throw new ActionError("invalid", `A household can have up to ${MAX_KIDS} kids.`);
   }
-  return count ?? 0;
+  // Each kid beyond the first needs the $5/month subscription (free during the trial).
+  for (let i = 0; i < adding; i++) {
+    if (needsPaymentForAnotherKid(ctx.subscription, new Date(), current + i)) {
+      throw new ActionError(
+        "limit",
+        "Your first kid is free. Each extra kid is $5/month: start your subscription in Billing to add more.",
+      );
+    }
+  }
+  return current;
+}
+
+/** Stripe quantity follows the kid count; never let billing sync break the action. */
+async function syncBilling(householdId: string) {
+  try {
+    await syncKidQuantity(householdId);
+  } catch (e) {
+    console.error("syncKidQuantity failed", e);
+  }
 }
 
 /** Onboarding: add several kids at once. Returns their ids (for photo upload). */
@@ -43,6 +61,7 @@ export async function addKids(names: string[]) {
       )
       .select("id, name");
     if (error) throw error;
+    await syncBilling(ctx.household.id);
     revalidatePath("/admin/kids");
     return { kids: data, householdId: ctx.household.id };
   });
@@ -66,6 +85,7 @@ export async function createKid(input: z.input<typeof KidInput>) {
       .select("id")
       .single();
     if (error) throw error;
+    await syncBilling(ctx.household.id);
     revalidatePath("/admin/kids");
     return { id: data.id, householdId: ctx.household.id };
   });
@@ -106,14 +126,27 @@ export async function setKidAvatar(kidId: string, hasPhoto: boolean) {
 
 export async function setKidArchived(kidId: string, archived: boolean) {
   return runAction(async () => {
-    const ctx = await requireWritableParent();
+    // Archiving is allowed even when read-only: it's how a lapsed household
+    // gets back to the free single-kid plan.
+    const ctx = archived ? await requireParentForArchive() : await requireWritableParent();
     if (!archived) await assertKidRoom(ctx, 1);
-    const { error } = await ctx.supabase
+    // RLS blocks writes while read-only, so archiving uses the service role,
+    // scoped to the household we just verified membership of.
+    const db = archived ? (await import("@/lib/supabase/admin")).createAdminClient() : ctx.supabase;
+    const { error } = await db
       .from("kids")
       .update({ archived_at: archived ? new Date().toISOString() : null })
       .eq("household_id", ctx.household.id)
       .eq("id", z.uuid().parse(kidId));
     if (error) throw error;
+    await syncBilling(ctx.household.id);
     revalidatePath("/admin/kids");
   });
+}
+
+async function requireParentForArchive() {
+  const { getParentContext } = await import("@/lib/auth/session");
+  const ctx = await getParentContext();
+  if (!ctx) throw new ActionError("forbidden", "Please log in again.");
+  return ctx;
 }

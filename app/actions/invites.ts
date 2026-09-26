@@ -5,7 +5,7 @@ import { ActionError, getUser, runAction } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sha256Hex } from "@/lib/crypto";
 import { getHouseholdAccess } from "@/lib/billing/access";
-import { PLAN_LIMITS, withinLimit, type PlanId } from "@/lib/billing/plans";
+import { LIMITS, withinLimit } from "@/lib/billing/plans";
 
 export async function acceptInvite(token: string) {
   const result = await runAction(async () => {
@@ -23,13 +23,13 @@ export async function acceptInvite(token: string) {
     if (invite.email.toLowerCase() !== user.email.toLowerCase()) {
       throw new ActionError("forbidden", "This invite is for a different email.");
     }
-    const [{ count }, { data: sub }] = await Promise.all([
+    const [{ count }, { data: sub }, { count: kids }] = await Promise.all([
       admin.from("household_members").select("user_id", { count: "exact", head: true }).eq("household_id", invite.household_id),
       admin.from("subscriptions").select("*").eq("household_id", invite.household_id).maybeSingle(),
+      admin.from("kids").select("id", { count: "exact", head: true }).eq("household_id", invite.household_id).is("archived_at", null),
     ]);
-    const plan = (sub?.plan ?? "free") as PlanId;
-    if (getHouseholdAccess(sub, new Date()) !== "full" || !withinLimit(plan, "parents", count ?? 0)) {
-      throw new ActionError("limit", `This household has reached its ${PLAN_LIMITS[plan].parents}-parent limit. Ask the owner to upgrade.`);
+    if (getHouseholdAccess(sub, new Date(), kids ?? 0) !== "full" || !withinLimit("parents", count ?? 0)) {
+      throw new ActionError("limit", `This household can't add parents right now (limit ${LIMITS.parents}). Ask the owner.`);
     }
     const { error } = await admin
       .from("household_members")
