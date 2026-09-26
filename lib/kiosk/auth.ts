@@ -2,9 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hmacHex, randomToken } from "@/lib/crypto";
+import { appSecret, hmacHex, randomToken } from "@/lib/crypto";
 import { KIOSK_COOKIE } from "@/lib/auth/adminMode";
-import { requireEnv } from "@/lib/env";
 
 // Kiosk (kitchen tablet) identity, SPEC §7. The raw token only ever lives in
 // the httpOnly cookie; the database stores HMAC(KIOSK_COOKIE_SECRET, token).
@@ -30,7 +29,7 @@ export type KioskResolution =
   | { status: "revoked" };
 
 async function tokenHash(token: string): Promise<string> {
-  return hmacHex(requireEnv("KIOSK_COOKIE_SECRET"), token);
+  return hmacHex(await appSecret("KIOSK_COOKIE_SECRET"), token);
 }
 
 /** Resolve the tablet's household from its cookie. Cached per request. */

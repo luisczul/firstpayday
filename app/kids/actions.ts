@@ -6,8 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveKiosk } from "@/lib/kiosk/auth";
 import { ADMIN_MODE_COOKIE, adminModeCookieOptions, signAdminMode } from "@/lib/auth/adminMode";
-import { verifyPin } from "@/lib/crypto";
-import { requireEnv } from "@/lib/env";
+import { appSecret, verifyPin } from "@/lib/crypto";
 
 // Parent unlock from the kiosk (SPEC §7 "Getting into Admin from the tablet").
 // These are parent-authentication actions, not kid operations.
@@ -94,7 +93,7 @@ export async function unlockWithPin(input: { userId: string; pin: string }): Pro
     return { ok: false, reason: "locked" };
   }
 
-  const good = await verifyPin(parsed.data.pin, member.pin_hash, requireEnv("ADMIN_MODE_SECRET"));
+  const good = await verifyPin(parsed.data.pin, member.pin_hash, await appSecret("ADMIN_MODE_SECRET"));
   if (!good) {
     const attempts = member.pin_failed_attempts + 1;
     const lock = attempts >= PIN_MAX_TRIES;

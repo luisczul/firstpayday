@@ -5,8 +5,8 @@ import { z } from "zod";
 import { ActionError, getParentContext, runAction } from "@/lib/auth/session";
 import { PLAN_LIMITS, withinLimit } from "@/lib/billing/plans";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hashPin, randomToken, sha256Hex } from "@/lib/crypto";
-import { appUrl, requireEnv } from "@/lib/env";
+import { appSecret, hashPin, randomToken, sha256Hex } from "@/lib/crypto";
+import { appUrl } from "@/lib/env";
 import { emailLayout, sendEmail } from "@/lib/email/send";
 import { brand } from "@/lib/brand";
 
@@ -111,7 +111,7 @@ export async function setMyPin(pin: string) {
     let pinHash: string | null = null;
     if (pin) {
       if (!/^\d{4,6}$/.test(pin)) throw new ActionError("invalid", "Use 4 to 6 digits.");
-      pinHash = await hashPin(pin, randomToken(8), requireEnv("ADMIN_MODE_SECRET"));
+      pinHash = await hashPin(pin, randomToken(8), await appSecret("ADMIN_MODE_SECRET"));
     }
     // Service role: pin_hash is not something the member's own session should read back.
     const { error } = await createAdminClient()

@@ -46,3 +46,16 @@ export async function verifyPin(pin: string, stored: string, secret: string): Pr
   if (!salt) return false;
   return safeEqual(await hashPin(pin, salt, secret), stored);
 }
+
+/**
+ * App signing secret by name: the env var when set, otherwise derived from
+ * the Supabase service-role key (HMAC with a per-purpose label), so a deploy
+ * only needs the Supabase keys. Rotating the service key rotates these too.
+ */
+export async function appSecret(name: "KIOSK_COOKIE_SECRET" | "ADMIN_MODE_SECRET"): Promise<string> {
+  const explicit = process.env[name];
+  if (explicit) return explicit;
+  const root = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!root) throw new Error(`Missing environment variable ${name}`);
+  return hmacHex(root, `chore-board:${name}`);
+}

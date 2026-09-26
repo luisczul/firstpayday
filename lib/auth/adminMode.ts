@@ -1,4 +1,4 @@
-import { hmacHex, safeEqual } from "@/lib/crypto";
+import { appSecret, hmacHex, safeEqual } from "@/lib/crypto";
 
 // Signed cookie that keeps Admin Mode alive on a kiosk tablet (SPEC §7).
 // Value: `${userId}.${untilMs}.${timeoutMinutes}.${hmac}`.
@@ -12,16 +12,12 @@ export interface AdminModeClaim {
   timeoutMinutes: number;
 }
 
-function secret(): string {
-  const s = process.env.ADMIN_MODE_SECRET;
-  if (!s) throw new Error("Missing environment variable ADMIN_MODE_SECRET");
-  return s;
-}
+const secret = () => appSecret("ADMIN_MODE_SECRET");
 
 export async function signAdminMode(userId: string, timeoutMinutes: number, now = Date.now()): Promise<string> {
   const until = now + timeoutMinutes * 60_000;
   const payload = `${userId}.${until}.${timeoutMinutes}`;
-  return `${payload}.${await hmacHex(secret(), payload)}`;
+  return `${payload}.${await hmacHex(await secret(), payload)}`;
 }
 
 export async function readAdminMode(value: string | undefined): Promise<AdminModeClaim | null> {
@@ -29,7 +25,7 @@ export async function readAdminMode(value: string | undefined): Promise<AdminMod
   const parts = value.split(".");
   if (parts.length !== 4) return null;
   const [userId, untilStr, timeoutStr, sig] = parts as [string, string, string, string];
-  const expected = await hmacHex(secret(), `${userId}.${untilStr}.${timeoutStr}`);
+  const expected = await hmacHex(await secret(), `${userId}.${untilStr}.${timeoutStr}`);
   if (!safeEqual(sig, expected)) return null;
   return { userId, until: Number(untilStr), timeoutMinutes: Number(timeoutStr) };
 }
