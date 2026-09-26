@@ -1,0 +1,36 @@
+import { cookies } from "next/headers";
+import { requireParent } from "@/lib/auth/session";
+import { ADMIN_MODE_COOKIE, KIOSK_COOKIE, readAdminMode } from "@/lib/auth/adminMode";
+import { trialDaysLeft } from "@/lib/billing/access";
+import { AdminShell } from "@/components/admin/AdminShell";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const ctx = await requireParent();
+  const store = await cookies();
+  const onKiosk = Boolean(store.get(KIOSK_COOKIE)?.value);
+  const claim = onKiosk ? await readAdminMode(store.get(ADMIN_MODE_COOKIE)?.value) : null;
+  const { count } = await ctx.supabase
+    .from("submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("household_id", ctx.household.id)
+    .eq("status", "pending");
+
+  return (
+    <AdminShell
+      householdId={ctx.household.id}
+      householdName={ctx.household.name}
+      locale={ctx.locale}
+      pendingCount={count ?? 0}
+      onKiosk={onKiosk}
+      adminTimeoutMinutes={claim?.timeoutMinutes ?? ctx.household.admin_timeout_minutes}
+      readOnly={ctx.access !== "full"}
+      isOwner={ctx.isOwner}
+      trialDaysLeft={ctx.subscription?.plan === "trial" ? trialDaysLeft(ctx.subscription, new Date()) : null}
+      theme={ctx.household.theme}
+    >
+      {children}
+    </AdminShell>
+  );
+}

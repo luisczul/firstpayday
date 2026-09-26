@@ -69,7 +69,7 @@ html {
 body {
   background: var(--c-paper);
   color: var(--c-ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-nunito), ui-rounded, system-ui, sans-serif;
 }
 
 :focus-visible {

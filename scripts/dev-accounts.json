@@ -1,0 +1,5 @@
+{
+  "_comment": "LOCAL DEVELOPMENT ONLY. Test accounts for the local Supabase stack (supabase start). Never use against a hosted project.",
+  "onboardingTester": { "email": "new-parent@example.test", "password": "local-dev-only-3141" },
+  "demoParent": { "email": "demo-parent@example.test", "password": "local-dev-only-2718" }
+}
