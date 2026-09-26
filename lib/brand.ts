@@ -1,8 +1,8 @@
-// Single place for the product brand (SPEC §16 #14), so it can be renamed later.
+// Single place for the product brand, so it can be renamed later.
 export const brand = {
-  name: "Chore Board",
-  tagline: "Chores kids actually want to do.",
-  domain: "kids.diegoczul.com",
-  supportEmail: "hello@diegoczul.com",
-  legalEntityName: process.env.LEGAL_ENTITY_NAME || "Chore Board",
+  name: "First Payday",
+  tagline: "The chore chart that pays your kids.",
+  domain: "firstpayday.app",
+  supportEmail: process.env.SUPPORT_EMAIL || "hello@firstpayday.app",
+  legalEntityName: process.env.LEGAL_ENTITY_NAME || "First Payday",
 } as const;

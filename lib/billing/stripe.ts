@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 let client: Stripe | null = null;
 
 export function stripe(): Stripe {
-  client ??= new Stripe(requireEnv("STRIPE_SECRET_KEY"), { appInfo: { name: "Chore Board" } });
+  client ??= new Stripe(requireEnv("STRIPE_SECRET_KEY"), { appInfo: { name: "First Payday" } });
   return client;
 }
 

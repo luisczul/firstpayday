@@ -25,7 +25,7 @@ export const SEO_PAGES: SeoPage[] = [
       "A chore chart app that lives on the kitchen tablet. Kids tap their face, pick a chore card and mark it done; parents approve from their phone. First kid free.",
     h1: "A chore chart app your kids will actually use",
     intro:
-      "Paper chore charts get ignored, and chore apps built for phones don't work for younger kids. Chore Board turns the family tablet into a big, colorful chore chart: kids tap their face, see their chores as cards, and tap “I did it!”. You check it from your phone.",
+      "Paper chore charts get ignored, and chore apps built for phones don't work for younger kids. First Payday turns the family tablet into a big, colorful chore chart: kids tap their face, see their chores as cards, and tap “I did it!”. You check it from your phone.",
     sections: [
       {
         heading: "Why a tablet chore chart works better",
@@ -64,7 +64,7 @@ export const SEO_PAGES: SeoPage[] = [
       "An allowance tracker where kids earn money for chores. Every approved chore adds to their balance; record cash payouts or savings deposits. First kid free.",
     h1: "An allowance app that ties money to effort",
     intro:
-      "Instead of a flat weekly allowance, many families pay for extra chores. Chore Board keeps a running balance for each kid: approved chores add money, payouts subtract it, and kids always see what's in their bank and what's “waiting for check”.",
+      "Instead of a flat weekly allowance, many families pay for extra chores. First Payday keeps a running balance for each kid: approved chores add money, payouts subtract it, and kids always see what's in their bank and what's “waiting for check”.",
     sections: [
       {
         heading: "How the allowance ledger works",
@@ -84,7 +84,7 @@ export const SEO_PAGES: SeoPage[] = [
       {
         heading: "No real money moves",
         paragraphs: [
-          "Chore Board is a ledger, not a bank. You hand over cash or transfer to their savings account yourself and record it in a tap. Kids have no accounts and no email.",
+          "First Payday is a ledger, not a bank. You hand over cash or transfer to their savings account yourself and record it in a tap. Kids have no accounts and no email.",
         ],
       },
     ],
@@ -100,7 +100,7 @@ export const SEO_PAGES: SeoPage[] = [
       "A practical list of paid chores for kids with suggested prices, from shoe organizing ($2) to cleaning the terrace ($10), and how often each should repeat.",
     h1: "Paid chores list, with prices that work",
     intro:
-      "These are the extra chores (beyond everyday responsibilities) a real family pays for, with prices in CAD and how often each one comes back. Use them as a starting point; every price is editable in Chore Board.",
+      "These are the extra chores (beyond everyday responsibilities) a real family pays for, with prices in CAD and how often each one comes back. Use them as a starting point; every price is editable in First Payday.",
     sections: [
       {
         heading: "Suggested chores and prices",

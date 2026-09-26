@@ -27,7 +27,7 @@ async function main() {
     const product =
       found.data[0] ??
       (await stripe.products.create({
-        name: "Chore Board: extra kid",
+        name: "First Payday: extra kid",
         description: "First kid is free. Each additional kid on the chore board.",
         metadata: { plan: "extra_kid" },
         tax_code: "txcd_10103001",
@@ -47,7 +47,7 @@ async function main() {
 Dashboard checklist:
   [ ] Stripe Tax on, registrations for GST/HST and QST (or set STRIPE_AUTOMATIC_TAX=false)
   [ ] Customer Portal: allow quantity changes, card updates, invoice history, cancel at period end
-  [ ] Webhook → https://kids.diegoczul.com/api/stripe/webhook
+  [ ] Webhook → https://firstpayday.app/api/stripe/webhook
       events: checkout.session.completed, customer.subscription.created/updated/deleted,
       invoice.paid, invoice.payment_failed`);
 }

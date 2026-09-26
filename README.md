@@ -1,6 +1,6 @@
-# Chore Board
+# First Payday
 
-Kid-friendly chore and allowance app. A kitchen tablet stays in **Kids Mode** (tap your face → tap a card → "I did it!"), parents approve from any phone or computer, and every kid has a money ledger. Public SaaS with Stripe subscriptions. Production: `kids.diegoczul.com`.
+Kid-friendly chore and allowance app. Pricing: first kid free, $5 CAD/month per extra kid. A kitchen tablet stays in **Kids Mode** (tap your face → tap a card → "I did it!"), parents approve from any phone or computer, and every kid has a money ledger. Public SaaS with Stripe subscriptions. Production: `firstpayday.app`.
 
 The full product brief is [SPEC.md](SPEC.md).
 
@@ -72,7 +72,7 @@ Security model in one paragraph: parents use Supabase Auth and every table has R
    pnpm exec supabase link --project-ref <ref>
    pnpm exec supabase db push        # migrations incl. templates + avatars bucket
    ```
-3. Auth → URL configuration: Site URL `https://kids.diegoczul.com`; redirect URLs `https://kids.diegoczul.com/**` and `http://localhost:3000/**`.
+3. Auth → URL configuration: Site URL `https://firstpayday.app`; redirect URLs `https://firstpayday.app/**` and `http://localhost:3000/**`.
 4. Auth → SMTP: point at Resend (or another SMTP) so confirmation and reset emails come from your domain.
 5. Use a separate project (or Supabase branching) for Vercel Preview deployments.
 
@@ -80,19 +80,19 @@ Security model in one paragraph: parents use Supabase Auth and every table has R
 ```bash
 STRIPE_SECRET_KEY=sk_test_... pnpm tsx scripts/stripe-setup.ts
 ```
-It creates/finds the products and prices by lookup key, prints the four `STRIPE_PRICE_*` ids, and prints the dashboard checklist (Stripe Tax for GST/HST + QST, Customer Portal, webhook endpoint `/api/stripe/webhook` with `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`). If Stripe Tax isn't on yet, set `STRIPE_AUTOMATIC_TAX=false`.
+It creates/finds the $5/month extra-kid price by lookup key, prints `STRIPE_PRICE_EXTRA_KID_MONTHLY`, and prints the dashboard checklist (Stripe Tax for GST/HST + QST, Customer Portal, webhook endpoint `/api/stripe/webhook` with `checkout.session.completed`, `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`). If Stripe Tax isn't on yet, set `STRIPE_AUTOMATIC_TAX=false`.
 
 Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook` (put the printed `whsec_…` in `.env.local`). Test card `4242 4242 4242 4242`.
 
 ### 3. Vercel
 1. Import the GitHub repo. Framework: Next.js. Node 22.
-2. Env vars (Production and Preview separately), names in `.env.example`: Supabase URL/anon/service role, Stripe keys + webhook secret + price ids, `KIOSK_COOKIE_SECRET`, `ADMIN_MODE_SECRET`, `APP_URL=https://kids.diegoczul.com`, `CRON_SECRET` (for the daily trial-email cron in `vercel.json`), optional `RESEND_API_KEY`, `EMAIL_FROM`, `LEGAL_ENTITY_NAME`.
-3. Domains → add `kids.diegoczul.com`, then at your DNS provider: **CNAME `kids` → `cname.vercel-dns.com`**.
+2. Env vars (Production and Preview separately), names in `.env.example`: Supabase URL/anon/service role, Stripe keys + webhook secret + price ids, (optional) `KIOSK_COOKIE_SECRET`, `ADMIN_MODE_SECRET`, `APP_URL=https://firstpayday.app`, `CRON_SECRET` (for the daily trial-email cron in `vercel.json`), optional `RESEND_API_KEY`, `EMAIL_FROM`, `LEGAL_ENTITY_NAME`.
+3. Domains → add `firstpayday.app` and `www.firstpayday.app` (www redirects to the apex). At GoDaddy DNS: **A `@` → the IP Vercel shows** and **CNAME `www` → the value Vercel shows**.
 
 Live Stripe keys go only into Vercel **Production** env vars, never into a file.
 
 ### 4. After the first deploy
-1. Sign up at `https://kids.diegoczul.com` like any customer.
+1. Sign up at `https://firstpayday.app` like any customer.
 2. Make yourself platform owner: `pnpm tsx scripts/make-platform-admin.ts you@example.com` (with production env loaded).
 3. Open `/platform` → your household → **Set comp**.
 

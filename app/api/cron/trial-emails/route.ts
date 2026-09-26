@@ -43,12 +43,12 @@ export async function GET(req: Request) {
       reminder
         ? {
             to: emails,
-            subject: "3 days left in your Chore Board trial",
+            subject: "3 days left in your First Payday trial",
             html: emailLayout("3 days left", `<p>Your kids' board keeps running until your trial ends. Pick a plan any time to keep it going.</p><p><a href="${link}">Choose a plan</a></p>`),
           }
         : {
             to: emails,
-            subject: "Your Chore Board trial ended — your data is safe",
+            subject: "Your First Payday trial ended — your data is safe",
             html: emailLayout("Your trial ended", `<p>Nothing was deleted. Balances and history are all still there, and the kids' tablet shows balances in read-only mode.</p><p><a href="${link}">Pick a plan to switch everything back on</a></p>`),
           },
     );

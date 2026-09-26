@@ -4,7 +4,7 @@ import { PricingTable } from "./PricingTable";
 
 export const metadata: Metadata = {
   title: "Pricing: first kid free, $5 per extra kid",
-  description: "Chore Board pricing: your first kid is free forever. Each additional kid is $5 CAD per month. 14-day free trial, no credit card.",
+  description: "First Payday pricing: your first kid is free forever. Each additional kid is $5 CAD per month. 14-day free trial, no credit card.",
   alternates: { canonical: "/pricing" },
 };
 

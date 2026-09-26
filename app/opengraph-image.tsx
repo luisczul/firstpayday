@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Chore Board: the chore chart that pays your kids";
+export const alt = "First Payday: the chore chart that pays your kids";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -15,7 +15,7 @@ export default function OgImage() {
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#FBF3E4", padding: 64 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18, color: "#B8431F", fontSize: 40, fontWeight: 800 }}>
           <div style={{ width: 64, height: 64, borderRadius: 16, background: "#B8431F", color: "#F2C14E", display: "flex", alignItems: "center", justifyContent: "center" }}>$</div>
-          Chore Board
+          First Payday
         </div>
         <div style={{ marginTop: 36, fontSize: 76, fontWeight: 900, color: "#3B2418", lineHeight: 1.05, display: "flex" }}>The chore chart that pays your kids.</div>
         <div style={{ marginTop: 16, fontSize: 32, color: "#7A5A48", display: "flex" }}>First kid free · kids tap, you approve, they save</div>

@@ -82,7 +82,7 @@ async function emailOwnersPaymentFailed(subscriptionId: string) {
   if (!emails.length) return;
   await sendEmail({
     to: emails,
-    subject: "Your Chore Board payment didn't go through",
+    subject: "Your First Payday payment didn't go through",
     html: emailLayout(
       "Payment failed",
       `<p>We couldn't charge your card. Your board keeps working for 7 days while you update it.</p>
