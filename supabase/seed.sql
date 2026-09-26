@@ -1,0 +1,1 @@
+-- Dev-only seed data goes here. Templates ship as a migration.

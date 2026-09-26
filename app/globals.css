@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens. Components use the semantic names (paper, ink, maple…);
+ * each seasonal theme only swaps the variables under [data-theme].
+ * Fall is the default (SPEC §6).
+ */
+:root,
+[data-theme="fall"] {
+  --c-paper: #fbf3e4;
+  --c-paper-deep: #f4e6cc;
+  --c-card: #fffaf1;
+  --c-ink: #3b2418;
+  --c-ink-soft: #7a5a48;
+  --c-line: #ead8b8;
+  --c-maple: #b8431f;
+  --c-amber: #e08a1e;
+  --c-gold: #f2c14e;
+  --c-moss: #6b7a2e;
+  --c-plum: #7a3b4a;
+  --c-success: #4f7a2e;
+  --c-danger: #b8431f;
+}
+
+[data-theme="plain"] {
+  --c-paper: #f7f7f5;
+  --c-paper-deep: #ececea;
+  --c-card: #ffffff;
+  --c-ink: #1f2328;
+  --c-ink-soft: #5b636d;
+  --c-line: #e1e3e6;
+  --c-maple: #d1495b;
+  --c-amber: #edae49;
+  --c-gold: #f6d55c;
+  --c-moss: #3caea3;
+  --c-plum: #5b4b8a;
+  --c-success: #2e8540;
+  --c-danger: #c62828;
+}
+
+@theme inline {
+  --color-paper: var(--c-paper);
+  --color-paper-deep: var(--c-paper-deep);
+  --color-card: var(--c-card);
+  --color-ink: var(--c-ink);
+  --color-ink-soft: var(--c-ink-soft);
+  --color-line: var(--c-line);
+  --color-maple: var(--c-maple);
+  --color-amber: var(--c-amber);
+  --color-gold: var(--c-gold);
+  --color-moss: var(--c-moss);
+  --color-plum: var(--c-plum);
+  --color-success: var(--c-success);
+  --color-danger: var(--c-danger);
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+
+  --radius-card: 1.5rem;
+  --shadow-card: 0 2px 0 rgb(59 36 24 / 0.06), 0 8px 24px -8px rgb(59 36 24 / 0.18);
+  --shadow-pop: 0 4px 0 rgb(59 36 24 / 0.12), 0 16px 40px -12px rgb(59 36 24 / 0.35);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--c-amber);
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+/* Kids Mode: app-like, no text selection or callouts, no rubber-band. */
+.kiosk {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  min-height: 100dvh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* Subtle paper grain for the kid side. */
+.paper-texture {
+  background-color: var(--c-paper);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgb(242 193 78 / 0.18), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgb(184 67 31 / 0.1), transparent 45%);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
