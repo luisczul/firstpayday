@@ -130,10 +130,8 @@ function KidGroup({
                   start(async () => {
                     items.forEach((i) => onHide(i.id));
                     const r = await approveAllForKid(kid.kidId);
-                    if (!r.ok) {
-                      items.forEach((i) => onUnhide(i.id));
-                      onError(r.message);
-                    }
+                    items.forEach((i) => onUnhide(i.id));
+                    if (!r.ok) onError(r.message);
                     setConfirmAll(false);
                   })
                 }
@@ -201,10 +199,10 @@ function ApprovalItem({
       onError(null);
       onHide(item.id);
       const r = await fn();
-      if (!r.ok) {
-        onUnhide(item.id);
-        onError(r.message ?? "Something went wrong.");
-      }
+      // The action's revalidation already removed it from the list; stop hiding
+      // so the same submission can reappear later (e.g. after "Fixed it!").
+      onUnhide(item.id);
+      if (!r.ok) onError(r.message ?? "Something went wrong.");
     });
 
   return (

@@ -46,7 +46,14 @@ export function AdminShell(props: {
   // Realtime: new/changed submissions refresh the badge and the current page.
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    void (async () => {
+      // Realtime must carry the parent's JWT, or RLS hides every row.
+      const { data } = await supabase.auth.getSession();
+      if (data.session) await supabase.realtime.setAuth(data.session.access_token);
+      if (cancelled) return;
+      channel = supabase
       .channel(`household-${props.householdId}`)
       .on(
         "postgres_changes",
@@ -58,9 +65,13 @@ export function AdminShell(props: {
         { event: "INSERT", schema: "public", table: "ledger_entries", filter: `household_id=eq.${props.householdId}` },
         () => router.refresh(),
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR" && process.env.NODE_ENV !== "production") console.warn("realtime", status, err);
+      });
+    })();
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [props.householdId, router]);
 

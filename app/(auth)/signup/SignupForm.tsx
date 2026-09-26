@@ -5,10 +5,11 @@ import { useActionState } from "react";
 import { signup } from "../actions";
 import { Alert, Button, Field, Input } from "@/components/ui";
 
-export function SignupForm() {
+export function SignupForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(signup, undefined);
   return (
     <form action={action} className="flex flex-col gap-4">
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Email">
         <Input name="email" type="email" autoComplete="email" required />
       </Field>

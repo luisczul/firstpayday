@@ -70,11 +70,17 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     ...parsed.data,
-    options: { emailRedirectTo: `${await origin()}/auth/callback?next=/onboarding/home` },
+    options: {
+      emailRedirectTo: `${await origin()}/auth/callback?next=${encodeURIComponent(
+        typeof form.get("next") === "string" && String(form.get("next")).startsWith("/invite/") ? String(form.get("next")) : "/onboarding/home",
+      )}`,
+    },
   });
   if (error) return { error: error.message };
+  const next = form.get("next");
+  const dest = typeof next === "string" && next.startsWith("/invite/") ? next : "/onboarding/home";
   if (!data.session) return { message: "Check your email to confirm your account, then come back to log in." };
-  redirect("/onboarding/home");
+  redirect(dest);
 }
 
 export async function requestReset(_: AuthState, form: FormData): Promise<AuthState> {

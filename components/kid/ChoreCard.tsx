@@ -89,7 +89,7 @@ export function ChoreCard({
   );
 
   const shell = `relative block overflow-hidden rounded-[var(--radius-card)] bg-card text-left shadow-[var(--shadow-card)] ring-1 ring-line ${
-    big ? "w-full min-h-[340px]" : "w-[272px] h-[300px] shrink-0"
+    big ? "w-full min-h-[340px]" : variant === "admin" ? "w-full h-[300px]" : "w-[272px] h-[300px] shrink-0"
   } ${dim ? "opacity-70 saturate-[0.6]" : ""}`;
 
   if (onPress) {

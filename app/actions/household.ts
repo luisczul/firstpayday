@@ -77,6 +77,11 @@ export async function deleteHousehold(confirmName: string) {
     if (confirmName.trim() !== ctx.household.name) throw new ActionError("invalid", "The name doesn't match.");
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const admin = createAdminClient();
+    // Stop billing before the data goes away.
+    if (ctx.subscription?.stripe_subscription_id && ["active", "trialing", "past_due"].includes(ctx.subscription.status)) {
+      const { stripe } = await import("@/lib/billing/stripe");
+      await stripe().subscriptions.cancel(ctx.subscription.stripe_subscription_id);
+    }
     const { data: files } = await admin.storage.from("avatars").list(ctx.household.id);
     if (files?.length) await admin.storage.from("avatars").remove(files.map((f) => `${ctx.household.id}/${f.name}`));
     const { error } = await ctx.supabase.from("households").delete().eq("id", ctx.household.id);

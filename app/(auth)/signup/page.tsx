@@ -4,7 +4,8 @@ import { SignupForm } from "./SignupForm";
 
 export const metadata = { title: "Start your free trial" };
 
-export default function SignupPage() {
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
   return (
     <AuthShell
       title="Start your free trial"
@@ -15,7 +16,7 @@ export default function SignupPage() {
       }
     >
       <p className="-mt-2 mb-5 text-ink-soft">14 days free. No credit card needed.</p>
-      <SignupForm />
+      <SignupForm next={next} />
     </AuthShell>
   );
 }
