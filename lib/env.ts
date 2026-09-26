@@ -10,8 +10,10 @@ export const publicEnv = {
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
 };
 
-/** Public base URL: APP_URL, else Vercel's production domain, else localhost. */
+/** Public base URL: APP_URL, else the brand domain in Vercel production, else the preview URL, else localhost. */
 export function appUrl(): string {
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  return (process.env.APP_URL || (vercel ? `https://${vercel}` : "http://localhost:3000")).replace(/\/$/, "");
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, "");
+  if (process.env.VERCEL_ENV === "production") return "https://firstpayday.app";
+  const preview = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+  return preview ? `https://${preview}` : "http://localhost:3000";
 }

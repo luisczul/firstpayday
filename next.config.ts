@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "127.0.0.1" },
     ],
   },
+  // www → apex (also set in Vercel Domains; this is the in-app backstop).
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.firstpayday.app" }],
+        destination: "https://firstpayday.app/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
