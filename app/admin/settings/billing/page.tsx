@@ -55,7 +55,11 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
         {!ctx.isOwner ? (
           <p className="mt-4 text-sm text-ink-soft">Only the household owner can manage billing.</p>
-        ) : ctx.plan === "comp" ? null : paid ? (
+        ) : ctx.plan === "comp" ? null : !paid && kids <= FREE_KIDS ? (
+          <p className="mt-4 rounded-xl bg-moss/10 px-4 py-3 font-semibold text-moss">
+            You&apos;re on the free plan. Add a second kid any time: it&apos;s {money(PRICE_PER_EXTRA_KID_CENTS)}/month per extra kid.
+          </p>
+        ) : paid ? (
           <form action="/api/stripe/portal" method="post" className="mt-5">
             <button className={buttonClass("secondary")}>Manage billing (card, invoices, cancel)</button>
           </form>

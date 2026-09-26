@@ -118,11 +118,14 @@ export function AdminShell(props: {
       <div className="flex min-w-0 flex-1 flex-col pb-24 md:pb-0">
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/90 px-4 py-2.5 backdrop-blur">
-          <span className="font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
+          <span className="truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
           <div className="ml-auto flex items-center gap-2">
             {props.onKiosk ? (
               <form action="/api/admin-mode/exit" method="post">
-                <button className={buttonClass("success", "sm")}>🧒 {tr("nav.backToKidsMode")}</button>
+                <button className={buttonClass("success", "sm")}>
+                  🧒 <span className="hidden sm:inline">{tr("nav.backToKidsMode")}</span>
+                  <span className="sm:hidden">{tr("nav.kidsMode")}</span>
+                </button>
               </form>
             ) : (
               <button
@@ -137,7 +140,8 @@ export function AdminShell(props: {
                   }
                 }}
               >
-                🧒 {tr("nav.switchToKidsMode")}
+                🧒 <span className="hidden sm:inline">{tr("nav.switchToKidsMode")}</span>
+                <span className="sm:hidden">{tr("nav.kidsMode")}</span>
               </button>
             )}
             <form action={logout} className="md:hidden">

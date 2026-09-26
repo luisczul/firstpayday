@@ -58,7 +58,7 @@ export function Landing() {
               A paid-chores and allowance app for families. Kids tap their face on the kitchen tablet, pick a chore card and hit “I did it!”. You approve from your phone and the money lands in their bank. No passwords, no arguing about who did what.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/signup" className="rounded-full bg-maple px-7 py-4 text-lg font-black text-white shadow-[0_4px_0_#8a3217]">Start your free trial</Link>
+              <Link href="/signup" className="rounded-full bg-maple px-7 py-4 text-lg font-black text-white shadow-[0_4px_0_#8a3217]">Start free</Link>
               <Link href="/pricing" className="rounded-full bg-card px-7 py-4 text-lg font-black text-ink ring-1 ring-line">See pricing</Link>
             </div>
             <p className="mt-3 text-sm text-ink-soft">First kid free forever · no credit card · set up in 3 minutes</p>
@@ -123,7 +123,7 @@ export function Landing() {
 
         <section className="my-10 rounded-[2rem] bg-maple px-6 py-12 text-center text-white">
           <h2 className="font-display text-4xl font-bold">Turn chores into their first paycheck.</h2>
-          <Link href="/signup" className="mt-6 inline-block rounded-full bg-gold px-8 py-4 text-lg font-black text-ink">Start free trial</Link>
+          <Link href="/signup" className="mt-6 inline-block rounded-full bg-gold px-8 py-4 text-lg font-black text-ink">Start free</Link>
           <p className="mt-3 text-sm text-white/80">{brand.name} · first kid free forever</p>
         </section>
       </main>

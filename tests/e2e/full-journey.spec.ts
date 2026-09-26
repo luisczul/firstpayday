@@ -86,7 +86,7 @@ test("1. sign up and set up a 3-kid home in under a minute", async ({ browser })
   kid = await tablet.newPage();
   const t0 = Date.now();
   await kid.goto("/");
-  await kid.getByRole("link", { name: "Start your free trial" }).click();
+  await kid.getByRole("link", { name: "Start free" }).first().click();
   await kid.getByLabel("Email").fill(email);
   await kid.getByLabel("Password").fill(password);
   await kid.getByRole("checkbox").check();

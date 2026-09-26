@@ -11,7 +11,7 @@ export function SiteHeader() {
       <nav className="ml-auto flex items-center gap-1 text-sm font-bold">
         <Link href="/pricing" className="rounded-lg px-3 py-2 text-ink-soft hover:text-ink">Pricing</Link>
         <Link href="/login" className="rounded-lg px-3 py-2 text-ink-soft hover:text-ink">Log in</Link>
-        <Link href="/signup" className="rounded-full bg-maple px-4 py-2 text-white">Start free trial</Link>
+        <Link href="/signup" className="rounded-full bg-maple px-4 py-2 text-white">Start free</Link>
       </nav>
     </header>
   );

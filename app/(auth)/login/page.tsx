@@ -11,7 +11,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       title="Welcome back"
       footer={
         <>
-          New here? <Link href="/signup" className="font-bold text-maple">Start a free trial</Link>
+          New here? <Link href="/signup" className="font-bold text-maple">Create a free account</Link>
         </>
       }
     >
