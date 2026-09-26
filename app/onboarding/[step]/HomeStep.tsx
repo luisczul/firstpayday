@@ -6,6 +6,13 @@ import { Alert, Button, Field, Input, Select } from "@/components/ui";
 
 const CURRENCIES = ["CAD", "USD", "EUR", "GBP", "AUD", "NZD", "MXN"];
 
+/** "America/New_York" → "New York (America)". */
+function zoneLabel(zone: string): string {
+  const parts = zone.split("/");
+  const city = parts[parts.length - 1]!.replaceAll("_", " ");
+  return parts.length > 1 ? `${city} (${parts[0]})` : city;
+}
+
 function guessCurrency(): string {
   const region = (navigator.language.split("-")[1] ?? "").toUpperCase();
   const map: Record<string, string> = { CA: "CAD", US: "USD", GB: "GBP", AU: "AUD", NZ: "NZD", MX: "MXN", FR: "EUR", DE: "EUR", ES: "EUR", IT: "EUR", BE: "EUR" };
@@ -51,14 +58,14 @@ export function HomeStep({ initial }: { initial: { name: string; timezone: strin
       <Field label="Home name">
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Czul family" required maxLength={80} autoFocus />
       </Field>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Timezone">
-          <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-            {zones.map((z) => (
-              <option key={z} value={z}>{z.replaceAll("_", " ")}</option>
-            ))}
-          </Select>
-        </Field>
+      <Field label="Timezone" hint="Chores come back at midnight in this timezone.">
+        <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+          {zones.map((z) => (
+            <option key={z} value={z}>{zoneLabel(z)}</option>
+          ))}
+        </Select>
+      </Field>
+      <div className="grid grid-cols-2 gap-4">
         <Field label="Currency">
           <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
             {CURRENCIES.map((c) => (

@@ -132,7 +132,7 @@ export function TemplatePicker({
                           if (v.startsWith("n")) update(t.key, { repeat_kind: "every_n_days", repeat_every_days: Number(v.slice(1)) });
                           else update(t.key, { repeat_kind: v as TemplateSelection["repeat_kind"], repeat_every_days: null });
                         }}
-                        className="min-h-9 rounded-full border border-line bg-paper px-3 text-sm font-bold text-ink"
+                        className="min-h-9 rounded-full border border-line bg-paper px-3 text-sm font-bold text-ink outline-none focus:border-amber focus:ring-2 focus:ring-amber/40"
                       >
                         <option value="once">{repeatLabel("once", null, locale)}</option>
                         <option value="daily">{repeatLabel("daily", null, locale)}</option>
@@ -184,7 +184,7 @@ export function PriceInput({
   const [text, setText] = useState((cents / 100).toFixed(2).replace(/\.00$/, ""));
   const [bad, setBad] = useState(false);
   return (
-    <span className="inline-flex items-center rounded-full bg-gold/60 pl-3 font-black text-ink">
+    <span className="inline-flex items-center rounded-full bg-gold/60 pl-3 font-black text-ink ring-amber focus-within:ring-2">
       <span aria-hidden>{formatPrice(0, currency, locale).replace(/[\d.,\s]/g, "") || "$"}</span>
       <input
         inputMode="decimal"
@@ -197,7 +197,7 @@ export function PriceInput({
           setBad(c === null || c < 0);
           if (c !== null && c >= 0) onChange(c);
         }}
-        className={`min-h-9 w-16 rounded-full bg-transparent px-1 text-base font-black focus:outline-none ${bad ? "text-danger" : ""}`}
+        className={`min-h-9 w-16 rounded-full bg-transparent px-1 text-base font-black outline-none ${bad ? "text-danger" : ""}`}
       />
     </span>
   );

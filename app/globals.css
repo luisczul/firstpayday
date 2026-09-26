@@ -75,7 +75,13 @@ body {
 :focus-visible {
   outline: 3px solid var(--c-amber);
   outline-offset: 3px;
-  border-radius: 0.5rem;
+}
+
+/* Text fields draw their own focus ring that follows their shape. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
 }
 
 /* Kids Mode: app-like, no text selection or callouts, no rubber-band. */
