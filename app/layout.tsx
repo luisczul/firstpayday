@@ -1,10 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Nunito } from "next/font/google";
+import localFont from "next/font/local";
 import { brand } from "@/lib/brand";
 import "./globals.css";
 
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", weight: ["600", "700", "800"] });
-const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", weight: ["400", "600", "700", "800", "900"] });
+// Self-hosted variable fonts (SIL Open Font License): no third-party requests at runtime or build.
+const fraunces = localFont({
+  src: "./fonts/Fraunces-latin.woff2",
+  variable: "--font-fraunces",
+  weight: "600 800",
+  display: "swap",
+  fallback: ["Georgia", "serif"],
+});
+const nunito = localFont({
+  src: "./fonts/Nunito-latin.woff2",
+  variable: "--font-nunito",
+  weight: "400 900",
+  display: "swap",
+  fallback: ["ui-rounded", "system-ui", "sans-serif"],
+});
 
 export const metadata: Metadata = {
   title: { default: brand.name, template: `%s · ${brand.name}` },
