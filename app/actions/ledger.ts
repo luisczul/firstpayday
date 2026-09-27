@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { ActionError, requireWritableParent, runAction } from "@/lib/auth/session";
 import { checkPayout } from "@/lib/money/ledger";
 import { familyPotCents } from "@/lib/familyPot";
+import { translateReward } from "@/lib/choreLanguages";
 import { parentT, type ParentKey } from "@/lib/i18n/parent";
 
 type Ctx = Awaited<ReturnType<typeof requireWritableParent>>;
@@ -93,23 +95,37 @@ export async function recordFamilyTreat(input: z.input<typeof FamilyTreat>) {
 const Adjustment = z.object({
   kidId: z.uuid(),
   amountCents: z.number().int().refine((n) => n !== 0, "a.common.enterAmount" satisfies ParentKey),
-  note: z.string().trim().min(1, "a.err.adjustmentNote" satisfies ParentKey).max(200),
+  icon: z.string().trim().max(16).optional(),
+  title: z.string().trim().min(1, "a.err.rewardName" satisfies ParentKey).max(80),
+  note: z.string().trim().max(200).optional(),
 });
 
+/**
+ * Add to (or take from) a kid's balance for something that isn't a chore: an icon, a short name
+ * ("Helped me with the groceries") and, optionally, what it was. Kids see it in their money list.
+ */
 export async function recordAdjustment(input: z.input<typeof Adjustment>) {
   return runAction(async () => {
     const ctx = await requireWritableParent();
     const parsed = Adjustment.safeParse(input);
     if (!parsed.success) throw new ActionError("invalid", issueMessage(ctx, parsed.error.issues[0]?.message));
-    const { error } = await ctx.supabase.from("ledger_entries").insert({
-      household_id: ctx.household.id,
-      kid_id: parsed.data.kidId,
-      kind: "adjustment",
-      amount_cents: parsed.data.amountCents,
-      note: parsed.data.note,
-      created_by: ctx.user.id,
-    });
+    const { data, error } = await ctx.supabase
+      .from("ledger_entries")
+      .insert({
+        household_id: ctx.household.id,
+        kid_id: parsed.data.kidId,
+        kind: "adjustment",
+        amount_cents: parsed.data.amountCents,
+        icon: parsed.data.icon || null,
+        title: parsed.data.title,
+        note: parsed.data.note || null,
+        created_by: ctx.user.id,
+      })
+      .select("id")
+      .single();
     if (error) throw error;
+    const hid = ctx.household.id;
+    after(() => translateReward(hid, data.id).catch((e) => console.error("translateReward", e)));
     revalidatePath("/admin/kids", "layout");
     revalidatePath("/admin/payouts");
   });

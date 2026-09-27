@@ -168,8 +168,8 @@ test("Spanish: onboarding and the parent pages are in Spanish", async ({ browser
   await page.getByRole("dialog").getByRole("button", { name: "Cancelar" }).click();
 
   // Adjustment → an error and a success message in Spanish.
-  await page.getByPlaceholder("Nota (bono, corrección…)").fill("Regalo");
-  await page.getByRole("button", { name: "Agregar ajuste" }).click();
+  await page.getByPlaceholder("Me ayudó con las compras").fill("Regalo");
+  await page.getByRole("button", { name: /Sumar al saldo/ }).click();
   await expect(page.getByText("Escribe un monto.")).toBeVisible();
 
   await expectHeading(page, "/admin/payouts", "Pagos");

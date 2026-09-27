@@ -68,7 +68,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
   if (type !== "submissions" && !f.chore) {
     let q = ctx.supabase
       .from("ledger_entries")
-      .select("id, kid_id, kind, amount_cents, note, method, created_at, submissions(chore_title_snapshot, chores(title))")
+      .select("id, kid_id, kind, amount_cents, note, method, icon, title, created_at, submissions(chore_title_snapshot, chores(title))")
       .eq("household_id", hid)
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -88,7 +88,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
         type: l.kind,
         kidId: l.kid_id,
         kidName: kidName.get(l.kid_id) ?? "?",
-        title: l.kind === "payout" ? `Payout${l.method ? ` (${l.method})` : ""}` : (noteNow ?? l.kind),
+        title: l.title ? `${l.icon ?? "⭐"} ${l.title}` : l.kind === "payout" ? `Payout${l.method ? ` (${l.method})` : ""}` : (noteNow ?? l.kind),
         status: null,
         amountCents: l.amount_cents,
         note: noteNow,

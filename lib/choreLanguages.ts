@@ -74,3 +74,24 @@ export async function ensureChoreLanguages(householdId: string, opts: { rebase?:
   }
   return { translated, missing: missing.length };
 }
+
+/**
+ * A custom reward ("helped me carry the groceries") reads in the kid's language: when the kid's
+ * board uses another language than the home, translate its name and description in the background.
+ */
+export async function translateReward(householdId: string, entryId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: row } = await admin
+    .from("ledger_entries")
+    .select("id, kid_id, title, note, kids(locale), households(locale)")
+    .eq("household_id", householdId)
+    .eq("id", entryId)
+    .maybeSingle();
+  if (!row?.title) return false;
+  const kidLocale = row.kids?.locale ? asLocale(row.kids.locale) : null;
+  if (!kidLocale || kidLocale === asLocale(row.households?.locale)) return false;
+  const t = await translateChoreText({ title: row.title, description: row.note || null, unit_label: null, note_for_kids: null });
+  if (!t) return false;
+  const { error } = await admin.from("ledger_entries").update({ translations: t as unknown as Json }).eq("id", row.id);
+  return !error;
+}

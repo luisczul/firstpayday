@@ -369,13 +369,13 @@ isOneToOne: false
                   ]
                 },"ledger_entries": {
                   Row: {
-                    "amount_cents": number,"created_at": string,"created_by": string | null,"household_id": string,"id": string,"kid_id": string,"kind": string,"method": string | null,"note": string | null,"payout_id": string | null,"submission_id": string | null
+                    "amount_cents": number,"created_at": string,"created_by": string | null,"household_id": string,"icon": string | null,"id": string,"kid_id": string,"kind": string,"method": string | null,"note": string | null,"payout_id": string | null,"submission_id": string | null,"title": string | null,"translations": Json | null
                   }
                   Insert: {
-                    "amount_cents": number,"created_at"?: string,"created_by"?: string | null,"household_id": string,"id"?: string,"kid_id": string,"kind": string,"method"?: string | null,"note"?: string | null,"payout_id"?: string | null,"submission_id"?: string | null
+                    "amount_cents": number,"created_at"?: string,"created_by"?: string | null,"household_id": string,"icon"?: string | null,"id"?: string,"kid_id": string,"kind": string,"method"?: string | null,"note"?: string | null,"payout_id"?: string | null,"submission_id"?: string | null,"title"?: string | null,"translations"?: Json | null
                   }
                   Update: {
-                    "amount_cents"?: number,"created_at"?: string,"created_by"?: string | null,"household_id"?: string,"id"?: string,"kid_id"?: string,"kind"?: string,"method"?: string | null,"note"?: string | null,"payout_id"?: string | null,"submission_id"?: string | null
+                    "amount_cents"?: number,"created_at"?: string,"created_by"?: string | null,"household_id"?: string,"icon"?: string | null,"id"?: string,"kid_id"?: string,"kind"?: string,"method"?: string | null,"note"?: string | null,"payout_id"?: string | null,"submission_id"?: string | null,"title"?: string | null,"translations"?: Json | null
                   }
                   Relationships: [
                     {

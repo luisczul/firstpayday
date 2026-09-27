@@ -202,6 +202,30 @@ describe("ledger is append-only", () => {
     expect(after?.amount_cents).toBe(500);
   });
 
+  it("a custom reward: only its translations can be filled in later, by the server", async () => {
+    const { data: row, error } = await A.client
+      .from("ledger_entries")
+      .insert({ household_id: A.householdId, kid_id: A.kidId, kind: "adjustment", amount_cents: 100, icon: "🤝", title: "Helped me", note: "Groceries", created_by: A.userId })
+      .select("id")
+      .single();
+    expect(error).toBeNull();
+    const tr = { fr: { title: "M'a aidé", description: "Épicerie", unit_label: null, note_for_kids: null } };
+    // Parents have no update policy: nothing changes.
+    await A.client.from("ledger_entries").update({ translations: tr }).eq("id", row!.id);
+    expect((await admin.from("ledger_entries").select("translations").eq("id", row!.id).single()).data?.translations).toBeNull();
+    // The server can fill the translations, and nothing else.
+    expect((await admin.from("ledger_entries").update({ translations: tr }).eq("id", row!.id)).error).toBeNull();
+    const svcTitle = await admin.from("ledger_entries").update({ title: "Changed", translations: tr }).eq("id", row!.id);
+    expect(svcTitle.error?.message).toMatch(/append-only/);
+    const svcAmount = await admin.from("ledger_entries").update({ amount_cents: 999 }).eq("id", row!.id);
+    expect(svcAmount.error?.message).toMatch(/append-only/);
+    const { data: after } = await admin.from("ledger_entries").select("amount_cents, title, translations").eq("id", row!.id).single();
+    expect(after).toMatchObject({ amount_cents: 100, title: "Helped me", translations: tr });
+    // Too-long names are refused.
+    const long = await A.client.from("ledger_entries").insert({ household_id: A.householdId, kid_id: A.kidId, kind: "adjustment", amount_cents: 1, title: "x".repeat(81), created_by: A.userId });
+    expect(long.error).not.toBeNull();
+  });
+
   it("approving twice is idempotent (one earning)", async () => {
     await A.client.rpc("approve_submission", { p_submission_id: A.submissionId });
     const { count } = await admin

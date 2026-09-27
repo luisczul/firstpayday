@@ -87,17 +87,19 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
         readOnly={!writable}
       />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        <Card>
-          <p className="text-sm font-bold text-ink-soft">{t("a.kid.balance")}</p>
-          <p className="font-display text-3xl font-bold text-moss">{money(bal?.balance_cents ?? 0)}</p>
-        </Card>
-        <Card>
-          <p className="text-sm font-bold text-ink-soft">{t("a.kid.waiting")}</p>
-          <p className="font-display text-3xl font-bold text-amber">{money(bal?.pending_cents ?? 0)}</p>
-        </Card>
+      <div className={`grid gap-4 ${writable ? "md:grid-cols-[1fr_1.6fr]" : "grid-cols-2"}`}>
+        <div className={`grid gap-4 ${writable ? "grid-cols-2 content-start md:grid-cols-1" : "col-span-2 grid-cols-2"}`}>
+          <Card>
+            <p className="text-sm font-bold text-ink-soft">{t("a.kid.balance")}</p>
+            <p className="font-display text-3xl font-bold text-moss">{money(bal?.balance_cents ?? 0)}</p>
+          </Card>
+          <Card>
+            <p className="text-sm font-bold text-ink-soft">{t("a.kid.waiting")}</p>
+            <p className="font-display text-3xl font-bold text-amber">{money(bal?.pending_cents ?? 0)}</p>
+          </Card>
+        </div>
         {writable ? (
-          <Card className="col-span-2 md:col-span-1">
+          <Card className="scroll-mt-24">
             <AdjustmentForm kidId={kid.id} />
           </Card>
         ) : null}
@@ -136,8 +138,8 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
               {ledger.map((l) => (
                 <li key={l.id} className="flex items-center gap-3 py-2.5">
                   <span className="min-w-0 flex-1">
-                    <span className="block font-bold">{KIND_LABEL[l.kind] ? t(KIND_LABEL[l.kind]!) : l.kind}</span>
-                    <span className="block truncate text-xs text-ink-soft">{when(l.created_at)}{l.note ? ` · ${localizeLedgerNote(linkedNote(l.note, l.submissions), ctx.locale)}` : ""}{l.method ? ` · ${METHOD_LABEL[l.method] ? t(METHOD_LABEL[l.method]!) : l.method}` : ""}</span>
+                    <span className="block font-bold">{l.title ? `${l.icon ?? "⭐"} ${l.title}` : KIND_LABEL[l.kind] ? t(KIND_LABEL[l.kind]!) : l.kind}</span>
+                    <span className="block truncate text-xs text-ink-soft">{when(l.created_at)}{l.note ? ` · ${l.title ? l.note : localizeLedgerNote(linkedNote(l.note, l.submissions), ctx.locale)}` : ""}{l.method ? ` · ${METHOD_LABEL[l.method] ? t(METHOD_LABEL[l.method]!) : l.method}` : ""}</span>
                   </span>
                   <span className={`w-24 text-right font-bold ${l.amount_cents < 0 ? "text-plum" : "text-moss"}`}>
                     {l.amount_cents > 0 ? "+" : ""}{money(l.amount_cents)}

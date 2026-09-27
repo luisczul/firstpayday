@@ -821,8 +821,15 @@ function MoneySheet({ board, onClose }: { board: KioskBoard; onClose: () => void
         <ul className="mt-2 divide-y divide-line">
           {(items ?? []).map((i) => (
             <li key={i.id} className="flex items-center gap-4 py-3 text-xl">
-              <span aria-hidden className="text-3xl">{icon[i.kind] ?? "•"}</span>
-              <span className="flex-1 font-semibold text-ink">{label(i)}</span>
+              <span aria-hidden className="text-3xl">{i.title ? (i.icon ?? "⭐") : (icon[i.kind] ?? "•")}</span>
+              {i.title ? (
+                <span className="flex-1">
+                  <span className="block font-semibold text-ink">{i.title}</span>
+                  {i.note ? <span className="block text-lg leading-snug text-ink-soft">{i.note}</span> : null}
+                </span>
+              ) : (
+                <span className="flex-1 font-semibold text-ink">{label(i)}</span>
+              )}
               <span className={`font-black ${i.amountCents < 0 ? "text-plum" : "text-moss"}`}>
                 {i.amountCents > 0 ? "+" : ""}
                 {money(i.amountCents)}

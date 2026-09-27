@@ -403,6 +403,9 @@ export interface KidHistoryItem {
   kind: string;
   amountCents: number;
   note: string | null;
+  /** A parent's custom reward: its icon and name (in the kid's language when translated). */
+  icon?: string | null;
+  title?: string | null;
   createdAt: string;
 }
 
@@ -411,7 +414,7 @@ export async function getKidHistory(ctx: KioskContext, kidId: string): Promise<K
   const [{ data }, { data: kid }, { data: home }] = await Promise.all([
     admin
       .from("ledger_entries")
-      .select("id, kind, amount_cents, note, created_at, submissions(chore_title_snapshot, chores(title, translations))")
+      .select("id, kind, amount_cents, note, icon, title, translations, created_at, submissions(chore_title_snapshot, chores(title, translations))")
       .eq("household_id", ctx.householdId)
       .eq("kid_id", kidId)
       .order("created_at", { ascending: false })
@@ -425,6 +428,10 @@ export async function getKidHistory(ctx: KioskContext, kidId: string): Promise<K
     const snapshot = r.submissions?.chore_title_snapshot;
     const localized = choreTextFor(r.submissions?.chores?.translations, kidLocale)?.title ?? r.submissions?.chores?.title;
     const note = r.note && snapshot && localized && r.note.endsWith(snapshot) ? r.note.slice(0, r.note.length - snapshot.length) + localized : r.note;
+    if (r.title) {
+      const tr = choreTextFor(r.translations, kidLocale);
+      return { id: r.id, kind: r.kind, amountCents: r.amount_cents, note: tr ? tr.description : r.note, icon: r.icon, title: tr?.title ?? r.title, createdAt: r.created_at };
+    }
     return { id: r.id, kind: r.kind, amountCents: r.amount_cents, note, createdAt: r.created_at };
   });
 }
