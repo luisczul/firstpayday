@@ -70,6 +70,9 @@ Verify each one on **production (https://firstpayday.app)** after deploy.
 | 63 | **Claim a quantity, confirm what was done** | For chores with several units (Baseboards: floors; Garbage: bins), the kid picks how many they take when claiming ("2 floors · 3 h left"); "I did it!" asks how many they actually did (prefilled, up to what they took) and that's what's submitted; siblings see the whole chore locked while claimed | Tablet |
 | 64 | **Share form clears after sending** | After "Send invitations", the emails and the message are cleared, ready for the next friend; your name and the email language stay | 💌 Share |
 | 65 | **Approve at a corrected price** | Approvals: ✏️ next to the price edits it for this submission; if the chore's price changed after the kid submitted, "Use today's price ($1.00)" appears; optional "Also use this price for … from now on"; the kid is paid the corrected amount | Approvals |
+| 66 | **Chore names follow the chore** | Kid: "Waiting for check" and money history show the chore's current name in the kid's language. Parent: approvals, recently approved, kid page, history + CSV and emails show the current name; renaming a chore updates past submissions everywhere | Tablet, parent admin |
+| 67 | **🔊 Read it to me** | Chore sheet button reads the title, description, note and steps aloud in the kid's language with the device's voice; "Stop" to interrupt | Tablet |
+| 68 | **Sound toggle labeled** | Kid board header shows "🔊 Sound on" / "🔇 Sound off" (chime when a chore is done; this tablet only) | Tablet |
 
 ## Final gate: full journeys in each language (required before "ready")
 Run the whole product from zero **four times**: en, fr, es, pt-BR. Each run uses a monitored throwaway inbox and covers:
@@ -107,8 +110,8 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit c1be71b)
-- **Local production build (latest run):** 118 E2E passed (120 incl. 2 skipped); 173 unit tests at 100% coverage; 69 RLS tests.
+## Verification status (2026-09-27, deployed commit 89b75bd)
+- **Local production build (latest run):** 120 E2E passed (122 incl. 2 skipped); 173 unit tests at 100% coverage; 69 RLS tests.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
