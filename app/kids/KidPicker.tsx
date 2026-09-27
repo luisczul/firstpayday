@@ -26,7 +26,7 @@ export function KidPicker({ initial }: { initial: { household: KioskHousehold; k
   usePolling(refresh, 5000);
 
   return (
-    <main className="flex min-h-dvh flex-col">
+    <main lang={household.locale} className="flex min-h-dvh flex-col">
       <header className="flex items-center justify-between px-8 pt-6">
         <p className="font-display text-2xl font-bold text-ink-soft">{household.name}</p>
         <button

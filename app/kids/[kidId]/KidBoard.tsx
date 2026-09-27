@@ -213,7 +213,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
     : null;
 
   return (
-    <main className="min-h-dvh pb-10">
+    <main lang={locale} className="min-h-dvh pb-10">
       {/* Header */}
       <header className="sticky top-0 z-30 flex items-center gap-5 bg-paper/90 px-6 py-4 backdrop-blur">
         <button

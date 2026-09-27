@@ -32,9 +32,9 @@ function TabletMockup({ lang }: { lang: SiteLang }) {
           </span>
         </div>
         <p className="mb-2 font-display text-xl font-bold text-maple">{m.hero.newRow}</p>
-        <div className="flex gap-3 overflow-hidden">
+        <div className="grid grid-cols-2 gap-3">
           {DEMO_CARDS.map((c, i) => (
-            <div key={c.emoji} className="relative h-40 w-36 shrink-0 overflow-hidden rounded-2xl bg-card p-3 pl-5 shadow-[var(--shadow-card)] ring-1 ring-line">
+            <div key={c.emoji} className="relative h-40 overflow-hidden rounded-2xl bg-card p-3 pl-5 shadow-[var(--shadow-card)] ring-1 ring-line">
               <span className="absolute inset-y-0 left-0 w-2" style={{ background: c.color }} />
               <span className="absolute top-2 right-2 rounded-full bg-gold px-2 py-0.5 text-xs font-black">
                 {m.money(c.amount)}{c.perFloor ? ` ${m.hero.perFloor}` : ""}
