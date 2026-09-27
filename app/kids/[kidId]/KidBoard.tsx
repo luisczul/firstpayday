@@ -75,6 +75,37 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
     setPending({ card, mode, key: crypto.randomUUID() });
   };
 
+  // A sent-back chore that turned out too hard: take it off Needs fixing (it's free again for everyone).
+  const giveUp = async () => {
+    const submissionId = pending?.card.submission?.id;
+    if (!pending || busy || !submissionId) return;
+    setBusy(true);
+    inFlight.current = true;
+    const before = board;
+    setBoard({ ...board, sections: { ...board.sections, fix: board.sections.fix.filter((c) => c.submission?.id !== submissionId) } });
+    setPending(null);
+    try {
+      const res = await fetch("/api/kiosk/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kidId: kid.id, submissionId }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean };
+      if (res.ok && body.ok) showToast(tr("kid.gaveUp"));
+      else {
+        setBoard(before);
+        showToast(tr("kid.oops"), "sad");
+      }
+    } catch {
+      setBoard(before);
+      showToast(tr("kid.oops"), "sad");
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+      void refresh();
+    }
+  };
+
   const confirm = async (quantity: number) => {
     if (!pending || busy) return;
     const { card, mode, key } = pending;
@@ -215,24 +246,29 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   return (
     <main lang={locale} className="min-h-dvh pb-10">
       {/* Header */}
-      <header className="sticky top-0 z-30 flex items-center gap-5 bg-paper/90 px-6 py-4 backdrop-blur">
+      <div className="sticky top-0 z-30 bg-paper/90 backdrop-blur">
+      <header className="flex items-center gap-4 px-6 py-3">
         <button
           type="button"
           onClick={() => router.push("/kids")}
-          className="flex min-h-16 min-w-16 items-center justify-center rounded-full bg-card text-3xl shadow-[var(--shadow-card)] active:scale-95"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-card text-ink shadow-[var(--shadow-card)] active:scale-95"
           aria-label={tr("kid.back")}
         >
-          ←
+          <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" />
+            <path d="M11 6l-6 6 6 6" />
+          </svg>
         </button>
-        <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={76} />
-        <h1 className="font-display text-5xl font-extrabold text-ink">{kid.name}</h1>
+        <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={68} />
+        <h1 className="font-display text-[2.7rem] leading-none font-extrabold text-ink">{kid.name}</h1>
 
         <div className="ml-auto flex items-center gap-4">
           <button
             type="button"
             onClick={() => setSoundOn(!soundOn)}
-            className="flex min-h-16 min-w-16 items-center justify-center rounded-full bg-card text-2xl shadow-[var(--shadow-card)]"
+            className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl shadow-[var(--shadow-card)] ${soundOn ? "bg-gold" : "bg-card"}`}
             aria-label={tr("kid.sound")}
+            title={tr("kid.sound")}
             aria-pressed={soundOn}
           >
             {soundOn ? "🔊" : "🔈"}
@@ -240,10 +276,10 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           <button
             type="button"
             onClick={() => setShowMoney(true)}
-            className="flex min-h-16 flex-col items-end rounded-3xl bg-card px-6 py-2 shadow-[var(--shadow-card)] active:scale-[0.98]"
+            className="flex min-h-14 flex-col items-end rounded-3xl bg-card px-5 py-1.5 shadow-[var(--shadow-card)] active:scale-[0.98]"
             aria-label={tr("kid.myMoney")}
           >
-            <span className="font-display text-4xl font-extrabold leading-tight text-moss">
+            <span className="font-display text-[2rem] font-extrabold leading-tight text-moss">
               {money(kid.balanceCents)} <span className="font-sans text-lg font-bold text-ink-soft">{tr("kid.inMyBank")}</span>
             </span>
             {kid.pendingCents > 0 ? (
@@ -252,6 +288,41 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           </button>
         </div>
       </header>
+      {available.length > 1 ? (
+        <nav
+          aria-label={tr("kid.categories")}
+          className="no-scrollbar flex gap-2.5 overflow-x-auto px-6 pb-3 md:px-8"
+        >
+          <button
+            type="button"
+            onClick={() => setSort((x) => (x === "parent" ? "asc" : x === "asc" ? "desc" : "parent"))}
+            aria-label={tr("kid.sortLabel")}
+            className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
+              sort === "parent" ? "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line" : "bg-gold text-ink shadow-[0_4px_0_#b8860b]"
+            }`}
+          >
+            {sort === "asc" ? `💰 ${tr("kid.sortAsc")}` : sort === "desc" ? `💰 ${tr("kid.sortDesc")}` : `💰 ${tr("kid.sortPrice")}`}
+          </button>
+          <span aria-hidden className="my-2 w-px shrink-0 bg-line" />
+          {(categoriesShown.length > 1 ? ["all", ...categoriesShown] : []).map((k) => {
+            const on = category === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setCategory(k)}
+                aria-pressed={on}
+                className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
+                  on ? "bg-maple text-white shadow-[0_4px_0_#8a3217]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
+                }`}
+              >
+                {k === "all" ? `🌈 ${tr("kid.allCategories")}` : catLabel(k)}
+              </button>
+            );
+          })}
+        </nav>
+      ) : null}
+      </div>
 
       {household.paused ? (
         <p className="mx-8 mt-2 rounded-3xl bg-plum px-6 py-4 text-center text-2xl font-bold text-white">{tr("kid.paused")}</p>
@@ -295,7 +366,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
             placeholder={tr("kid.searchPlaceholder")}
             aria-label={tr("kid.search")}
             enterKeyHint="search"
-            className="min-h-16 min-w-0 flex-1 rounded-full bg-card px-6 text-xl font-bold text-ink shadow-[var(--shadow-card)] ring-1 ring-line outline-none placeholder:text-ink-soft/60 focus:ring-2 focus:ring-amber"
+            className="min-h-14 min-w-0 flex-1 rounded-full bg-card px-5 text-lg font-bold text-ink shadow-[var(--shadow-card)] ring-1 ring-line outline-none placeholder:text-ink-soft/60 focus:ring-2 focus:ring-amber"
           />
           {search ? (
             <button
@@ -304,51 +375,17 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                 setDraft("");
                 setSearch("");
               }}
-              className="min-h-16 shrink-0 rounded-full bg-card px-5 text-xl font-extrabold text-ink shadow-[var(--shadow-card)] ring-1 ring-line active:scale-95"
+              className="min-h-14 shrink-0 rounded-full bg-card px-4 text-lg font-extrabold text-ink shadow-[var(--shadow-card)] ring-1 ring-line active:scale-95"
             >
               ✕
             </button>
           ) : null}
-          <button type="submit" className="min-h-16 shrink-0 rounded-full bg-maple px-6 text-xl font-extrabold text-white shadow-[0_4px_0_#8a3217] active:scale-95">
+          <button type="submit" className="min-h-14 shrink-0 rounded-full bg-maple px-5 text-lg font-extrabold text-white shadow-[0_4px_0_#8a3217] active:scale-95">
             🔍 {tr("kid.search")}
           </button>
         </form>
       ) : null}
 
-      {available.length > 1 ? (
-        <nav
-          aria-label={tr("kid.categories")}
-          className="no-scrollbar sticky top-[108px] z-20 flex gap-3 overflow-x-auto bg-paper/90 px-6 py-3 backdrop-blur md:px-8"
-        >
-          <button
-            type="button"
-            onClick={() => setSort((x) => (x === "parent" ? "asc" : x === "asc" ? "desc" : "parent"))}
-            aria-label={tr("kid.sortLabel")}
-            className={`flex min-h-16 shrink-0 items-center gap-2 rounded-full px-6 text-xl font-extrabold whitespace-nowrap transition active:scale-95 ${
-              sort === "parent" ? "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line" : "bg-gold text-ink shadow-[0_4px_0_#b8860b]"
-            }`}
-          >
-            {sort === "asc" ? `💰 ${tr("kid.sortAsc")}` : sort === "desc" ? `💰 ${tr("kid.sortDesc")}` : `💰 ${tr("kid.sortPrice")}`}
-          </button>
-          <span aria-hidden className="my-2 w-px shrink-0 bg-line" />
-          {(categoriesShown.length > 1 ? ["all", ...categoriesShown] : []).map((k) => {
-            const on = category === k;
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setCategory(k)}
-                aria-pressed={on}
-                className={`flex min-h-16 shrink-0 items-center gap-2 rounded-full px-6 text-xl font-extrabold whitespace-nowrap transition active:scale-95 ${
-                  on ? "bg-maple text-white shadow-[0_4px_0_#8a3217]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
-                }`}
-              >
-                {k === "all" ? `🌈 ${tr("kid.allCategories")}` : catLabel(k)}
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
 
       <AnimatePresence initial={false}>
         {sections.fix.length > 0 ? (
@@ -371,7 +408,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                             💬 {c.submission.reviewComment}
                           </span>
                         ) : null}
-                        <span className="flex min-h-16 items-center justify-center rounded-2xl bg-plum text-2xl font-black text-white">
+                        <span className="flex min-h-14 items-center justify-center rounded-2xl bg-plum text-xl font-black text-white">
                           {tr("kid.fixedIt")}
                         </span>
                       </span>
@@ -528,6 +565,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         onCancel={() => setPending(null)}
         kidId={kid.id}
         onStepsChange={patchSteps}
+        onGiveUp={pending?.mode === "resubmit" ? () => void giveUp() : undefined}
       />
       <KidToast message={toast?.text ?? null} tone={toast?.tone} />
       {showMoney ? <MoneySheet board={board} onClose={() => setShowMoney(false)} /> : null}

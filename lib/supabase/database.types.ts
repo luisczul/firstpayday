@@ -137,13 +137,13 @@ isOneToOne: false
                   ]
                 },"chores": {
                   Row: {
-                    "active": boolean,"available_from": string | null,"available_until": string | null,"category": string,"color": string | null,"created_at": string,"description": string | null,"emoji": string | null,"household_id": string,"id": string,"max_quantity": number,"note_for_kids": string | null,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"requires_approval": boolean,"scope": string,"sort_order": number,"subtasks": NonNullable<Json>,"template_key": string | null,"title": string,"translations": NonNullable<Json>,"unit_label": string | null,"updated_at": string
+                    "active": boolean,"available_from": string | null,"available_until": string | null,"category": string,"color": string | null,"created_at": string,"description": string | null,"emoji": string | null,"household_id": string,"id": string,"max_quantity": number,"note_for_kids": string | null,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"requires_approval": boolean,"reset_at": string | null,"scope": string,"sort_order": number,"subtasks": NonNullable<Json>,"template_key": string | null,"title": string,"translations": NonNullable<Json>,"unit_label": string | null,"updated_at": string
                   }
                   Insert: {
-                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id": string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"requires_approval"?: boolean,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title": string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id": string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"requires_approval"?: boolean,"reset_at"?: string | null,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title": string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id"?: string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"requires_approval"?: boolean,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title"?: string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id"?: string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"requires_approval"?: boolean,"reset_at"?: string | null,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title"?: string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -642,6 +642,33 @@ isOneToOne: false
 "kiosk_toggle_subtask":
 { Args: { "p_checked": boolean,"p_chore_id": string,"p_device_id": string,"p_household_id": string,"p_kid_id": string,"p_subtask_id": string }; Returns: Json
                            },
+"kiosk_withdraw_submission":
+{ Args: { "p_household_id": string,"p_kid_id": string,"p_submission_id": string }; Returns: {
+              "amount_cents": number,
+"chore_id": string,
+"chore_title_snapshot": string,
+"created_at": string,
+"device_id": string | null,
+"household_id": string,
+"id": string,
+"idempotency_key": string | null,
+"kid_id": string,
+"photo_path": string | null,
+"quantity": number,
+"resubmitted_at": string | null,
+"review_comment": string | null,
+"reviewed_at": string | null,
+"reviewed_by": string | null,
+"status": string,
+"submitted_at": string,
+"unit_price_cents": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "submissions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "promo_bonus_at":
 { Args: { "p_amount_cents": number,"p_at": string,"p_household_id": string }; Returns: {
               "bonus_cents": number,"name": string,"promotion_id": string

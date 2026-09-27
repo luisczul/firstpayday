@@ -29,7 +29,7 @@ export default async function ChoresPage() {
 
   const byChore = new Map<string, string[]>();
   for (const a of assignees ?? []) byChore.set(a.chore_id, [...(byChore.get(a.chore_id) ?? []), a.kid_id]);
-  const subs = (submissions ?? []).map((s) => ({ ...s, status: s.status as "pending" | "approved" | "sent_back" | "rejected" }));
+  const subs = (submissions ?? []).map((s) => ({ ...s, status: s.status as "pending" | "approved" | "sent_back" | "rejected" | "reversed" | "withdrawn" }));
   const historyCount = new Map<string, number>();
   for (const s of subs) historyCount.set(s.chore_id, (historyCount.get(s.chore_id) ?? 0) + 1);
   const now = new Date();

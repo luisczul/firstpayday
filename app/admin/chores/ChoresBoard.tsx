@@ -6,6 +6,7 @@ import {
   addChoresFromTemplates,
   deleteChore,
   duplicateChore,
+  makeChoreAvailable,
   reorderChores,
   retranslateChores,
   setChoreActive,
@@ -189,7 +190,13 @@ export function ChoresBoard({
                 <Button size="sm" variant="secondary" disabled={pending} onClick={() => run(() => setChoreActive(c.id, !c.active))}>
                   {c.active ? t("b.chores.pause") : t("b.chores.resume")}
                 </Button>
-                <Button size="sm" variant="secondary" disabled={pending} onClick={() => translate(c.id)}>{t("b.chores.translate")}</Button>
+                {/* Resting or done: one tap puts it back on the kids' boards. */}
+                {c.status.kind === "cooldown" || c.status.kind === "done" ? (
+                  <Button size="sm" variant="secondary" disabled={pending} onClick={() => run(() => makeChoreAvailable(c.id))}>
+                    ↺ {t("b.chores.makeAvailable")}
+                  </Button>
+                ) : null}
+                <Button size="sm" variant="ghost" disabled={pending} onClick={() => translate(c.id)}>{t("b.chores.translate")}</Button>
                 <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => duplicateChore(c.id))}>{t("b.chores.duplicate")}</Button>
                 <DeleteButton chore={c} onDelete={() => run(() => deleteChore(c.id))} onPause={() => run(() => setChoreActive(c.id, false))} />
                 <span className="ml-auto flex">

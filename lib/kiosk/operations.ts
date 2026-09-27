@@ -22,6 +22,7 @@ import { loadKioskMoneyExtras, type KioskMoneyExtras } from "./taxPromo";
  *   4. resubmit          – "Fixed it!"
  *   5. getKidHistory     – one kid's recent money
  *   6. toggleSubtask     – tick / untick one step of a checklist chore
+ *   7. withdraw          – give up a sent-back chore ("too hard for me")
  * Nothing else. Do not add operations here without updating the spec.
  */
 
@@ -127,7 +128,7 @@ export async function loadBoardData(
     client
       .from("chores")
       .select(
-        "id, title, description, emoji, color, price_cents, unit_label, max_quantity, repeat_kind, repeat_every_days, scope, note_for_kids, available_from, available_until, sort_order, created_at, category, template_key, translations, subtasks",
+        "id, title, description, emoji, color, price_cents, unit_label, max_quantity, repeat_kind, repeat_every_days, scope, note_for_kids, available_from, available_until, sort_order, created_at, category, template_key, translations, reset_at, subtasks",
       )
       .eq("household_id", householdId)
       .eq("active", true),
@@ -292,6 +293,21 @@ export async function resubmit(
   input: { kidId: string; submissionId: string },
 ): Promise<SubmitResult> {
   const { data, error } = await createAdminClient().rpc("kiosk_resubmit", {
+    p_household_id: ctx.householdId,
+    p_kid_id: input.kidId,
+    p_submission_id: input.submissionId,
+  });
+  if (error) return { ok: false, reason: reasonFromError(error.message) };
+  return { ok: true, submissionId: data.id };
+}
+
+// 4b --------------------------------------------------------------------------
+/** A kid gives up a chore that was sent back ("too hard for me"): it leaves Needs fixing and is free again. */
+export async function withdraw(
+  ctx: KioskContext,
+  input: { kidId: string; submissionId: string },
+): Promise<SubmitResult> {
+  const { data, error } = await createAdminClient().rpc("kiosk_withdraw_submission", {
     p_household_id: ctx.householdId,
     p_kid_id: input.kidId,
     p_submission_id: input.submissionId,

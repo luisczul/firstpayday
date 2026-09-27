@@ -27,6 +27,8 @@ const STATUS: Record<string, ParentKey> = {
   approved: "a.status.approved",
   sent_back: "a.status.sent_back",
   rejected: "a.status.rejected",
+  reversed: "a.status.reversed",
+  withdrawn: "a.status.withdrawn",
 };
 const METHOD: Record<string, ParentKey> = {
   cash: "a.pay.method.cash",

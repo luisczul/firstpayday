@@ -10,7 +10,7 @@ import {
 
 export type RepeatKind = "once" | "daily" | "weekly" | "every_n_days";
 export type ChoreScope = "household" | "per_kid";
-export type SubmissionStatus = "pending" | "approved" | "sent_back" | "rejected";
+export type SubmissionStatus = "pending" | "approved" | "sent_back" | "rejected" | "reversed" | "withdrawn";
 
 export type ChoreStateName =
   | "available"
@@ -31,6 +31,8 @@ export interface ScheduleChore {
   available_until: string | null;
   /** Kid ids from chore_assignees; empty means every kid. */
   assignee_ids: readonly string[];
+  /** "Make available now": submissions before this stop counting (open ones still do). */
+  reset_at?: string | Date | null;
 }
 
 export interface ScheduleSubmission {
@@ -137,7 +139,14 @@ export function getChoreState<S extends ScheduleSubmission>(
     return { state: "not_assigned" };
   }
 
-  const forChore = submissions.filter((s) => s.chore_id === chore.id);
+  // Reversed approvals and chores a kid gave up never count, nor does anything finished before a
+  // parent's "Make available now" (a pending or sent-back chore still does).
+  const resetAt = chore.reset_at ? toDate(chore.reset_at) : undefined;
+  const counts = (s: S) =>
+    s.status !== "reversed" &&
+    s.status !== "withdrawn" &&
+    (!resetAt || toDate(s.submitted_at) >= resetAt || s.status === "pending" || s.status === "sent_back");
+  const forChore = submissions.filter((s) => s.chore_id === chore.id && counts(s));
   const mine = forChore.filter((s) => s.kid_id === kidId);
   const relevant = chore.scope === "household" ? forChore : mine;
   const latestRelevant = newest(relevant);
@@ -150,7 +159,8 @@ export function getChoreState<S extends ScheduleSubmission>(
 
   const tz = household.timezone;
   const season = seasonWindow(chore, tz);
-  const createdAt = toDate(chore.created_at);
+  // A reset makes the card "New!" again from that moment.
+  const createdAt = maxDate(toDate(chore.created_at), resetAt)!;
 
   // ----- once -------------------------------------------------------------
   if (chore.repeat_kind === "once") {

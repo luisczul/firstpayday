@@ -409,3 +409,56 @@ describe("acceptance: baseboards (SPEC §15)", () => {
     expect(isNew(back, d("2026-10-10T07:00"), d("2026-10-01"))).toBe(true);
   });
 });
+
+describe("getChoreState — undo and 'Make available now'", () => {
+  it("a reversed approval doesn't count: the chore is available again", () => {
+    const r = sub({ status: "reversed", submitted_at: d("2026-09-26T09:00") });
+    const s = getChoreState(chore(), [r], A, d("2026-09-26T12:00"), hh);
+    expect(s.state).toBe("available");
+    expect(s.latestRelevant).toBeUndefined();
+  });
+
+  it("a reversed once-chore can be done again", () => {
+    const once = chore({ repeat_kind: "once", repeat_every_days: null });
+    const r = sub({ status: "reversed", submitted_at: d("2026-09-26T09:00") });
+    expect(getChoreState(once, [r], A, d("2026-09-27"), hh).state).toBe("available");
+  });
+
+  it("Make available now ends a cooldown and marks the card new from that moment", () => {
+    const p = sub({ status: "approved", submitted_at: d("2026-09-26T09:00") });
+    const reset = d("2026-09-27T10:00");
+    const s = getChoreState(chore({ reset_at: reset }), [p], A, d("2026-09-27T11:00"), hh);
+    expect(s.state).toBe("available");
+    expect(s.becameAvailableAt).toEqual(reset);
+    // Without the reset it would still be resting.
+    expect(getChoreState(chore(), [p], A, d("2026-09-27T11:00"), hh).state).toBe("cooldown");
+  });
+
+  it("Make available now brings back a done once-chore", () => {
+    const once = chore({ repeat_kind: "once", repeat_every_days: null, reset_at: "2026-10-01T12:00:00Z" });
+    const p = sub({ status: "approved", submitted_at: d("2026-09-26T09:00") });
+    expect(getChoreState(once, [p], A, d("2026-10-02"), hh).state).toBe("available");
+  });
+
+  it("a reset keeps work that's still open (pending, sent back)", () => {
+    const pending = sub({ status: "pending", submitted_at: d("2026-09-26T09:00") });
+    const reset = chore({ reset_at: d("2026-09-27T10:00") });
+    expect(getChoreState(reset, [pending], A, d("2026-09-27T11:00"), hh).state).toBe("pending");
+    const back = sub({ status: "sent_back", submitted_at: d("2026-09-26T09:00") });
+    expect(getChoreState(reset, [back], A, d("2026-09-27T11:00"), hh).state).toBe("needs_fixing");
+  });
+
+  it("work done after the reset counts normally", () => {
+    const p = sub({ status: "approved", submitted_at: d("2026-09-27T12:00") });
+    const s = getChoreState(chore({ reset_at: d("2026-09-27T10:00") }), [p], A, d("2026-09-27T13:00"), hh);
+    expect(s.state).toBe("cooldown");
+  });
+});
+
+describe("getChoreState — a kid gives up a sent-back chore", () => {
+  it("a withdrawn chore is free again, for everyone", () => {
+    const w = sub({ kid_id: B, status: "withdrawn", submitted_at: d("2026-09-26T09:00") });
+    expect(getChoreState(chore(), [w], A, d("2026-09-26T12:00"), hh).state).toBe("available");
+    expect(getChoreState(chore(), [w], B, d("2026-09-26T12:00"), hh).state).toBe("available");
+  });
+});

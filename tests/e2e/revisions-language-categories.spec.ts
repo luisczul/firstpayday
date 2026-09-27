@@ -148,7 +148,10 @@ test("undo as a reversal: money out, no revision", async () => {
   await expect(parent.getByText(/is reversed/)).toBeVisible();
   await expect.poll(async () => (await admin.from("kid_balances").select("balance_cents").eq("kid_id", kidId.Liam!).single()).data?.balance_cents).toBe(0);
   const { data } = await admin.from("submissions").select("status").eq("kid_id", kidId.Liam!).single();
-  expect(data?.status).toBe("rejected");
+  expect(data?.status).toBe("reversed");
+  // A reversed chore is back on the board straight away (no cooldown).
+  await openBoard("Liam");
+  await expect(kid.getByRole("button", { name: "Garbage boss", exact: true })).toBeVisible();
 });
 
 test("tablets page shows per-tablet usage; history shows the tablet", async () => {
@@ -269,4 +272,42 @@ test("cartoon avatar instead of a photo shows on the tablet", async () => {
 
   await kid.goto("/kids");
   await expect(kid.getByRole("button", { name: /Camila/ })).toContainText("🦊");
+});
+
+
+test("Make available now: a resting chore comes back on the board", async () => {
+  // Car mats was approved earlier (every 14 days), so it's resting.
+  await openBoard("Liam");
+  await expect(kid.getByRole("button", { name: "Car mats & vacuum", exact: true })).toHaveCount(0);
+  await parent.goto("/admin/chores");
+  const card = parent.locator("div.flex.flex-col.gap-2", { has: parent.getByText("Car mats & vacuum", { exact: true }) }).last();
+  await card.getByRole("button", { name: /Make available/ }).click();
+  await expect(card.getByRole("button", { name: /Make available/ })).toHaveCount(0);
+  await openBoard("Liam");
+  await expect(kid.getByRole("button", { name: "Car mats & vacuum", exact: true })).toBeVisible();
+});
+
+test("a kid gives up a sent-back chore: it leaves Needs fixing and is free again", async () => {
+  await openBoard("Liam");
+  await kid.getByRole("button", { name: "Kitchen cabinets", exact: true }).click();
+  await kid.getByRole("button", { name: /I did it/ }).click();
+  await parent.goto("/admin/approvals");
+  const item = parent.locator("li", { hasText: "Kitchen cabinets" }).filter({ hasNot: parent.getByRole("button", { name: "Undo…" }) });
+  await item.getByRole("button", { name: /Send back/ }).click();
+  await item.getByRole("button", { name: "Missed a spot" }).click();
+  await item.getByRole("button", { name: "Send back", exact: true }).click();
+  await expect(item).toHaveCount(0);
+
+  await openBoard("Liam");
+  await kid.locator("#needs-fixing").getByRole("button", { name: /Kitchen cabinets/ }).click();
+  await kid.getByRole("button", { name: /too hard for me/ }).click();
+  await kid.getByRole("button", { name: "Yes, remove it" }).click();
+  await expect(kid.getByText("Okay! It's off your list.")).toBeVisible();
+  await expect(kid.locator("#needs-fixing")).toHaveCount(0);
+  await expect(kid.getByRole("button", { name: "Kitchen cabinets", exact: true })).toBeVisible();
+  // Free for a sibling too, and nothing was paid.
+  await openBoard("Camila");
+  await expect(kid.getByRole("button", { name: /Armoires de cuisine|Kitchen cabinets/ }).first()).toBeVisible();
+  const { data } = await admin.from("submissions").select("status, amount_cents").eq("kid_id", kidId.Liam!).eq("chore_title_snapshot", "Kitchen cabinets").single();
+  expect(data?.status).toBe("withdrawn");
 });

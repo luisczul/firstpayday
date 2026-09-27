@@ -171,7 +171,7 @@ function MeCard({
     <Card>
       <h2 className="mb-1 font-display text-xl font-bold">{t("b.me.title")}</h2>
       <p className="mb-4 text-sm text-ink-soft">{email}</p>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <form
           className="flex items-end gap-2"
           onSubmit={(e) => {
@@ -182,13 +182,13 @@ function MeCard({
             });
           }}
         >
-          <Field label={t("b.me.yourName")}>
+          <div className="flex-1"><Field label={t("b.me.yourName")}>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("b.me.namePlaceholder")} maxLength={40} />
-          </Field>
-          <Button type="submit" variant="secondary" disabled={pending}>{t("b.common.save")}</Button>
+          </Field></div>
+          <Button type="submit" variant="secondary" disabled={pending} className="min-h-11">{t("b.common.save")}</Button>
         </form>
         <form
-          className="flex items-end gap-2"
+          className="flex flex-col gap-1.5"
           onSubmit={(e) => {
             e.preventDefault();
             start(async () => {
@@ -198,10 +198,16 @@ function MeCard({
             });
           }}
         >
-          <Field label={`${t("b.me.parentPin")} ${hasPin ? t("b.me.pinTagSet") : t("b.me.pinTagOptional")}`} hint={t("b.me.pinHint")}>
-            <Input inputMode="numeric" pattern="\d{4,6}|" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••" autoComplete="off" />
-          </Field>
-          <Button type="submit" variant="secondary" disabled={pending}>{pin ? t("b.me.setPin") : hasPin ? t("b.common.remove") : t("b.me.setPin")}</Button>
+          {/* Input and button share one row; the hint sits under both, so they line up. */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Field label={`${t("b.me.parentPin")} ${hasPin ? t("b.me.pinTagSet") : t("b.me.pinTagOptional")}`}>
+                <Input inputMode="numeric" pattern="\d{4,6}|" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••" autoComplete="off" />
+              </Field>
+            </div>
+            <Button type="submit" variant="secondary" disabled={pending} className="min-h-11">{pin ? t("b.me.setPin") : hasPin ? t("b.common.remove") : t("b.me.setPin")}</Button>
+          </div>
+          <span className="text-xs text-ink-soft">{t("b.me.pinHint")}</span>
         </form>
       </div>
       <label className="mt-4 flex cursor-pointer items-start gap-3">

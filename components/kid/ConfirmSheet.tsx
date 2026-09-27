@@ -27,6 +27,7 @@ export function ConfirmSheet({
   onCancel,
   kidId,
   onStepsChange,
+  onGiveUp,
 }: {
   target: ConfirmTarget | null;
   currency: string;
@@ -38,6 +39,8 @@ export function ConfirmSheet({
   kidId?: string;
   /** Ticks changed (optimistic, then as saved), so the board card can follow. */
   onStepsChange?: (choreId: string, done: string[]) => void;
+  /** Needs fixing only: the kid gives the chore up ("too hard for me"). */
+  onGiveUp?: () => void;
 }) {
   return (
     <AnimatePresence>
@@ -52,6 +55,7 @@ export function ConfirmSheet({
           onCancel={onCancel}
           kidId={kidId}
           onStepsChange={onStepsChange}
+          onGiveUp={onGiveUp}
         />
       ) : null}
     </AnimatePresence>
@@ -67,6 +71,7 @@ function SheetBody({
   onCancel,
   kidId,
   onStepsChange,
+  onGiveUp,
 }: {
   target: ConfirmTarget;
   currency: string;
@@ -76,8 +81,10 @@ function SheetBody({
   onCancel: () => void;
   kidId?: string;
   onStepsChange?: (choreId: string, done: string[]) => void;
+  onGiveUp?: () => void;
 }) {
   const tr = translator(locale);
+  const [confirmGiveUp, setConfirmGiveUp] = useState(false);
   const [qty, setQty] = useState(1);
   const showStepper = target.mode === "submit" && target.maxQuantity > 1;
   const steps = target.checklist?.subtasks ?? [];
@@ -144,16 +151,19 @@ function SheetBody({
         role="dialog"
         aria-modal="true"
         aria-label={target.title}
-        className={`flex w-full max-w-4xl flex-col gap-6 rounded-[2rem] bg-paper p-6 shadow-[var(--shadow-pop)] md:flex-row md:p-8 ${
-          steps.length ? "max-h-[92dvh] overflow-y-auto md:overflow-hidden" : ""
-        }`}
+        className={
+          steps.length
+            ? // Routine: card and buttons on the left, the steps use the whole right side (phones: card, steps, buttons).
+              "grid max-h-[92dvh] w-full max-w-5xl gap-6 overflow-y-auto rounded-[2rem] bg-paper p-6 shadow-[var(--shadow-pop)] [grid-template-areas:'card'_'steps'_'actions'] md:grid-cols-2 md:grid-rows-[auto_1fr] md:overflow-hidden md:p-8 md:[grid-template-areas:'card_steps'_'actions_steps']"
+            : "flex w-full max-w-4xl flex-col gap-6 rounded-[2rem] bg-paper p-6 shadow-[var(--shadow-pop)] md:flex-row md:p-8"
+        }
         initial={{ y: 60, scale: 0.95 }}
         animate={{ y: 0, scale: 1 }}
         exit={{ y: 60, opacity: 0 }}
         transition={{ type: "spring", stiffness: 320, damping: 28 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="md:w-1/2">
+        <div className={steps.length ? "[grid-area:card]" : "md:w-1/2"}>
           <ChoreCard
             chore={target}
             currency={currency}
@@ -164,20 +174,25 @@ function SheetBody({
           {target.noteForKids ? (
             <p className="mt-4 rounded-2xl bg-gold/30 px-5 py-3 text-lg font-semibold text-ink">💬 {target.noteForKids}</p>
           ) : null}
+          {steps.length && target.mode === "resubmit" && target.reviewComment ? (
+            <div className="relative mt-4 rounded-3xl bg-card px-6 py-4 text-xl font-bold text-plum ring-2 ring-plum/30">
+              “{target.reviewComment}”
+            </div>
+          ) : null}
         </div>
 
-        <div className={`flex flex-col gap-5 md:w-1/2 ${steps.length ? "md:min-h-0" : "justify-center"}`}>
-          {target.mode === "resubmit" && target.reviewComment ? (
+        <div className={steps.length ? "contents" : "flex flex-col justify-center gap-5 md:w-1/2"}>
+          {!steps.length && target.mode === "resubmit" && target.reviewComment ? (
             <div className="relative rounded-3xl bg-card px-6 py-4 text-xl font-bold text-plum ring-2 ring-plum/30">
               “{target.reviewComment}”
             </div>
           ) : null}
 
           {steps.length ? (
-            <div className="flex min-h-0 flex-col gap-3 rounded-3xl bg-card p-4 ring-1 ring-line">
+            <div className="flex min-h-0 flex-col gap-3 rounded-3xl bg-card p-4 ring-1 ring-line [grid-area:steps] md:max-h-[84dvh]">
               <ChecklistProgress done={progress.done} total={progress.total} locale={locale} size="lg" />
               {target.mode === "submit" ? <p className="text-lg font-semibold text-ink-soft">{tr("kid.stepsHint")}</p> : null}
-              <div className="-mx-1 flex min-h-0 flex-col gap-2 overflow-y-auto px-1 md:max-h-[46dvh]" role="group" aria-label={tr("kid.steps", { done: progress.done, total: progress.total })}>
+              <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-1" role="group" aria-label={tr("kid.steps", { done: progress.done, total: progress.total })}>
                 {groupSubtasks(steps).map((g, gi) => (
                   <div key={`${g.section ?? ""}-${gi}`} className="flex flex-col gap-2">
                     {g.section ? <h3 className="mt-1 font-display text-2xl font-extrabold text-ink">{g.section}</h3> : null}
@@ -214,6 +229,7 @@ function SheetBody({
             </div>
           ) : null}
 
+          <div className={steps.length ? "flex flex-col gap-5 [grid-area:actions]" : "contents"}>
           {steps.length && target.mode === "submit" ? (
             <p aria-live="polite" className={`text-center text-2xl font-black ${locked ? "text-amber" : "text-moss"}`}>
               {progress.remaining > 1
@@ -261,6 +277,39 @@ function SheetBody({
           >
             {tr("kid.notYet")}
           </button>
+          {target.mode === "resubmit" && onGiveUp ? (
+            confirmGiveUp ? (
+              <div className="flex flex-col gap-3 rounded-3xl bg-paper-deep p-4 text-center">
+                <p className="text-xl font-bold text-ink">{tr("kid.giveUpSure")}</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onGiveUp}
+                    className="min-h-16 flex-1 rounded-2xl bg-plum px-4 text-xl font-black text-white active:scale-95 disabled:opacity-60"
+                  >
+                    {tr("kid.giveUpYes")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmGiveUp(false)}
+                    className="min-h-16 flex-1 rounded-2xl bg-card px-4 text-xl font-bold text-ink ring-1 ring-line active:scale-95"
+                  >
+                    {tr("kid.giveUpKeep")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmGiveUp(true)}
+                className="min-h-16 rounded-2xl text-xl font-bold text-plum underline-offset-4 active:bg-paper-deep"
+              >
+                😅 {tr("kid.giveUp")}
+              </button>
+            )
+          ) : null}
+          </div>
         </div>
       </motion.div>
     </motion.div>

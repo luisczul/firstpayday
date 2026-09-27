@@ -22,7 +22,7 @@ export function currencyOptions(locale: string): { code: string; label: string; 
       return false;
     }
   };
-  const label = (code: string) => `${code} · ${names.of(code) ?? code}`;
+  const label = (code: string) => `${code} · ${String(names.of(code))}`;
   const common = COMMON.map((code) => ({ code, label: label(code), common: true }));
   const rest = all
     .filter((c) => !(COMMON as readonly string[]).includes(c) && twoDecimals(c))

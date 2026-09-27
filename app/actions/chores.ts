@@ -286,6 +286,20 @@ export async function retranslateChores(choreId?: string) {
   });
 }
 
+/** "Make available now": the chore comes back on every kid's board right away, whatever its cooldown. */
+export async function makeChoreAvailable(choreId: string) {
+  return runAction(async () => {
+    const ctx = await requireWritableParent();
+    const { error } = await ctx.supabase
+      .from("chores")
+      .update({ reset_at: new Date().toISOString(), active: true })
+      .eq("household_id", ctx.household.id)
+      .eq("id", z.uuid().parse(choreId));
+    if (error) throw error;
+    revalidateChores();
+  });
+}
+
 export async function updateChorePrice(choreId: string, priceCents: number) {
   return runAction(async () => {
     const ctx = await requireWritableParent();

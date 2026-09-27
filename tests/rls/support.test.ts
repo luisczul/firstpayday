@@ -59,3 +59,14 @@ describe("support messages", () => {
     expect(data?.every((r) => r.status === "new")).toBe(true);
   });
 });
+
+describe("kiosk withdraw (give up a sent-back chore)", () => {
+  it("can't be called from a parent's browser session", async () => {
+    const { error } = await a.client.rpc("kiosk_withdraw_submission", {
+      p_household_id: a.householdId,
+      p_kid_id: a.userId,
+      p_submission_id: a.userId,
+    });
+    expect(error).not.toBeNull();
+  });
+});

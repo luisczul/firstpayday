@@ -31,6 +31,8 @@ const STATUS_LABEL: Record<string, ParentKey> = {
   approved: "a.status.approved",
   sent_back: "a.status.sent_back",
   rejected: "a.status.rejected",
+  reversed: "a.status.reversed",
+  withdrawn: "a.status.withdrawn",
 };
 const METHOD_LABEL: Record<string, ParentKey> = {
   cash: "a.pay.method.cash",
@@ -38,7 +40,7 @@ const METHOD_LABEL: Record<string, ParentKey> = {
   savings: "a.pay.method.savings",
   other: "a.pay.method.other",
 };
-const STATUS_TONE = { pending: "warn", approved: "good", sent_back: "bad", rejected: "neutral" } as const;
+const STATUS_TONE = { pending: "warn", approved: "good", sent_back: "bad", rejected: "neutral", reversed: "neutral", withdrawn: "neutral" } as const;
 
 export default async function KidPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
