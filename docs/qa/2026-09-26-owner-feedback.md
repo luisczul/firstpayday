@@ -53,6 +53,14 @@ Verify each one on **production (https://firstpayday.app)** after deploy.
 | 46 | **Parent side in 4 languages** | Onboarding and every admin screen, dialog, error message and invite email follow the household language (en/fr/es/pt) | Parent admin |
 | 47 | **New chore → template or blank** | "+ New chore" first asks "📋 Start from a template" or "✏️ Start from blank"; a template opens the editor pre-filled (price, steps, translations) to tweak before saving; "✓ On your board" badge; bulk "Add from templates" still there | Admin → Chores |
 | 48 | **Longer repeat options**: every 60 / 90 days, twice a year, yearly | Chore editor "Every N days" offers 3, 7, 14, 30, 60, 90 days, "Twice a year" (182 days) and "Yearly" (365 days); cards and lists say "Twice a year" / "Yearly" in all 4 languages | Chore editor |
+| 49 | **Billing hidden** while free | No Billing tab; /admin/settings/billing redirects to Settings | Settings |
+| 50 | **Currency independent of language** | Onboarding and Settings currency picker: most used first, then every currency with cents, names in the parent's language; saving CHF with Spanish works | Onboarding, Settings |
+| 51 | **Reversing an approval reopens the chore** | Approvals → Undo… → Reverse: money out, and the chore is immediately back on the kids' boards (no cooldown) | Approvals, tablet |
+| 52 | **"↺ Make available"** for a resting or done chore | Button in the chore's action row, shown while it's resting ("Back in 13 days") or done; one tap puts it back on every kid's board; Translate is now a text action | Admin → Chores |
+| 53 | **Kid can give up a sent-back chore** | In the Needs-fixing sheet: "😅 This one's too hard for me" → "Yes, remove it": leaves Needs fixing, no money, free again for everyone; parent sees "given up by the kid" in History | Tablet |
+| 54 | **Routine sheet layout** | Tablet: card + "I did it!" / "Oops, not yet" on the left, steps full height on the right; phone: card, steps, buttons | Tablet |
+| 55 | **Board polish** | Header and categories never overlap; cards and controls about 10% smaller; back arrow centered; sound toggle 🔊 turns tablet sounds on/off | Tablet |
+| 56 | **Parent unlock** | 🔒 Parent → keypad for parents with a PIN (4–6 digits, set in Settings → You) or "Use password instead" (email + password); PIN and name rows aligned in Settings | Tablet, Settings |
 
 ## Final gate: full journeys in each language (required before "ready")
 Run the whole product from zero **four times**: en, fr, es, pt-BR. Each run uses a monitored throwaway inbox and covers:
@@ -90,8 +98,9 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit 20c1d59)
-- **Local production build:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
+## Verification status (2026-09-27, deployed commit 68f9e0c)
+- **Local production build (latest run):** 105 E2E passed, 2 skipped; 152 unit tests at 100% coverage; 57 RLS tests.
+- **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
 - **Supabase auth emails:** confirm sign-up, magic link and reset password are in 4 languages.
