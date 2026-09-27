@@ -65,6 +65,7 @@ Verify each one on **production (https://firstpayday.app)** after deploy.
 | 58 | **Kid "remove from my list" wording** | Needs-fixing sheet: "I just want to remove this from my list" (4 languages), no emoji | Tablet |
 | 59 | **💌 Share First Payday** with friends | Sidebar + Settings tab: up to 10 emails, your name, optional note, email language; email "{name} is using First Payday with their kids…" (reply goes to you); list with Sent / Joined ✓ and Resend once a day; existing accounts not emailed; 20 per day | Parent admin |
 | 60 | **Owner control panel access** | https://firstpayday.app/platform, not linked anywhere; only platform owners (luisczul@gmail.com) can open it, everyone else sees "not found" | Owner |
+| 61 | **Translate only when needed** | "Translate all" / "Translate" are hidden when every kid uses the home language; switching a kid to another language (or changing the home language) translates every chore still missing it, automatically, in the background | Chores, kid settings |
 
 ## Final gate: full journeys in each language (required before "ready")
 Run the whole product from zero **four times**: en, fr, es, pt-BR. Each run uses a monitored throwaway inbox and covers:
@@ -102,8 +103,8 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit 50146db)
-- **Local production build (latest run):** 108 E2E passed, 2 skipped; 156 unit tests at 100% coverage; 61 RLS tests.
+## Verification status (2026-09-27, deployed commit eb0923c)
+- **Local production build (latest run):** 108 E2E passed (110 incl. 2 skipped); 156 unit tests at 100% coverage; 61 RLS tests.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
