@@ -19,7 +19,7 @@ export default async function ApprovalsPage() {
   const { data } = await ctx.supabase
     .from("submissions")
     .select(
-      "id, kid_id, quantity, unit_price_cents, amount_cents, chore_title_snapshot, submitted_at, resubmitted_at, review_comment, kids(name, color, avatar_path), chores(emoji, max_quantity, unit_label, subtasks)",
+      "id, kid_id, quantity, unit_price_cents, amount_cents, chore_title_snapshot, submitted_at, resubmitted_at, review_comment, kids(name, color, avatar_path), chores(emoji, max_quantity, unit_label, subtasks, price_cents)",
     )
     .eq("household_id", ctx.household.id)
     .eq("status", "pending")
@@ -61,6 +61,7 @@ export default async function ApprovalsPage() {
     maxQuantity: Math.max(s.chores?.max_quantity ?? 1, s.quantity),
     unitLabel: s.chores?.unit_label ?? null,
     unitPriceCents: s.unit_price_cents,
+    chorePriceCents: s.chores?.price_cents ?? s.unit_price_cents,
     submittedAt: s.submitted_at,
     resubmitted: Boolean(s.resubmitted_at),
     previousComment: s.resubmitted_at ? s.review_comment : null,

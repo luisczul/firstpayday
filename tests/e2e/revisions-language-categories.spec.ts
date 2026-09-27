@@ -331,3 +331,23 @@ test("Translate only shows when a kid reads another language than the home", asy
   await parent.getByRole("button", { name: "Save", exact: true }).click();
   await expect(parent.getByText("Saved")).toBeVisible();
 });
+
+test("approve at a corrected price (the chore was priced wrong)", async () => {
+  const bal = async () => (await admin.from("kid_balances").select("balance_cents").eq("kid_id", kidId.Liam!).single()).data?.balance_cents ?? 0;
+  const start = await bal();
+  await openBoard("Liam");
+  await kid.getByRole("button", { name: "Sous-chef night", exact: true }).click();
+  await kid.getByRole("button", { name: /I did it/ }).click();
+  await expect(kid.getByText("Sent to Mom/Dad for checking!")).toBeVisible();
+  // The parent fixes the chore's price after the kid submitted.
+  await admin.from("chores").update({ price_cents: 100 }).eq("household_id", (await admin.from("kids").select("household_id").eq("id", kidId.Liam!).single()).data!.household_id).eq("title", "Sous-chef night");
+
+  await parent.goto("/admin/approvals");
+  const item = parent.locator("li", { hasText: "Sous-chef night" }).filter({ hasNot: parent.getByRole("button", { name: "Undo…" }) });
+  await item.getByRole("button", { name: /Use today's price/ }).click();
+  await expect(item.getByText("$1.00").first()).toBeVisible();
+  await item.getByRole("button", { name: /Approve/ }).click();
+  await expect.poll(bal).toBe(start + 100);
+  const { data } = await admin.from("submissions").select("unit_price_cents, amount_cents").eq("kid_id", kidId.Liam!).eq("chore_title_snapshot", "Sous-chef night").single();
+  expect(data).toEqual({ unit_price_cents: 100, amount_cents: 100 });
+});

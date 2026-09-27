@@ -1,6 +1,10 @@
 // Parent-side strings: "Share First Payday" (invite friends by email) and chore claims ("I'm on it!").
 // Keys are namespaced "c.<screen>.<name>". en is the source of truth; fr/es/pt must mirror every key.
 export const en = {
+  "c.appr.editPrice": "Edit the price",
+  "c.appr.priceLabel": "Price for this one:",
+  "c.appr.useCurrent": "Use today's price ({price})",
+  "c.appr.keepPrice": "Also use this price for “{title}” from now on",
   "c.shell.share": "💌 Share First Payday",
   "c.tabs.share": "💌 Share",
 
@@ -67,6 +71,10 @@ export const en = {
 export type AreaCKey = keyof typeof en;
 
 export const fr: Record<AreaCKey, string> = {
+  "c.appr.editPrice": "Modifier le prix",
+  "c.appr.priceLabel": "Prix pour celle-ci :",
+  "c.appr.useCurrent": "Utiliser le prix actuel ({price})",
+  "c.appr.keepPrice": "Garder aussi ce prix pour « {title} » à l'avenir",
   "c.shell.share": "💌 Partager First Payday",
   "c.tabs.share": "💌 Partager",
 
@@ -131,6 +139,10 @@ export const fr: Record<AreaCKey, string> = {
 };
 
 export const es: Record<AreaCKey, string> = {
+  "c.appr.editPrice": "Cambiar el precio",
+  "c.appr.priceLabel": "Precio para esta:",
+  "c.appr.useCurrent": "Usar el precio de hoy ({price})",
+  "c.appr.keepPrice": "Usar también este precio para “{title}” de ahora en adelante",
   "c.shell.share": "💌 Compartir First Payday",
   "c.tabs.share": "💌 Compartir",
 
@@ -195,6 +207,10 @@ export const es: Record<AreaCKey, string> = {
 };
 
 export const pt: Record<AreaCKey, string> = {
+  "c.appr.editPrice": "Mudar o preço",
+  "c.appr.priceLabel": "Preço desta vez:",
+  "c.appr.useCurrent": "Usar o preço de hoje ({price})",
+  "c.appr.keepPrice": "Usar também este preço para “{title}” daqui para frente",
   "c.shell.share": "💌 Compartilhar o First Payday",
   "c.tabs.share": "💌 Compartilhar",
 

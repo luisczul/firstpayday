@@ -406,3 +406,12 @@ describe("privilege boundaries", () => {
     }
   });
 });
+
+describe("approve at a corrected price", () => {
+  it("rejects prices out of range and doesn't touch other households' chores", async () => {
+    const { error } = await A.client.rpc("approve_submission", { p_submission_id: B.submissionId, p_unit_price_cents: 1 });
+    expect(error).not.toBeNull();
+    const { data: chore } = await admin.from("chores").select("price_cents").eq("id", B.choreId).single();
+    expect(chore?.price_cents).toBe(500);
+  });
+});

@@ -13,6 +13,7 @@ import { taxPromoCopy } from "@/lib/i18n/taxPromoCopy";
 import { type Locale } from "@/lib/i18n";
 import { groupSubtasks, type Subtask } from "@/lib/schedule/checklist";
 import { useParentT } from "@/lib/i18n/parent/client";
+import { PriceInput } from "@/components/admin/TemplatePicker";
 
 export interface QueueItem {
   id: string;
@@ -26,6 +27,8 @@ export interface QueueItem {
   maxQuantity: number;
   unitLabel: string | null;
   unitPriceCents: number;
+  /** The chore's price today (may differ if the parent fixed it after the kid submitted). */
+  chorePriceCents?: number;
   submittedAt: string;
   resubmitted: boolean;
   previousComment: string | null;
@@ -219,6 +222,10 @@ function ApprovalItem({
 }) {
   const t = useParentT();
   const [qty, setQty] = useState(item.quantity);
+  const [unitPrice, setUnitPrice] = useState(item.unitPriceCents);
+  const [editingPrice, setEditingPrice] = useState(false);
+  const [keepPrice, setKeepPrice] = useState(false);
+  const chorePrice = item.chorePriceCents ?? item.unitPriceCents;
   const [mode, setMode] = useState<"idle" | "sendBack" | "reject">("idle");
   const [comment, setComment] = useState("");
   const [menu, setMenu] = useState(false);
@@ -227,7 +234,8 @@ function ApprovalItem({
   const [pending, start] = useTransition();
   const money = (c: number) => formatMoney(c, currency, locale);
   const price = (c: number) => formatPrice(c, currency, locale);
-  const amount = qty * item.unitPriceCents;
+  const amount = qty * unitPrice;
+  const priceChanged = unitPrice !== item.unitPriceCents;
   const tc = TIP_COPY[locale] ?? TIP_COPY.en;
   const parsedCustom = customTip === null || customTip.trim() === "" ? 0 : parseMoneyToCents(customTip);
   const customInvalid = customTip !== null && (parsedCustom === null || parsedCustom < 0 || parsedCustom > MAX_TIP);
@@ -271,8 +279,14 @@ function ApprovalItem({
           ) : null}
           <span className="text-right">
             <span className="block text-xs font-bold text-ink-soft">
-              {qty} × {money(item.unitPriceCents)}
+              {qty} × {priceChanged ? <s className="mr-1 opacity-60">{money(item.unitPriceCents)}</s> : null}
+              {money(unitPrice)}
               {item.unitLabel ? ` / ${item.unitLabel}` : ""}
+              {!readOnly ? (
+                <button type="button" className="ml-1.5 underline decoration-dotted" onClick={() => setEditingPrice((v) => !v)} aria-label={t("c.appr.editPrice")}>
+                  ✏️
+                </button>
+              ) : null}
             </span>
             <span className="block font-display text-2xl font-bold text-moss">{money(amount)}</span>
             {match > 0 ? <span className="block text-xs font-bold text-amber">{t("a.appr.match", { amount: money(match) })}</span> : null}
@@ -284,6 +298,28 @@ function ApprovalItem({
           </span>
         </div>
       </div>
+
+      {editingPrice || (!readOnly && chorePrice !== item.unitPriceCents && !priceChanged) ? (
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-paper px-4 py-3" data-testid="price-editor">
+          {chorePrice !== item.unitPriceCents && unitPrice !== chorePrice ? (
+            <Button size="sm" variant="secondary" onClick={() => { setUnitPrice(chorePrice); setEditingPrice(true); }}>
+              {t("c.appr.useCurrent", { price: money(chorePrice) })}
+            </Button>
+          ) : null}
+          {editingPrice ? (
+            <>
+              <span className="text-sm font-bold text-ink">{t("c.appr.priceLabel")}</span>
+              <PriceInput key={unitPrice} cents={unitPrice} currency={currency} locale={locale} onChange={setUnitPrice} />
+              {priceChanged ? (
+                <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <input type="checkbox" className="h-4 w-4 accent-maple" checked={keepPrice} onChange={(e) => setKeepPrice(e.target.checked)} />
+                  {t("c.appr.keepPrice", { title: item.title })}
+                </label>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {item.subtasks?.length ? (
         <div className="mt-3 rounded-xl bg-moss/10 px-4 py-3" data-testid="approval-steps">
@@ -369,7 +405,17 @@ function ApprovalItem({
             size="lg"
             className="min-w-36 flex-1 sm:flex-none"
             disabled={pending || customInvalid}
-            onClick={() => act(() => approveSubmission(item.id, qty, undefined, bonus > 0 ? bonus : undefined))}
+            onClick={() =>
+              act(() =>
+                approveSubmission(
+                  item.id,
+                  qty,
+                  undefined,
+                  bonus > 0 ? bonus : undefined,
+                  priceChanged ? { unitPriceCents: unitPrice, updateChore: keepPrice } : undefined,
+                ),
+              )
+            }
           >
             {tc.approve}
             {bonus > 0 ? tc.plus(price(bonus)) : ""}

@@ -27,7 +27,14 @@ function revalidate() {
   revalidatePath("/admin/kids", "layout");
 }
 
-export async function approveSubmission(submissionId: string, quantity?: number, comment?: string, bonusCents?: number) {
+export async function approveSubmission(
+  submissionId: string,
+  quantity?: number,
+  comment?: string,
+  bonusCents?: number,
+  /** Corrected price per unit (the chore was priced wrong), and whether to keep it for the chore. */
+  price?: { unitPriceCents: number; updateChore: boolean },
+) {
   return runAction(async () => {
     const ctx = await requireWritableParent();
     const bonus = z.number().int().min(0).max(MAX_TIP_CENTS).optional().safeParse(bonusCents);
@@ -38,8 +45,11 @@ export async function approveSubmission(submissionId: string, quantity?: number,
       p_comment: comment?.slice(0, 300),
       // Optional "great job" tip, paid as its own ledger row (max $100).
       p_bonus_cents: bonus.data,
+      p_unit_price_cents: price ? z.number().int().min(0).max(100000).parse(price.unitPriceCents) : undefined,
+      p_update_chore_price: price?.updateChore ?? false,
     });
     if (error) throw friendly(ctx, error.message);
+    if (price?.updateChore) revalidatePath("/admin/chores");
     revalidate();
   });
 }

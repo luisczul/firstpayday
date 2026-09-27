@@ -600,7 +600,7 @@ isOneToOne: false
           }
           Functions: {
             "approve_submission":
-{ Args: { "p_bonus_cents"?: number,"p_comment"?: string,"p_quantity"?: number,"p_submission_id": string }; Returns: {
+{ Args: { "p_bonus_cents"?: number,"p_comment"?: string,"p_quantity"?: number,"p_submission_id": string,"p_unit_price_cents"?: number,"p_update_chore_price"?: boolean }; Returns: {
               "amount_cents": number,
 "chore_id": string,
 "chore_title_snapshot": string,
