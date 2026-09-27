@@ -42,6 +42,13 @@ const METHOD_LABEL: Record<string, ParentKey> = {
 };
 const STATUS_TONE = { pending: "warn", approved: "good", sent_back: "bad", rejected: "neutral", reversed: "neutral", withdrawn: "neutral" } as const;
 
+/** Money lines name the chore as it was when saved: show its current (linked) name instead. */
+function linkedNote(note: string, sub: { chore_title_snapshot: string; chores: { title: string } | null } | null): string {
+  const snap = sub?.chore_title_snapshot;
+  const current = sub?.chores?.title;
+  return snap && current && note.endsWith(snap) ? note.slice(0, note.length - snap.length) + current : note;
+}
+
 export default async function KidPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
@@ -53,8 +60,8 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
   const [{ data: kid }, { data: bal }, { data: ledger }, { data: subs }, { data: recentCheckins }, { count: checkinTotal }] = await Promise.all([
     ctx.supabase.from("kids").select("*").eq("household_id", hid).eq("id", id).maybeSingle(),
     ctx.supabase.from("kid_balances").select("*").eq("household_id", hid).eq("kid_id", id).maybeSingle(),
-    ctx.supabase.from("ledger_entries").select("*").eq("household_id", hid).eq("kid_id", id).order("created_at", { ascending: false }).limit(50),
-    ctx.supabase.from("submissions").select("id, chore_title_snapshot, amount_cents, status, submitted_at, review_comment").eq("household_id", hid).eq("kid_id", id).order("submitted_at", { ascending: false }).limit(20),
+    ctx.supabase.from("ledger_entries").select("*, submissions(chore_title_snapshot, chores(title))").eq("household_id", hid).eq("kid_id", id).order("created_at", { ascending: false }).limit(50),
+    ctx.supabase.from("submissions").select("id, chore_title_snapshot, amount_cents, status, submitted_at, review_comment, chores(title)").eq("household_id", hid).eq("kid_id", id).order("submitted_at", { ascending: false }).limit(20),
     ctx.supabase.from("kid_checkins").select("created_at").eq("household_id", hid).eq("kid_id", id).gte("created_at", since30).order("created_at", { ascending: false }).limit(1000),
     ctx.supabase.from("kid_checkins").select("id", { count: "exact", head: true }).eq("household_id", hid).eq("kid_id", id),
   ]);
@@ -110,7 +117,7 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
               {subs.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 py-2.5">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-bold">{s.chore_title_snapshot}</span>
+                    <span className="block truncate font-bold">{s.chores?.title ?? s.chore_title_snapshot}</span>
                     <span className="text-xs text-ink-soft">{when(s.submitted_at)}{s.review_comment ? ` · “${s.review_comment}”` : ""}</span>
                   </span>
                   <Badge tone={STATUS_TONE[s.status as keyof typeof STATUS_TONE] ?? "neutral"}>{STATUS_LABEL[s.status] ? t(STATUS_LABEL[s.status]!) : s.status.replace("_", " ")}</Badge>
@@ -130,7 +137,7 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
                 <li key={l.id} className="flex items-center gap-3 py-2.5">
                   <span className="min-w-0 flex-1">
                     <span className="block font-bold">{KIND_LABEL[l.kind] ? t(KIND_LABEL[l.kind]!) : l.kind}</span>
-                    <span className="block truncate text-xs text-ink-soft">{when(l.created_at)}{l.note ? ` · ${localizeLedgerNote(l.note, ctx.locale)}` : ""}{l.method ? ` · ${METHOD_LABEL[l.method] ? t(METHOD_LABEL[l.method]!) : l.method}` : ""}</span>
+                    <span className="block truncate text-xs text-ink-soft">{when(l.created_at)}{l.note ? ` · ${localizeLedgerNote(linkedNote(l.note, l.submissions), ctx.locale)}` : ""}{l.method ? ` · ${METHOD_LABEL[l.method] ? t(METHOD_LABEL[l.method]!) : l.method}` : ""}</span>
                   </span>
                   <span className={`w-24 text-right font-bold ${l.amount_cents < 0 ? "text-plum" : "text-moss"}`}>
                     {l.amount_cents > 0 ? "+" : ""}{money(l.amount_cents)}

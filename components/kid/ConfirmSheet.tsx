@@ -1,5 +1,6 @@
 "use client";
 
+import { ReadAloud } from "@/components/kid/ReadAloud";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChoreCard, type ChoreCardData } from "./ChoreCard";
@@ -194,6 +195,20 @@ function SheetBody({
           {target.noteForKids ? (
             <p className="mt-4 rounded-2xl bg-gold/30 px-5 py-3 text-lg font-semibold text-ink">💬 {target.noteForKids}</p>
           ) : null}
+          <div className="mt-4 flex justify-center">
+            <ReadAloud
+              locale={locale}
+              text={[
+                target.title,
+                target.description,
+                target.noteForKids,
+                target.mode === "resubmit" ? target.reviewComment : null,
+                ...steps.map((s) => s.title),
+              ]
+                .filter(Boolean)
+                .join(". ")}
+            />
+          </div>
           {steps.length && target.mode === "resubmit" && target.reviewComment ? (
             <div className="relative mt-4 rounded-3xl bg-card px-6 py-4 text-xl font-bold text-plum ring-2 ring-plum/30">
               “{target.reviewComment}”

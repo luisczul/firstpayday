@@ -234,16 +234,14 @@ export function buildBoard(input: {
     }
   }
 
-  // "Waiting for check": every pending submission of this kid, newest first.
+  // "Waiting for check": every pending submission of this kid, newest first. The title is the
+  // chore's (already in the kid's language), not the submission's English snapshot.
   const pending = submissions
     .filter((s) => s.kid_id === kidId && s.status === "pending" && choreById.has(s.chore_id))
     .sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
   for (const s of pending) {
     const chore = choreById.get(s.chore_id)!;
-    sections.waiting.push({
-      ...toCard(chore, { state: "pending", submission: s }, { isNew: false, now, timeZone: household.timezone }),
-      title: s.chore_title_snapshot,
-    });
+    sections.waiting.push(toCard(chore, { state: "pending", submission: s }, { isNew: false, now, timeZone: household.timezone }));
   }
 
   sections.soon.sort((a, b) => (a.availableAt ?? "").localeCompare(b.availableAt ?? ""));

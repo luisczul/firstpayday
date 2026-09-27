@@ -32,7 +32,7 @@ async function run(householdId: string, submissionId: string) {
   const admin = createAdminClient();
   const { data: sub } = await admin
     .from("submissions")
-    .select("id, kid_id, status, amount_cents, chore_title_snapshot, submitted_at, resubmitted_at")
+    .select("id, kid_id, status, amount_cents, chore_title_snapshot, submitted_at, resubmitted_at, chores(title)")
     .eq("id", submissionId)
     .eq("household_id", householdId)
     .maybeSingle();
@@ -102,7 +102,7 @@ async function run(householdId: string, submissionId: string) {
       const content = buildReviewEmail({
         locale,
         kidName: kid?.name ?? "",
-        choreTitle: sub.chore_title_snapshot,
+        choreTitle: sub.chores?.title ?? sub.chore_title_snapshot,
         amount: formatMoney(sub.amount_cents, household.currency, locale),
         when,
         resubmitted: Boolean(sub.resubmitted_at),

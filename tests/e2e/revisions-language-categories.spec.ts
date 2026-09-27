@@ -351,3 +351,35 @@ test("approve at a corrected price (the chore was priced wrong)", async () => {
   const { data } = await admin.from("submissions").select("unit_price_cents, amount_cents").eq("kid_id", kidId.Liam!).eq("chore_title_snapshot", "Sous-chef night").single();
   expect(data).toEqual({ unit_price_cents: 100, amount_cents: 100 });
 });
+
+test("names follow the chore: a French kid's waiting card is French; a rename shows everywhere", async () => {
+  await openBoard("Camila");
+  await kid.getByRole("button", { name: "Tapis d'auto et aspirateur", exact: true }).click();
+  await kid.getByRole("button", { name: /Je l'ai fait|I did it/ }).click();
+  const waiting = kid.locator("section", { has: kid.getByRole("heading", { name: /attente|Waiting/i }) });
+  await expect(waiting.getByText("Tapis d'auto et aspirateur")).toBeVisible();
+  await expect(waiting.getByText("Car mats & vacuum")).toHaveCount(0);
+
+  // The parent renames the chore after Camila submitted: approvals show the new name.
+  const hid = (await admin.from("kids").select("household_id").eq("id", kidId.Camila!).single()).data!.household_id;
+  await admin.from("chores").update({ title: "Car mats (renamed)" }).eq("household_id", hid).eq("title", "Car mats & vacuum");
+  await parent.goto("/admin/approvals");
+  await expect(parent.getByText("Car mats (renamed)").first()).toBeVisible();
+  await expect(parent.getByText("Car mats & vacuum")).toHaveCount(0);
+});
+
+test("Read it to me: the chore is read aloud in the kid's language", async () => {
+  await kid.addInitScript(() => {
+    (window as unknown as { __spoken: { text: string; lang: string }[] }).__spoken = [];
+    window.speechSynthesis.speak = (u: SpeechSynthesisUtterance) => {
+      (window as unknown as { __spoken: { text: string; lang: string }[] }).__spoken.push({ text: u.text, lang: u.lang });
+    };
+  });
+  await openBoard("Camila");
+  await kid.getByRole("button", { name: /Nettoyer la terrasse/ }).first().click();
+  await kid.getByRole("button", { name: /Lis-le-moi/ }).click();
+  const spoken = await kid.evaluate(() => (window as unknown as { __spoken: { text: string; lang: string }[] }).__spoken);
+  expect(spoken.at(-1)?.lang).toBe("fr-CA");
+  expect(spoken.at(-1)?.text).toMatch(/^Nettoyer la terrasse/);
+  await kid.keyboard.press("Escape");
+});

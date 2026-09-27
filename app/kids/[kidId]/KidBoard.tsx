@@ -395,12 +395,13 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           <button
             type="button"
             onClick={() => setSoundOn(!soundOn)}
-            className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl shadow-[var(--shadow-card)] ${soundOn ? "bg-gold" : "bg-card"}`}
+            className={`flex h-14 items-center justify-center gap-1.5 rounded-full px-4 text-base font-extrabold whitespace-nowrap shadow-[var(--shadow-card)] ${soundOn ? "bg-gold text-ink" : "bg-card text-ink-soft"}`}
             aria-label={tr("kid.sound")}
-            title={tr("kid.sound")}
             aria-pressed={soundOn}
           >
-            {soundOn ? "🔊" : "🔈"}
+            {/* Plays a little chime when a chore is done; this tablet only. */}
+            <span aria-hidden className="text-xl">{soundOn ? "🔊" : "🔇"}</span>
+            {soundOn ? tr("kid.soundOn") : tr("kid.soundOff")}
           </button>
           <button
             type="button"

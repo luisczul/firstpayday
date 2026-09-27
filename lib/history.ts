@@ -40,7 +40,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
   if (type === "all" || type === "submissions") {
     let q = ctx.supabase
       .from("submissions")
-      .select("id, kid_id, chore_id, chore_title_snapshot, status, amount_cents, submitted_at, review_comment, device_id")
+      .select("id, kid_id, chore_id, chore_title_snapshot, status, amount_cents, submitted_at, review_comment, device_id, chores(title)")
       .eq("household_id", hid)
       .order("submitted_at", { ascending: false })
       .limit(limit);
@@ -56,7 +56,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
         type: "submission",
         kidId: s.kid_id,
         kidName: kidName.get(s.kid_id) ?? "?",
-        title: s.chore_title_snapshot,
+        title: s.chores?.title ?? s.chore_title_snapshot,
         status: s.status,
         amountCents: s.amount_cents,
         note: s.review_comment,
@@ -68,7 +68,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
   if (type !== "submissions" && !f.chore) {
     let q = ctx.supabase
       .from("ledger_entries")
-      .select("id, kid_id, kind, amount_cents, note, method, created_at")
+      .select("id, kid_id, kind, amount_cents, note, method, created_at, submissions(chore_title_snapshot, chores(title))")
       .eq("household_id", hid)
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -78,16 +78,20 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
     if (toExclusive) q = q.lt("created_at", toExclusive);
     const { data } = await q;
     for (const l of data ?? []) {
+      // Money lines name the chore as it was when saved: show its current (linked) name.
+      const snap = l.submissions?.chore_title_snapshot;
+      const current = l.submissions?.chores?.title;
+      const noteNow = l.note && snap && current && l.note.endsWith(snap) ? l.note.slice(0, l.note.length - snap.length) + current : l.note;
       rows.push({
         id: l.id,
         at: l.created_at,
         type: l.kind,
         kidId: l.kid_id,
         kidName: kidName.get(l.kid_id) ?? "?",
-        title: l.kind === "payout" ? `Payout${l.method ? ` (${l.method})` : ""}` : (l.note ?? l.kind),
+        title: l.kind === "payout" ? `Payout${l.method ? ` (${l.method})` : ""}` : (noteNow ?? l.kind),
         status: null,
         amountCents: l.amount_cents,
-        note: l.note,
+        note: noteNow,
         tablet: null,
       });
     }

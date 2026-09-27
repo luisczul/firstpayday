@@ -406,20 +406,26 @@ export interface KidHistoryItem {
 }
 
 export async function getKidHistory(ctx: KioskContext, kidId: string): Promise<KidHistoryItem[]> {
-  const { data } = await createAdminClient()
-    .from("ledger_entries")
-    .select("id, kind, amount_cents, note, created_at")
-    .eq("household_id", ctx.householdId)
-    .eq("kid_id", kidId)
-    .order("created_at", { ascending: false })
-    .limit(30);
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    kind: r.kind,
-    amountCents: r.amount_cents,
-    note: r.note,
-    createdAt: r.created_at,
-  }));
+  const admin = createAdminClient();
+  const [{ data }, { data: kid }, { data: home }] = await Promise.all([
+    admin
+      .from("ledger_entries")
+      .select("id, kind, amount_cents, note, created_at, submissions(chore_title_snapshot, chores(title, translations))")
+      .eq("household_id", ctx.householdId)
+      .eq("kid_id", kidId)
+      .order("created_at", { ascending: false })
+      .limit(30),
+    admin.from("kids").select("locale").eq("household_id", ctx.householdId).eq("id", kidId).maybeSingle(),
+    admin.from("households").select("locale").eq("id", ctx.householdId).maybeSingle(),
+  ]);
+  const kidLocale = asLocale(kid?.locale ?? home?.locale);
+  return (data ?? []).map((r) => {
+    // Notes carry the chore's name as it was (in the home's language): show it in the kid's language.
+    const snapshot = r.submissions?.chore_title_snapshot;
+    const localized = choreTextFor(r.submissions?.chores?.translations, kidLocale)?.title ?? r.submissions?.chores?.title;
+    const note = r.note && snapshot && localized && r.note.endsWith(snapshot) ? r.note.slice(0, r.note.length - snapshot.length) + localized : r.note;
+    return { id: r.id, kind: r.kind, amountCents: r.amount_cents, note, createdAt: r.created_at };
+  });
 }
 
 // 6 ---------------------------------------------------------------------------

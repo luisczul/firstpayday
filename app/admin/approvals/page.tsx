@@ -19,7 +19,7 @@ export default async function ApprovalsPage() {
   const { data } = await ctx.supabase
     .from("submissions")
     .select(
-      "id, kid_id, quantity, unit_price_cents, amount_cents, chore_title_snapshot, submitted_at, resubmitted_at, review_comment, kids(name, color, avatar_path), chores(emoji, max_quantity, unit_label, subtasks, price_cents)",
+      "id, kid_id, quantity, unit_price_cents, amount_cents, chore_title_snapshot, submitted_at, resubmitted_at, review_comment, kids(name, color, avatar_path), chores(title, emoji, max_quantity, unit_label, subtasks, price_cents)",
     )
     .eq("household_id", ctx.household.id)
     .eq("status", "pending")
@@ -27,7 +27,7 @@ export default async function ApprovalsPage() {
 
   const { data: approved } = await ctx.supabase
     .from("submissions")
-    .select("id, amount_cents, chore_title_snapshot, reviewed_at, kids(name, color, avatar_path), chores(emoji)")
+    .select("id, amount_cents, chore_title_snapshot, reviewed_at, kids(name, color, avatar_path), chores(title, emoji)")
     .eq("household_id", ctx.household.id)
     .eq("status", "approved")
     .gte("reviewed_at", new Date(Date.now() - 14 * 86_400_000).toISOString())
@@ -44,7 +44,8 @@ export default async function ApprovalsPage() {
     kidName: s.kids?.name ?? "?",
     kidColor: s.kids?.color ?? "#E08A1E",
     kidAvatar: s.kids?.avatar_path ? (avatars[s.kids.avatar_path] ?? null) : null,
-    title: s.chore_title_snapshot,
+    // The chore's current name (linked); the snapshot is only a fallback.
+    title: s.chores?.title ?? s.chore_title_snapshot,
     emoji: s.chores?.emoji ?? null,
     amountCents: s.amount_cents,
     reviewedAt: s.reviewed_at!,
@@ -55,7 +56,8 @@ export default async function ApprovalsPage() {
     kidName: s.kids?.name ?? "?",
     kidColor: s.kids?.color ?? "#E08A1E",
     kidAvatar: s.kids?.avatar_path ? (avatars[s.kids.avatar_path] ?? null) : null,
-    title: s.chore_title_snapshot,
+    // The chore's current name (linked); the snapshot is only a fallback.
+    title: s.chores?.title ?? s.chore_title_snapshot,
     emoji: s.chores?.emoji ?? null,
     quantity: s.quantity,
     maxQuantity: Math.max(s.chores?.max_quantity ?? 1, s.quantity),
