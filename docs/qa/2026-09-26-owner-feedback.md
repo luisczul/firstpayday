@@ -73,6 +73,8 @@ Verify each one on **production (https://firstpayday.app)** after deploy.
 | 66 | **Chore names follow the chore** | Kid: "Waiting for check" and money history show the chore's current name in the kid's language. Parent: approvals, recently approved, kid page, history + CSV and emails show the current name; renaming a chore updates past submissions everywhere | Tablet, parent admin |
 | 67 | **🔊 Read it to me** | Chore sheet button reads the title, description, note and steps aloud in the kid's language with the device's voice; "Stop" to interrupt | Tablet |
 | 68 | **Sound toggle labeled** | Kid board header shows "🔊 Sound on" / "🔇 Sound off" (chime when a chore is done; this tablet only) | Tablet |
+| 69 | **Lifetime totals in the kid's bank** | Tapping the balance shows "⭐ Earned since the start" (bank + paid out + taxes) and "💵 Paid to me", plus taxes paid when family tax is on | Tablet |
+| 70 | **📲 Download app** | Public header and parent admin header: one tap installs the web app where the browser supports it (Android, Chrome/Edge desktop); on iPhone/iPad it shows Apple's "Share → Add to Home Screen" steps; hidden once installed; the icon opens the kids' board on a kids' tablet and the parent admin (or login) elsewhere | Public site, parent admin |
 
 ## Final gate: full journeys in each language (required before "ready")
 Run the whole product from zero **four times**: en, fr, es, pt-BR. Each run uses a monitored throwaway inbox and covers:
@@ -110,8 +112,8 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit 89b75bd)
-- **Local production build (latest run):** 120 E2E passed (122 incl. 2 skipped); 173 unit tests at 100% coverage; 69 RLS tests.
+## Verification status (2026-09-27, deployed commit 0049fcf)
+- **Local production build (latest run):** 123 E2E passed (125 incl. 2 skipped); 173 unit tests at 100% coverage; 69 RLS tests.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
