@@ -34,7 +34,16 @@ test("Download app on an iPhone shows Apple's Add to Home Screen steps (in Frenc
   const page = await ctx.newPage();
   await page.goto("/fr");
   await page.getByRole("button", { name: "Télécharger l'app" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Sur l'écran d'accueil");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Sur l'écran d'accueil");
+  // It covers the whole screen, above the header (not trapped inside the sticky header).
+  expect(await dialog.evaluate((el) => el.parentElement === document.body && !el.closest("header"))).toBe(true);
+  const box = (await dialog.boundingBox())!;
+  const vp = page.viewportSize()!;
+  expect(box.y).toBe(0);
+  expect(box.height).toBeGreaterThanOrEqual(vp.height - 1);
+  const panel = (await dialog.getByRole("heading").boundingBox())!;
+  expect(panel.y).toBeGreaterThan(vp.height / 3);
   await ctx.close();
 });
 

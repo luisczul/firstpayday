@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 /** Chrome/Edge/Android's install event (not in the TS DOM lib). */
 interface InstallPromptEvent extends Event {
@@ -93,8 +94,9 @@ export function InstallApp({ lang = "en", compact = false }: { lang?: string; co
         <span aria-hidden>📲</span>
         <span className={compact ? "hidden sm:inline" : ""}>{t.button}</span>
       </button>
-      {help ? (
-        <div role="dialog" aria-modal="true" aria-label={t.title} className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 p-4 sm:items-center" onClick={() => setHelp(null)}>
+      {/* Portaled to <body>: the sticky, blurred header would otherwise trap a fixed overlay inside it. */}
+      {help ? createPortal(
+        <div role="dialog" aria-modal="true" aria-label={t.title} className="fixed inset-0 z-[70] flex items-end justify-center bg-ink/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center" onClick={() => setHelp(null)}>
           <div className="w-full max-w-md rounded-3xl bg-paper p-6 text-left shadow-[var(--shadow-pop)]" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-display text-2xl font-bold text-ink">📲 {t.title}</h2>
             <ol className="mt-4 flex list-decimal flex-col gap-3 pl-6 text-lg text-ink">
@@ -106,7 +108,8 @@ export function InstallApp({ lang = "en", compact = false }: { lang?: string; co
               {t.close}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </>
   );
