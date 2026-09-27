@@ -305,7 +305,7 @@ function SheetBody({
                 onClick={() => setConfirmGiveUp(true)}
                 className="min-h-16 rounded-2xl text-xl font-bold text-plum underline-offset-4 active:bg-paper-deep"
               >
-                😅 {tr("kid.giveUp")}
+                {tr("kid.giveUp")}
               </button>
             )
           ) : null}

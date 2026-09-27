@@ -62,6 +62,38 @@ export async function inviteMember(input: { email: string; role: "owner" | "pare
   });
 }
 
+/**
+ * Resend a pending invite: the old link is replaced by a fresh one (we only keep a hash,
+ * so the old link can't be re-sent), valid 7 more days, emailed again.
+ */
+export async function resendInvite(inviteId: string) {
+  return runAction(async () => {
+    const ctx = await ownerCtx();
+    const admin = createAdminClient();
+    const { data: invite } = await admin
+      .from("household_invites")
+      .select("id, email, accepted_at")
+      .eq("household_id", ctx.household.id)
+      .eq("id", z.uuid().parse(inviteId))
+      .maybeSingle();
+    if (!invite || invite.accepted_at) throw new ActionError("invalid", parentT(ctx.locale)("b.err.inviteGone"));
+
+    const token = randomToken(24);
+    const { error } = await admin
+      .from("household_invites")
+      .update({ token_hash: await sha256Hex(token), expires_at: new Date(Date.now() + 7 * 86_400_000).toISOString() })
+      .eq("household_id", ctx.household.id)
+      .eq("id", invite.id);
+    if (error) throw error;
+
+    const link = `${appUrl()}/invite/${token}`;
+    const mail = inviteEmail({ locale: ctx.locale, home: ctx.household.name, inviter: ctx.user.email, brand: brand.name, link });
+    const sent = await sendEmail({ to: invite.email, subject: mail.subject, html: emailLayout(mail.title, mail.body) });
+    revalidatePath("/admin/settings/members");
+    return { link, emailed: sent, email: invite.email };
+  });
+}
+
 export async function cancelInvite(inviteId: string) {
   return runAction(async () => {
     const ctx = await ownerCtx();

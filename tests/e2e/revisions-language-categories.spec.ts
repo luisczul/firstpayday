@@ -300,7 +300,7 @@ test("a kid gives up a sent-back chore: it leaves Needs fixing and is free again
 
   await openBoard("Liam");
   await kid.locator("#needs-fixing").getByRole("button", { name: /Kitchen cabinets/ }).click();
-  await kid.getByRole("button", { name: /too hard for me/ }).click();
+  await kid.getByRole("button", { name: /remove this from my list/ }).click();
   await kid.getByRole("button", { name: "Yes, remove it" }).click();
   await expect(kid.getByText("Okay! It's off your list.")).toBeVisible();
   await expect(kid.locator("#needs-fixing")).toHaveCount(0);

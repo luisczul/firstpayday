@@ -248,6 +248,9 @@ export const en = {
   "b.members.optOwner": "Owner (full access)",
   "b.members.send": "Send invite",
   "b.members.copy": "Copy",
+  "b.members.resend": "Resend",
+  "b.members.resent": "Invite sent again to {email}. The new link works for 7 days.",
+  "b.err.inviteGone": "This invite was already used or cancelled.",
 
   // Settings: billing
   "b.billing.title": "Billing",
@@ -617,6 +620,9 @@ export const fr: Record<AreaBKey, string> = {
   "b.members.optOwner": "Propriétaire (accès complet)",
   "b.members.send": "Envoyer l'invitation",
   "b.members.copy": "Copier",
+  "b.members.resend": "Renvoyer",
+  "b.members.resent": "Invitation renvoyée à {email}. Le nouveau lien est valide 7 jours.",
+  "b.err.inviteGone": "Cette invitation a déjà été utilisée ou annulée.",
 
   "b.billing.title": "Facturation",
   "b.billing.freeTitle": "Gratuit 🎁",
@@ -980,6 +986,9 @@ export const es: Record<AreaBKey, string> = {
   "b.members.optOwner": "Dueño (acceso completo)",
   "b.members.send": "Enviar invitación",
   "b.members.copy": "Copiar",
+  "b.members.resend": "Reenviar",
+  "b.members.resent": "Invitación reenviada a {email}. El nuevo enlace vale 7 días.",
+  "b.err.inviteGone": "Esta invitación ya se usó o se canceló.",
 
   "b.billing.title": "Facturación",
   "b.billing.freeTitle": "Gratis 🎁",
@@ -1342,6 +1351,9 @@ export const pt: Record<AreaBKey, string> = {
   "b.members.optOwner": "Dono (acesso total)",
   "b.members.send": "Enviar convite",
   "b.members.copy": "Copiar",
+  "b.members.resend": "Reenviar",
+  "b.members.resent": "Convite reenviado para {email}. O novo link vale por 7 dias.",
+  "b.err.inviteGone": "Este convite já foi usado ou cancelado.",
 
   "b.billing.title": "Cobrança",
   "b.billing.freeTitle": "Grátis 🎁",

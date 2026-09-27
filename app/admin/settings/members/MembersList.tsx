@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { cancelInvite, inviteMember, removeMember } from "@/app/actions/members";
+import { cancelInvite, inviteMember, removeMember, resendInvite } from "@/app/actions/members";
 import { Alert, Badge, Button, Card, Field, Input, Select } from "@/components/ui";
 import { intlLocale } from "@/lib/i18n";
 import { useParentLocale, useParentT } from "@/lib/i18n/parent/client";
@@ -71,9 +71,30 @@ export function MembersList({
               </span>
               <Badge>{roleLabel(i.role)}</Badge>
               {isOwner ? (
-                <Button size="sm" variant="ghost" onClick={() => start(async () => { await cancelInvite(i.id); router.refresh(); })}>
-                  {t("b.common.cancel")}
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={pending}
+                    onClick={() =>
+                      start(async () => {
+                        const r = await resendInvite(i.id);
+                        if (!r.ok) return setMsg({ tone: "bad", text: r.message });
+                        setMsg(
+                          r.data!.emailed
+                            ? { tone: "good", text: t("b.members.resent", { email: r.data!.email }) }
+                            : { tone: "warn", text: t("b.members.noEmail"), link: r.data!.link },
+                        );
+                        router.refresh();
+                      })
+                    }
+                  >
+                    ↻ {t("b.members.resend")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => start(async () => { await cancelInvite(i.id); router.refresh(); })}>
+                    {t("b.common.cancel")}
+                  </Button>
+                </>
               ) : null}
             </li>
           ))}
