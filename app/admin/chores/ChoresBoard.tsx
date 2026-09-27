@@ -42,6 +42,7 @@ export function ChoresBoard({
   currency,
   locale,
   readOnly,
+  showTranslate = false,
 }: {
   chores: AdminChore[];
   kids: { id: string; name: string; color: string }[];
@@ -49,6 +50,8 @@ export function ChoresBoard({
   currency: string;
   locale: Locale;
   readOnly: boolean;
+  /** Only when a kid reads a language other than the home's. */
+  showTranslate?: boolean;
 }) {
   const router = useRouter();
   const t = useParentT();
@@ -127,7 +130,7 @@ export function ChoresBoard({
         actions={
           readOnly ? null : (
             <>
-              <Button variant="secondary" disabled={pending} onClick={() => translate()}>{t("b.chores.translateAll")}</Button>
+              {showTranslate ? <Button variant="secondary" disabled={pending} onClick={() => translate()}>{t("b.chores.translateAll")}</Button> : null}
               <Button variant="secondary" onClick={() => setPicking(true)}>{t("b.chores.addFromTemplates")}</Button>
               <Button onClick={() => setChoosing("menu")}>{t("b.chores.newChore")}</Button>
             </>
@@ -196,7 +199,7 @@ export function ChoresBoard({
                     ↺ {t("b.chores.makeAvailable")}
                   </Button>
                 ) : null}
-                <Button size="sm" variant="ghost" disabled={pending} onClick={() => translate(c.id)}>{t("b.chores.translate")}</Button>
+                {showTranslate ? <Button size="sm" variant="ghost" disabled={pending} onClick={() => translate(c.id)}>{t("b.chores.translate")}</Button> : null}
                 <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => duplicateChore(c.id))}>{t("b.chores.duplicate")}</Button>
                 <DeleteButton chore={c} onDelete={() => run(() => deleteChore(c.id))} onPause={() => run(() => setChoreActive(c.id, false))} />
                 <span className="ml-auto flex">

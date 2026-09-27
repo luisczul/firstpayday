@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { after } from "next/server";
+import { ensureChoreLanguages } from "@/lib/choreLanguages";
 import { isKnownCurrency } from "@/lib/money/currencies";
 import { getParentContext, getUser, requireWritableParent, runAction, ActionError } from "@/lib/auth/session";
 import { asLocale } from "@/lib/i18n";
@@ -65,6 +67,11 @@ export async function updateHouseholdSettings(input: z.input<typeof Settings>) {
     if (!parsed.success) throw new ActionError("invalid", zodErrorMessage(ctx.locale, parsed.error.issues));
     const { error } = await ctx.supabase.from("households").update(parsed.data).eq("id", ctx.household.id);
     if (error) throw error;
+    // New home language: the parent's copy of each chore switches to it (translating what's missing).
+    if (parsed.data.locale && parsed.data.locale !== ctx.household.locale) {
+      const householdId = ctx.household.id;
+      after(() => ensureChoreLanguages(householdId, { rebase: true }).then(() => revalidatePath("/admin/chores")));
+    }
     revalidatePath("/admin", "layout");
   });
 }

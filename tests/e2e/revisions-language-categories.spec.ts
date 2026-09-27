@@ -311,3 +311,23 @@ test("a kid gives up a sent-back chore: it leaves Needs fixing and is free again
   const { data } = await admin.from("submissions").select("status, amount_cents").eq("kid_id", kidId.Liam!).eq("chore_title_snapshot", "Kitchen cabinets").single();
   expect(data?.status).toBe("withdrawn");
 });
+
+
+test("Translate only shows when a kid reads another language than the home", async () => {
+  // Camila was switched to French in setup: the chores page offers Translate.
+  await parent.goto("/admin/chores");
+  await expect(parent.getByRole("button", { name: /Translate all/ })).toBeVisible();
+  // Back to the home language: nothing to translate, so no Translate buttons.
+  await parent.goto(`/admin/kids/${kidId.Camila}`);
+  await parent.getByLabel("Board language").selectOption("");
+  await parent.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(parent.getByText("Saved")).toBeVisible();
+  await parent.goto("/admin/chores");
+  await expect(parent.getByRole("heading", { name: "Chores" })).toBeVisible();
+  await expect(parent.getByRole("button", { name: /Translate/ })).toHaveCount(0);
+  // Restore French for any later checks.
+  await parent.goto(`/admin/kids/${kidId.Camila}`);
+  await parent.getByLabel("Board language").selectOption("fr");
+  await parent.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(parent.getByText("Saved")).toBeVisible();
+});

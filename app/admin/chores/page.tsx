@@ -23,7 +23,7 @@ export default async function ChoresPage() {
       .eq("household_id", hid)
       .order("submitted_at", { ascending: false })
       .limit(5000),
-    ctx.supabase.from("kids").select("id, name, color").eq("household_id", hid).is("archived_at", null).order("sort_order"),
+    ctx.supabase.from("kids").select("id, name, color, locale").eq("household_id", hid).is("archived_at", null).order("sort_order"),
     ctx.supabase.from("chore_templates").select("*").eq("locale", ctx.household.locale).order("sort_order"),
   ]);
 
@@ -73,6 +73,7 @@ export default async function ChoresPage() {
     <ChoresBoard
       chores={items}
       kids={kids ?? []}
+      showTranslate={(kids ?? []).some((k) => k.locale && k.locale !== ctx.household.locale)}
       templates={templates ?? []}
       currency={ctx.household.currency}
       locale={ctx.locale}

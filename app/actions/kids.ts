@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { after } from "next/server";
+import { ensureChoreLanguages } from "@/lib/choreLanguages";
 import { PRESET_PREFIX, isPresetId } from "@/lib/avatarPresets";
 import { ActionError, requireWritableParent, runAction, type ParentContext } from "@/lib/auth/session";
 import { MAX_KIDS } from "@/lib/billing/plans";
@@ -110,6 +112,11 @@ export async function updateKid(kidId: string, input: z.input<typeof KidInput>) 
       .eq("household_id", ctx.household.id)
       .eq("id", z.uuid().parse(kidId));
     if (error) throw error;
+    // A kid switched to another language: translate every chore they can't read yet, in the background.
+    if (parsed.data.locale && parsed.data.locale !== ctx.household.locale) {
+      const householdId = ctx.household.id;
+      after(() => ensureChoreLanguages(householdId).then(() => revalidatePath("/admin/chores")));
+    }
     revalidatePath("/admin/kids");
     revalidatePath(`/admin/kids/${kidId}`);
   });
