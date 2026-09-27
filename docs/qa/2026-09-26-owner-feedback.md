@@ -105,7 +105,8 @@ Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayd
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
 - **Supabase auth emails:** confirm sign-up, magic link and reset password are in 4 languages.
 - **Live public site:** items 25, 36, 39, the public half of 42, and the kiosk "not set up" message all pass. The 2 bugs found (kids-page language, login link language) are fixed and redeployed.
+- **Live Claude translation (item 9/10) verified in production:** after the owner's "Translate all", 23/23 chores have en/fr/es/pt (e.g. a custom chore → "Ramasser les kakas de Buzzy").
 - **Left for the owner (signed in, production):**
   1. Turn on custom SMTP (Resend) in Supabase.
-  2. Tap "🌐 Translate all" once.
+  2. ~~Tap "🌐 Translate all" once.~~ Done.
   3. Run the logged-in journeys in his own session: checklist items 1–24, 26–31, 33–35, 37–48, and live Claude translation.
