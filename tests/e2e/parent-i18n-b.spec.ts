@@ -227,10 +227,9 @@ for (const lang of ["es", "pt", "fr"] as const satisfies Lang[]) {
     await expect(parent.getByText(d["b.members.roleOwner"], { exact: true })).toBeVisible();
     await expectNoEnglish(parent);
 
-    // Billing (free variant while billing is off; the tab is hidden then, the page still answers).
-    await heading(parent, "/admin/settings/billing", d["b.common.settings"]);
-    await expect(parent.getByRole("heading", { name: new RegExp(`${d["b.billing.freeTitle"]}|${d["b.billing.howTitle"]}`) }).first()).toBeVisible();
-    await expectNoEnglish(parent);
+    // Billing is hidden while First Payday is free: the page sends parents back to Settings.
+    await parent.goto("/admin/settings/billing");
+    await expect(parent).toHaveURL(/\/admin\/settings$/);
 
     // Help & feedback.
     await heading(parent, "/admin/support", d["b.support.title"]);

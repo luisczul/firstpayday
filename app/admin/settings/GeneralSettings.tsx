@@ -1,5 +1,7 @@
 "use client";
 
+import { CurrencySelect } from "@/components/admin/CurrencySelect";
+import { CURRENCY_COPY } from "@/lib/money/currencies";
 import { useMemo, useState, useTransition } from "react";
 import { deleteHousehold, updateHouseholdSettings } from "@/app/actions/household";
 import { setMyDisplayName, setMyPin, setMyReviewEmails, setMyWeeklyReport } from "@/app/actions/members";
@@ -87,10 +89,8 @@ export function GeneralSettings(props: {
                 {zones.map((z) => <option key={z} value={z}>{z.replaceAll("_", " ")}</option>)}
               </Select>
             </Field>
-            <Field label={t("b.general.currency")}>
-              <Select value={h.currency} onChange={(e) => set("currency", e.target.value)}>
-                {["CAD", "USD", "EUR", "GBP", "AUD", "NZD", "MXN", "BRL"].map((c) => <option key={c}>{c}</option>)}
-              </Select>
+            <Field label={t("b.general.currency")} hint={(CURRENCY_COPY[h.locale] ?? CURRENCY_COPY.en!).hint}>
+              <CurrencySelect value={h.currency} onChange={(c) => set("currency", c)} locale={h.locale} />
             </Field>
             <Field label={t("b.general.language")}>
               <Select value={h.locale} onChange={(e) => set("locale", e.target.value as Locale)}>

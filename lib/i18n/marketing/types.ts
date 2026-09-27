@@ -42,7 +42,7 @@ type Item = readonly [emoji: string, title: string, body: string];
 export interface MarketingDict {
   /** Open Graph locale, e.g. "fr_CA". */
   ogLocale: string;
-  /** Kid-sized example amount in the local style: 2 → "$2" / "2 $" / "R$ 2". */
+  /** Kid-sized example amount in the local style: 2 → "$2" / "2 $". */
   money: (amount: number) => string;
   meta: {
     siteTitle: string;

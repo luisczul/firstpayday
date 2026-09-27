@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { requireParent } from "@/lib/auth/session";
 import { parentT } from "@/lib/i18n/parent";
 import { FREE_KIDS, billingEnabled, PRICE_PER_EXTRA_KID_CENTS, billableExtraKids, monthlyPriceCents } from "@/lib/billing/plans";
@@ -29,6 +30,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const statusLabel = sub ? (t(statusKey) === statusKey ? sub.status : t(statusKey)) : "";
   const extraKids = billableExtraKids(kids);
 
+  // Hidden while First Payday is free (the "Free" card below is kept for later).
+  if (!billingEnabled() && !paid) redirect("/admin/settings");
   if (!billingEnabled() && !paid) {
     return (
       <>

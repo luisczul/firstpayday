@@ -1,5 +1,7 @@
 "use client";
 
+import { CurrencySelect } from "@/components/admin/CurrencySelect";
+import { CURRENCY_COPY } from "@/lib/money/currencies";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { saveHomeStep } from "@/app/actions/household";
 import { Alert, Button, Field, Input, Select } from "@/components/ui";
@@ -7,7 +9,6 @@ import { LOCALES, LOCALE_NAMES, isLocale, localeFromBrowser, type Locale } from 
 import { SIGNUP_LANG_COOKIE } from "@/lib/i18n/marketing/routes";
 import { parentT } from "@/lib/i18n/parent";
 
-const CURRENCIES = ["CAD", "USD", "EUR", "GBP", "AUD", "NZD", "MXN", "BRL"];
 
 /** Timezone regions in the page language (city names stay as the platform spells them). */
 const REGIONS: Record<string, Record<Locale, string>> = {
@@ -94,12 +95,8 @@ export function HomeStep({
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-4">
-        <Field label={t("a.onb.home.currency")}>
-          <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-            {CURRENCIES.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </Select>
+        <Field label={t("a.onb.home.currency")} hint={(CURRENCY_COPY[locale] ?? CURRENCY_COPY.en!).hint}>
+          <CurrencySelect value={currency} onChange={setCurrency} locale={locale} />
         </Field>
         <Field label={t("a.onb.home.language")}>
           <Select value={locale} onChange={(e) => setLocale(e.target.value as Locale)}>

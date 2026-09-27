@@ -1,7 +1,8 @@
 import type { MarketingDict } from "./types";
 
 // Português do Brasil. Regra: nunca escrever «sempre» nem prometer nada «para sempre».
-const money = (n: number) => `R$ ${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")}`;
+// "$" like the other languages: each family picks its own currency, whatever the language.
+const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")}`;
 
 export const pt: MarketingDict = {
   ogLocale: "pt_BR",

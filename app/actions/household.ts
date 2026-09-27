@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { isKnownCurrency } from "@/lib/money/currencies";
 import { getParentContext, getUser, requireWritableParent, runAction, ActionError } from "@/lib/auth/session";
 import { asLocale } from "@/lib/i18n";
 import { parentT } from "@/lib/i18n/parent";
@@ -11,7 +12,7 @@ import { zodErrorMessage } from "@/lib/i18n/parent/zodError";
 const HouseholdInput = z.object({
   name: z.string().trim().min(1, "b.err.homeName").max(80),
   timezone: z.string().min(1).max(64),
-  currency: z.string().regex(/^[A-Z]{3}$/),
+  currency: z.string().regex(/^[A-Z]{3}$/).refine(isKnownCurrency),
   locale: z.enum(["en", "fr", "es", "pt"]),
 });
 
@@ -46,7 +47,7 @@ export async function saveHomeStep(input: z.input<typeof HouseholdInput>) {
 const Settings = z.object({
   name: z.string().trim().min(1).max(80),
   timezone: z.string().min(1).max(64),
-  currency: z.string().regex(/^[A-Z]{3}$/),
+  currency: z.string().regex(/^[A-Z]{3}$/).refine(isKnownCurrency),
   locale: z.enum(["en", "fr", "es", "pt"]),
   week_starts_on: z.coerce.number().int().min(0).max(6),
   admin_timeout_minutes: z.coerce.number().int().min(1).max(240),

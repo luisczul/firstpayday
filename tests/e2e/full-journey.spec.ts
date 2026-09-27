@@ -271,8 +271,9 @@ test("7. THREE WEEKS LATER: chores come back, trial over, 3 kids → read-only",
     await expect(kid.getByRole("dialog")).toBeVisible();
     await parent.goto("/admin/approvals");
     await expect(parent.getByText(/read-only/)).toHaveCount(0);
+    // Billing is hidden while free: its page sends parents back to Settings.
     await parent.goto("/admin/settings/billing");
-    await expect(parent.getByText("Free 🎁")).toBeVisible();
+    await expect(parent).toHaveURL(/\/admin\/settings$/);
   } else {
     // Trial ended a week ago with 3 kids and no subscription → paused board.
     await expect(kid.getByText("The chore board is paused. Ask a parent!").first()).toBeVisible();
