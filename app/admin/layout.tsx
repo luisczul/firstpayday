@@ -4,6 +4,7 @@ import { ADMIN_MODE_COOKIE, KIOSK_COOKIE, readAdminMode } from "@/lib/auth/admin
 import { trialDaysLeft } from "@/lib/billing/access";
 import { billingEnabled } from "@/lib/billing/plans";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { platformShortcut } from "@/lib/auth/platform";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const store = await cookies();
   const onKiosk = Boolean(store.get(KIOSK_COOKIE)?.value);
   const claim = onKiosk ? await readAdminMode(store.get(ADMIN_MODE_COOKIE)?.value) : null;
-  const { count } = await ctx.supabase
-    .from("submissions")
-    .select("id", { count: "exact", head: true })
-    .eq("household_id", ctx.household.id)
-    .eq("status", "pending");
+  const [{ count }, platformHref] = await Promise.all([
+    ctx.supabase.from("submissions").select("id", { count: "exact", head: true }).eq("household_id", ctx.household.id).eq("status", "pending"),
+    platformShortcut(),
+  ]);
 
   return (
     <AdminShell
@@ -30,6 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       isOwner={ctx.isOwner}
       trialDaysLeft={billingEnabled() && ctx.subscription?.plan === "trial" ? trialDaysLeft(ctx.subscription, new Date()) : null}
       theme={ctx.household.theme}
+      platformHref={platformHref}
     >
       {children}
     </AdminShell>

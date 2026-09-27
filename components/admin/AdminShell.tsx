@@ -33,6 +33,8 @@ export function AdminShell(props: {
   isOwner: boolean;
   trialDaysLeft: number | null;
   theme: string;
+  /** The owner's control panel shortcut; null for every other account. */
+  platformHref?: string | null;
   children: React.ReactNode;
 }) {
   const tr = translator(props.locale);
@@ -110,6 +112,11 @@ export function AdminShell(props: {
           ))}
         </nav>
         <div className="mt-auto flex flex-col gap-2 px-1">
+          {props.platformHref ? (
+            <a href={props.platformHref} data-testid="platform-shortcut" className="flex min-h-10 items-center gap-2 rounded-xl bg-ink px-3 text-sm font-bold text-paper hover:opacity-90">
+              🛠️ Control panel
+            </a>
+          ) : null}
           <Link
             href="/admin/share"
             className={`flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${isActive("/admin/share") ? "bg-maple text-white" : "text-ink-soft hover:bg-paper-deep"}`}
@@ -136,6 +143,11 @@ export function AdminShell(props: {
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/90 px-4 py-2.5 backdrop-blur">
           <span className="min-w-0 truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
           <div className="ml-auto flex items-center gap-2">
+            {props.platformHref ? (
+              <a href={props.platformHref} data-testid="platform-shortcut-mobile" aria-label="Control panel" title="Control panel" className={`${buttonClass("ghost", "sm")} md:hidden`}>
+                🛠️
+              </a>
+            ) : null}
             {!props.onKiosk ? <InstallApp lang={props.locale} compact /> : null}
             {props.onKiosk ? (
               <form action="/api/admin-mode/exit" method="post">
