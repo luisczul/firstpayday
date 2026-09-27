@@ -10,6 +10,7 @@ const TABS: { href: string; key: ParentKey }[] = [
   { href: "/admin/settings/members", key: "b.tabs.parents" },
   { href: "/admin/settings/billing", key: "b.tabs.billing" },
   { href: "/admin/support", key: "b.tabs.help" },
+  { href: "/admin/share", key: "c.tabs.share" },
 ];
 
 export function SettingsNav({ active, locale }: { active: string; locale: Locale }) {

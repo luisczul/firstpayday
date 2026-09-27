@@ -110,6 +110,12 @@ export function AdminShell(props: {
         </nav>
         <div className="mt-auto flex flex-col gap-2 px-1">
           <Link
+            href="/admin/share"
+            className={`flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${isActive("/admin/share") ? "bg-maple text-white" : "text-ink-soft hover:bg-paper-deep"}`}
+          >
+            {pt("c.shell.share")}
+          </Link>
+          <Link
             href="/admin/support"
             className={`flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${isActive("/admin/support") ? "bg-maple text-white" : "text-ink-soft hover:bg-paper-deep"}`}
           >

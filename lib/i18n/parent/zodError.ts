@@ -8,5 +8,5 @@ import { parentT, type ParentKey } from "./index";
 export function zodErrorMessage(locale: Locale, issues: { message: string }[], vars?: Record<string, string | number>): string {
   const t = parentT(locale);
   const m = issues[0]?.message;
-  return m && /^[ab]\.[\w.]+$/.test(m) ? t(m as ParentKey, vars) : t("b.err.checkForm");
+  return m && /^[abc]\.[\w.]+$/.test(m) ? t(m as ParentKey, vars) : t("b.err.checkForm");
 }

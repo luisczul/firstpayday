@@ -393,6 +393,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"share_invites": {
+                  Row: {
+                    "email": string,"household_id": string,"id": string,"joined_at": string | null,"joined_user_id": string | null,"last_sent_at": string,"locale": string,"send_count": number,"sender_user_id": string | null,"sent_at": string
+                  }
+                  Insert: {
+                    "email": string,"household_id": string,"id"?: string,"joined_at"?: string | null,"joined_user_id"?: string | null,"last_sent_at"?: string,"locale"?: string,"send_count"?: number,"sender_user_id"?: string | null,"sent_at"?: string
+                  }
+                  Update: {
+                    "email"?: string,"household_id"?: string,"id"?: string,"joined_at"?: string | null,"joined_user_id"?: string | null,"last_sent_at"?: string,"locale"?: string,"send_count"?: number,"sender_user_id"?: string | null,"sent_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "share_invites_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"stripe_events": {
                   Row: {
                     "created_at": string,"id": string,"payload": NonNullable<Json>,"processed_at": string | null,"type": string
@@ -569,6 +588,9 @@ isOneToOne: false
                            },
 "create_household":
 { Args: { "p_currency": string,"p_locale": string,"p_name": string,"p_timezone": string }; Returns: string
+                           },
+"email_has_account":
+{ Args: { "p_email": string }; Returns: boolean
                            },
 "household_has_full_access":
 { Args: { "hid": string }; Returns: boolean
