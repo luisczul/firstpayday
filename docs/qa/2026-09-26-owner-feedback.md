@@ -68,6 +68,8 @@ Verify each one on **production (https://firstpayday.app)** after deploy.
 | 61 | **Translate only when needed** | "Translate all" / "Translate" are hidden when every kid uses the home language; switching a kid to another language (or changing the home language) translates every chore still missing it, automatically, in the background | Chores, kid settings |
 | 62 | **Claim a whole-house chore ("🙋 I'm on it!")** with a time limit | Claimed chores show first in "⏳ In progress" with a countdown; siblings see "🔒 Liam is on it · until 9 PM"; max 2 claims per kid; time limit set per chore in the chore editor ("Time to finish once a kid claims it": 2 h / 4 h / end of day / **24 h default** / 48 h; all existing regular chores get 24 h; hidden for routines and "each kid" chores); expired claims go back on the board with a gentle nudge; parents can release a claim from the Chores page | Tablet, Chores, Settings |
 | 63 | **Claim a quantity, confirm what was done** | For chores with several units (Baseboards: floors; Garbage: bins), the kid picks how many they take when claiming ("2 floors · 3 h left"); "I did it!" asks how many they actually did (prefilled, up to what they took) and that's what's submitted; siblings see the whole chore locked while claimed | Tablet |
+| 64 | **Share form clears after sending** | After "Send invitations", the emails and the message are cleared, ready for the next friend; your name and the email language stay | 💌 Share |
+| 65 | **Approve at a corrected price** | Approvals: ✏️ next to the price edits it for this submission; if the chore's price changed after the kid submitted, "Use today's price ($1.00)" appears; optional "Also use this price for … from now on"; the kid is paid the corrected amount | Approvals |
 
 ## Final gate: full journeys in each language (required before "ready")
 Run the whole product from zero **four times**: en, fr, es, pt-BR. Each run uses a monitored throwaway inbox and covers:
@@ -105,8 +107,8 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit 78957db)
-- **Local production build (latest run):** 117 E2E passed (119 incl. 2 skipped); 173 unit tests at 100% coverage; 68 RLS tests.
+## Verification status (2026-09-27, deployed commit c1be71b)
+- **Local production build (latest run):** 118 E2E passed (120 incl. 2 skipped); 173 unit tests at 100% coverage; 69 RLS tests.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
