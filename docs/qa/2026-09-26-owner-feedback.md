@@ -89,3 +89,14 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
+
+## Verification status (2026-09-27, deployed commit 20c1d59)
+- **Local production build:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
+- **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
+- **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
+- **Supabase auth emails:** confirm sign-up, magic link and reset password are in 4 languages.
+- **Live public site:** items 25, 36, 39, the public half of 42, and the kiosk "not set up" message all pass. The 2 bugs found (kids-page language, login link language) are fixed and redeployed.
+- **Left for the owner (signed in, production):**
+  1. Turn on custom SMTP (Resend) in Supabase.
+  2. Tap "🌐 Translate all" once.
+  3. Run the logged-in journeys in his own session: checklist items 1–24, 26–31, 33–35, 37–48, and live Claude translation.
