@@ -57,7 +57,9 @@ export function ShareForm({ defaultName, defaultLocale }: { defaultName: string;
           const r = await sendShareInvites({ emails: valid, senderName: name, note: note.trim() || null, locale });
           if (!r.ok) return setError(r.message);
           setResults(r.data?.results ?? []);
-          if (r.data?.results.some((x) => x.status === "sent")) setRaw("");
+          // Ready for the next friend: clear the emails and the message (your name and language stay).
+          setRaw("");
+          setNote("");
           router.refresh();
         });
       }}

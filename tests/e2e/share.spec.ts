@@ -42,6 +42,10 @@ test("share First Payday with friends and track the invitations", async ({ page,
 
   const results = page.getByRole("status");
   await expect(results.getByText(f1)).toBeVisible();
+  // Ready for the next friend: emails and note are cleared; name stays.
+  await expect(page.getByLabel("Their emails")).toHaveValue("");
+  await expect(page.getByLabel("A personal note")).toHaveValue("");
+  await expect(page.getByLabel("Your name")).toHaveValue("Nicolle");
   await expect(results.getByText("Sent ✓")).toHaveCount(2);
 
   for (const to of [f1, f2]) {
