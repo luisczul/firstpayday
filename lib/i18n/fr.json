@@ -64,6 +64,8 @@
   "kid.soundOff": "Son coupé",
   "kid.readToMe": "Lis-le-moi",
   "kid.readStop": "Arrêter",
+  "kid.earnedEver": "Gagné depuis le début",
+  "kid.paidOutEver": "Déjà reçu",
   "kid.sound": "Son",
   "kid.per": "/ {unit}",
   "kid.promoBannerFlat": "+{amount} sur chaque tâche jusqu'à {time}!",

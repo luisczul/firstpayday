@@ -115,6 +115,12 @@ test("payout shows gross / tax / net and withholds the family tax", async () => 
   await kid.getByRole("button", { name: "My money" }).click();
   const taxes = kid.getByTestId("kid-taxes");
   await expect(taxes).toContainText("Taxes paid so far: $0.20");
+  // Since the start: everything earned stays visible after the payout (bank $0 + paid $1.80 + tax $0.20).
+  const lifetime = kid.getByTestId("kid-lifetime");
+  await expect(lifetime).toContainText("Earned since the start");
+  await expect(lifetime).toContainText("$2.00");
+  await expect(lifetime).toContainText("Paid to me");
+  await expect(lifetime).toContainText("$1.80");
   await expect(taxes).toContainText("ice-cream outing");
   await expect(kid.getByRole("dialog")).toContainText("Family tax");
   await expect(kid.getByRole("dialog")).toContainText("Special bonus: Saturday blitz");

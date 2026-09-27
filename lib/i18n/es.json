@@ -64,6 +64,8 @@
   "kid.soundOff": "Sonido apagado",
   "kid.readToMe": "Léemelo",
   "kid.readStop": "Parar",
+  "kid.earnedEver": "Ganado desde el principio",
+  "kid.paidOutEver": "Ya recibido",
   "kid.sound": "Sonido",
   "kid.per": "/ {unit}",
   "kid.promoBannerFlat": "¡+{amount} en cada tarea hasta {time}!",

@@ -798,6 +798,19 @@ function MoneySheet({ board, onClose }: { board: KioskBoard; onClose: () => void
           <h2 className="font-display text-4xl font-extrabold text-ink">{tr("kid.myMoney")}</h2>
           <span className="font-display text-4xl font-extrabold text-moss">{money(kid.balanceCents)}</span>
         </div>
+        {/* Since the start: everything earned stays visible even after payouts bring the bank down. */}
+        <div className="mt-5 grid grid-cols-2 gap-3" data-testid="kid-lifetime">
+          <div className="rounded-3xl bg-card p-4 shadow-[var(--shadow-card)]">
+            <p className="text-base font-bold text-ink-soft">⭐ {tr("kid.earnedEver")}</p>
+            <p className="font-display text-3xl font-extrabold text-moss">
+              {money(kid.balanceCents + (board.paidOutCents ?? 0) + (board.tax?.paidCents ?? 0))}
+            </p>
+          </div>
+          <div className="rounded-3xl bg-card p-4 shadow-[var(--shadow-card)]">
+            <p className="text-base font-bold text-ink-soft">💵 {tr("kid.paidOutEver")}</p>
+            <p className="font-display text-3xl font-extrabold text-ink">{money(board.paidOutCents ?? 0)}</p>
+          </div>
+        </div>
         {board.tax?.enabled || (board.tax?.paidCents ?? 0) > 0 ? (
           <div className="mt-5 rounded-3xl bg-card p-5 shadow-[var(--shadow-card)]" data-testid="kid-taxes">
             <p className="font-display text-2xl font-extrabold text-plum">🏛️ {tr("kid.taxesPaid", { amount: money(board.tax.paidCents) })}</p>

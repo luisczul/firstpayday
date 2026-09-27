@@ -168,6 +168,7 @@ export interface KioskBoard {
   /** Family tax (taxes this kid paid so far) and promotions live right now. */
   tax: KioskMoneyExtras["tax"];
   promos: KioskMoneyExtras["promos"];
+  paidOutCents: KioskMoneyExtras["paidOutCents"];
   /**
    * Chores this kid claimed whose time ran out since the last visit ("went back on
    * the board"). Only filled when the board is opened (markSeen); each shows once.

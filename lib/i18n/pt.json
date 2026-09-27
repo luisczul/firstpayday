@@ -64,6 +64,8 @@
   "kid.soundOff": "Som desligado",
   "kid.readToMe": "Leia para mim",
   "kid.readStop": "Parar",
+  "kid.earnedEver": "Ganho desde o começo",
+  "kid.paidOutEver": "Já recebido",
   "kid.sound": "Som",
   "kid.per": "/ {unit}",
   "kid.promoBannerFlat": "+{amount} em cada tarefa até {time}!",

@@ -64,6 +64,8 @@
   "kid.soundOff": "Sound off",
   "kid.readToMe": "Read it to me",
   "kid.readStop": "Stop",
+  "kid.earnedEver": "Earned since the start",
+  "kid.paidOutEver": "Paid to me",
   "kid.sound": "Sound",
   "kid.per": "/ {unit}",
   "kid.promoBannerFlat": "+{amount} on every chore until {time}!",
