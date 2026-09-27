@@ -105,8 +105,8 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit eb0923c)
-- **Local production build (latest run):** 108 E2E passed (110 incl. 2 skipped); 156 unit tests at 100% coverage; 61 RLS tests.
+## Verification status (2026-09-27, deployed commit 78957db)
+- **Local production build (latest run):** 117 E2E passed (119 incl. 2 skipped); 173 unit tests at 100% coverage; 68 RLS tests.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
