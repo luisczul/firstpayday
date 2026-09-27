@@ -6,10 +6,11 @@ export default function manifest(): MetadataRoute.Manifest {
     name: brand.name,
     short_name: brand.name,
     description: brand.tagline,
-    start_url: "/kids",
+    id: "/",
+    // Kids' tablet → board, parent phone → admin (see app/start/route.ts).
+    start_url: "/start",
     scope: "/",
     display: "standalone",
-    orientation: "landscape",
     background_color: "#FBF3E4",
     theme_color: "#B8431F",
     icons: [

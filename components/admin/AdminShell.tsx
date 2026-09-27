@@ -1,6 +1,7 @@
 "use client";
 
 import { ParentLocaleProvider } from "@/lib/i18n/parent/client";
+import { InstallApp } from "@/components/InstallApp";
 import { parentT } from "@/lib/i18n/parent";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -135,6 +136,7 @@ export function AdminShell(props: {
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/90 px-4 py-2.5 backdrop-blur">
           <span className="min-w-0 truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
           <div className="ml-auto flex items-center gap-2">
+            {!props.onKiosk ? <InstallApp lang={props.locale} compact /> : null}
             {props.onKiosk ? (
               <form action="/api/admin-mode/exit" method="post">
                 <button className={`${buttonClass("success", "sm")} whitespace-nowrap`}>

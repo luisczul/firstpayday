@@ -1,3 +1,4 @@
+import { InstallApp } from "@/components/InstallApp";
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 import { brand } from "@/lib/brand";
@@ -22,7 +23,8 @@ function LanguageMenu({ lang, path }: { lang: SiteLang; path: string }) {
         className="flex cursor-pointer list-none items-center gap-1 rounded-lg px-2.5 py-2 text-ink-soft hover:text-ink [&::-webkit-details-marker]:hidden"
       >
         <span aria-hidden>🌐</span>
-        {lang.toUpperCase()}
+        {/* Just the globe on the smallest phones, so the header never gets cut off. */}
+        <span className="hidden min-[400px]:inline">{lang.toUpperCase()}</span>
       </summary>
       <ul className="absolute right-0 z-20 mt-1 flex min-w-36 flex-col rounded-xl bg-card p-1 shadow-[var(--shadow-pop)] ring-1 ring-line">
         {SITE_LANGS.map((l) => (
@@ -47,11 +49,12 @@ export function SiteHeader({ lang = "en", path = "/" }: { lang?: SiteLang; path?
   const t = marketing(lang).nav;
   return (
     <header className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-5 sm:gap-4">
-      <Link href={localePath(lang, "/")} className="flex min-w-0 items-center gap-2 font-display text-xl font-bold text-maple">
+      <Link href={localePath(lang, "/")} className="flex shrink-0 items-center gap-2 font-display text-xl font-bold text-maple">
         <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-maple text-lg text-gold">$</span>
         <span className="hidden truncate min-[400px]:inline">{brand.name}</span>
       </Link>
-      <nav className="ml-auto flex items-center gap-1 text-sm font-bold">
+      <nav className="ml-auto flex min-w-0 items-center gap-0.5 text-sm font-bold sm:gap-1">
+        <InstallApp lang={lang} compact />
         <LanguageMenu lang={lang} path={path} />
         {billingEnabled() ? <Link href={localePath(lang, "/pricing")} className="hidden rounded-lg px-3 py-2 text-ink-soft hover:text-ink sm:block">{t.pricing}</Link> : null}
         <Link href={authHref(lang, "/login")} className="rounded-lg px-2 py-2 whitespace-nowrap text-ink-soft hover:text-ink sm:px-3">{t.login}</Link>
