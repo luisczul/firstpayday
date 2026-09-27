@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   // Lets E2E runs use their own build folder next to a running dev server.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
+  // Always render metadata (title, canonical, hreflang, Open Graph) in <head>, for every visitor
+  // and crawler, instead of streaming it into <body> after the page starts.
+  htmlLimitedBots: /.*/,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },

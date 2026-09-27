@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { requireParent } from "@/lib/auth/session";
 import { ADMIN_MODE_COOKIE, KIOSK_COOKIE, readAdminMode } from "@/lib/auth/adminMode";
 import { trialDaysLeft } from "@/lib/billing/access";
+import { billingEnabled } from "@/lib/billing/plans";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       adminTimeoutMinutes={claim?.timeoutMinutes ?? ctx.household.admin_timeout_minutes}
       readOnly={ctx.access !== "full"}
       isOwner={ctx.isOwner}
-      trialDaysLeft={ctx.subscription?.plan === "trial" ? trialDaysLeft(ctx.subscription, new Date()) : null}
+      trialDaysLeft={billingEnabled() && ctx.subscription?.plan === "trial" ? trialDaysLeft(ctx.subscription, new Date()) : null}
       theme={ctx.household.theme}
     >
       {children}

@@ -31,6 +31,8 @@ export function ChoreCard({
   pressLabel,
   size = "md",
   priceSlot,
+  fluid,
+  routine,
 }: {
   chore: ChoreCardData;
   variant?: ChoreCardVariant;
@@ -45,6 +47,10 @@ export function ChoreCard({
   size?: "md" | "lg";
   /** Replaces the price chip (admin inline price edit). */
   priceSlot?: ReactNode;
+  /** Fill the grid cell instead of a fixed-width card. */
+  fluid?: boolean;
+  /** A routine (chore with steps): lavender card with a plum top band so it stands apart. */
+  routine?: boolean;
 }) {
   const color = chore.color ?? "#E08A1E";
   const dim = variant === "waiting" || variant === "soon";
@@ -53,25 +59,28 @@ export function ChoreCard({
   const body = (
     <>
       <span aria-hidden className="absolute inset-y-0 left-0 w-3" style={{ background: color }} />
-      <span className="absolute top-4 right-4 z-10">
-        {priceSlot ?? (
-          <span className="inline-flex items-center rounded-full bg-gold px-3.5 py-1.5 text-lg font-black text-ink shadow-[0_2px_0_rgb(59_36_24/0.15)]">
-            {formatPrice(chore.priceCents, currency, locale)}
-            {chore.unitLabel && perLabel ? (
-              <span className="ml-1 text-sm font-bold text-ink-soft">{perLabel}</span>
-            ) : null}
+      {routine ? <span aria-hidden className="absolute inset-x-0 top-0 h-2 bg-plum" /> : null}
+      {/* Icon on the left, price on the right, on one line. */}
+      <span className={`flex h-full flex-col pl-7 pr-5 ${big ? "pt-6 pb-7" : "pt-4 pb-5"}`}>
+        <span className="mb-3 flex items-start justify-between gap-3">
+          <span
+            aria-hidden
+            className={`inline-flex shrink-0 items-center justify-center rounded-2xl ${big ? "h-24 w-24 text-6xl" : "h-16 w-16 text-4xl"}`}
+            style={{ background: `${color}1f` }}
+          >
+            {chore.emoji || "⭐"}
           </span>
-        )}
-      </span>
-      {badge ? <span className="absolute top-4 left-7 z-10">{badge}</span> : null}
-
-      <span className={`flex h-full flex-col pl-7 pr-5 ${big ? "pt-16 pb-7" : "pt-14 pb-5"}`}>
-        <span
-          aria-hidden
-          className={`mb-3 inline-flex items-center justify-center rounded-2xl ${big ? "h-24 w-24 text-6xl" : "h-16 w-16 text-4xl"}`}
-          style={{ background: `${color}1f` }}
-        >
-          {chore.emoji || "⭐"}
+          <span className="z-10 flex flex-col items-end gap-2">
+            {priceSlot ?? (
+              <span className="inline-flex items-center rounded-full bg-gold px-3.5 py-1.5 text-lg font-black text-ink shadow-[0_2px_0_rgb(59_36_24/0.15)]">
+                {formatPrice(chore.priceCents, currency, locale)}
+                {chore.unitLabel && perLabel ? (
+                  <span className="ml-1 text-sm font-bold text-ink-soft">{perLabel}</span>
+                ) : null}
+              </span>
+            )}
+            {badge ?? null}
+          </span>
         </span>
         <span className={`font-display font-bold leading-tight text-ink ${big ? "text-4xl" : "text-2xl"}`}>
           {chore.title}
@@ -88,8 +97,8 @@ export function ChoreCard({
     </>
   );
 
-  const shell = `relative block overflow-hidden rounded-[var(--radius-card)] bg-card text-left shadow-[var(--shadow-card)] ring-1 ring-line ${
-    big ? "w-full min-h-[340px]" : variant === "admin" ? "w-full h-[300px]" : "w-[272px] h-[300px] shrink-0"
+  const shell = `relative block overflow-hidden rounded-[var(--radius-card)] ${routine ? "bg-[#F6EEF9]" : "bg-card"} text-left shadow-[var(--shadow-card)] ring-1 ring-line ${
+    big ? "w-full min-h-[340px]" : variant === "admin" ? "w-full min-h-[220px]" : fluid ? "w-full h-full min-h-[240px]" : "w-[272px] h-[280px] shrink-0"
   } ${dim ? "opacity-70 saturate-[0.6]" : ""}`;
 
   if (onPress) {

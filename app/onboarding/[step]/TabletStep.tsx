@@ -4,20 +4,33 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { enableKioskOnThisDevice } from "@/app/actions/devices";
 import { Alert, Button, buttonClass } from "@/components/ui";
+import { FamilyTaxCard } from "@/components/admin/FamilyTaxCard";
+import { taxPromoCopy } from "@/lib/i18n/taxPromoCopy";
+import type { Locale } from "@/lib/i18n";
+import { useParentT } from "@/lib/i18n/parent/client";
+import { rich } from "@/lib/i18n/parent/rich";
 
-export function TabletStep() {
+export function TabletStep({
+  familyTax,
+  currency,
+  locale,
+}: {
+  familyTax: { enabled: boolean; percent: number };
+  currency: string;
+  locale: Locale;
+}) {
+  const t = useParentT();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-5 text-center">
       <span className="text-7xl" aria-hidden>📱</span>
-      <h1 className="font-display text-4xl font-bold text-ink">Set up this tablet?</h1>
+      <h1 className="font-display text-4xl font-bold text-ink">{t("a.onb.tablet.title")}</h1>
       <p className="text-lg text-ink-soft">
-        If this is the tablet in your kitchen, turn it into the kids&apos; board now. You&apos;ll be logged out here, and
-        kids will never need a password. Tap <b>Parent</b> in the corner any time to get back in.
+        {rich(t("a.onb.tablet.intro"), { parent: <b>{t("a.onb.tablet.parent")}</b> })}
       </p>
       <p className="text-sm text-ink-soft">
-        Tip: on iPad, tap Share → <b>Add to Home Screen</b> so it opens full-screen like an app.
+        {rich(t("a.onb.tablet.tip"), { a2hs: <b>{t("a.onb.tablet.a2hs")}</b> })}
       </p>
       {error ? <Alert tone="bad">{error}</Alert> : null}
       <Button
@@ -30,9 +43,18 @@ export function TabletStep() {
           })
         }
       >
-        Use this device as the kids&apos; tablet
+        {t("a.onb.tablet.use")}
       </Button>
-      <Link href="/admin" className={buttonClass("secondary", "lg")}>I&apos;ll do it later</Link>
+      <Link href="/admin" className={buttonClass("secondary", "lg")}>{t("a.onb.tablet.later")}</Link>
+      <div className="mt-4 border-t border-line pt-6">
+        <FamilyTaxCard
+          initial={familyTax}
+          currency={currency}
+          locale={locale}
+          title={taxPromoCopy(locale).taxOnboardingTitle}
+          autoSave
+        />
+      </div>
     </div>
   );
 }

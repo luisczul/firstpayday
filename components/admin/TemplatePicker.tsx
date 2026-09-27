@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CATEGORIES, CATEGORY_LABELS, REPEAT_PRESETS, type ChoreTemplate } from "@/lib/templates";
-import { formatPrice, parseMoneyToCents } from "@/lib/money/format";
+import { CATEGORIES, CATEGORY_LABELS, NAMED_INTERVALS, REPEAT_PRESETS, type ChoreTemplate } from "@/lib/templates";
+import { amountInput, formatPrice, parseMoneyToCents } from "@/lib/money/format";
 import { Button } from "@/components/ui";
+import { asLocale, type Locale } from "@/lib/i18n";
+import { parentT } from "@/lib/i18n/parent";
 
 export interface TemplateSelection {
   key: string;
@@ -14,12 +16,20 @@ export interface TemplateSelection {
 
 type RepeatValue = "once" | "daily" | "weekly" | `n${number}`;
 
-export function repeatLabel(kind: string, n: number | null, locale: "en" | "fr" = "en"): string {
-  const fr = locale === "fr";
-  if (kind === "once") return fr ? "Une fois" : "Once";
-  if (kind === "daily") return fr ? "Chaque jour" : "Daily";
-  if (kind === "weekly") return fr ? "Chaque semaine" : "Weekly";
-  return fr ? `Aux ${n} jours` : `Every ${n} days`;
+const REPEAT_WORDS: Record<Locale, { once: string; daily: string; weekly: string; every: (n: number | null) => string }> = {
+  en: { once: "Once", daily: "Daily", weekly: "Weekly", every: (n) => `Every ${n} days` },
+  fr: { once: "Une fois", daily: "Chaque jour", weekly: "Chaque semaine", every: (n) => `Aux ${n} jours` },
+  es: { once: "Una vez", daily: "Cada día", weekly: "Cada semana", every: (n) => `Cada ${n} días` },
+  pt: { once: "Uma vez", daily: "Todo dia", weekly: "Toda semana", every: (n) => `A cada ${n} dias` },
+};
+
+export function repeatLabel(kind: string, n: number | null, locale: Locale = "en"): string {
+  const w = REPEAT_WORDS[locale] ?? REPEAT_WORDS.en;
+  if (kind === "once") return w.once;
+  if (kind === "daily") return w.daily;
+  if (kind === "weekly") return w.weekly;
+  if (n && NAMED_INTERVALS[n]) return NAMED_INTERVALS[n]![locale] ?? NAMED_INTERVALS[n]!.en;
+  return w.every(n);
 }
 
 const toValue = (kind: string, n: number | null): RepeatValue =>
@@ -40,7 +50,7 @@ export function TemplatePicker({
 }: {
   templates: ChoreTemplate[];
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
   excludeKeys?: string[];
   submitLabel: string;
   busy?: boolean;
@@ -66,6 +76,8 @@ export function TemplatePicker({
     setState((s) => ({ ...s, [key]: { ...s[key]!, ...patch } }));
 
   const selected = Object.values(state).filter((s) => s.on);
+  // Also used by onboarding, so the locale comes from props rather than the admin provider.
+  const tr = parentT(locale);
 
   return (
     <div className="flex flex-col gap-8">
@@ -82,7 +94,7 @@ export function TemplatePicker({
                 className="min-h-9 rounded-lg px-2 text-sm font-bold text-maple"
                 onClick={() => items.forEach((t) => update(t.key, { on: !allOn }))}
               >
-                {allOn ? "Select none" : "Select all"}
+                {allOn ? tr("b.tpl.selectNone") : tr("b.tpl.selectAll")}
               </button>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -95,7 +107,7 @@ export function TemplatePicker({
                       s.on ? "ring-moss shadow-[var(--shadow-card)]" : "opacity-55 ring-line"
                     }`}
                   >
-                    <span aria-hidden className="absolute inset-y-0 left-0 w-2 bg-amber" />
+                    <span aria-hidden className={`absolute inset-y-0 left-0 w-2 ${Array.isArray(t.subtasks) && t.subtasks.length ? "bg-plum" : "bg-amber"}`} />
                     <button
                       type="button"
                       onClick={() => update(t.key, { on: !s.on })}
@@ -106,6 +118,11 @@ export function TemplatePicker({
                       <span className="flex-1">
                         <span className="block font-display text-lg font-bold leading-tight text-ink">{t.title}</span>
                         <span className="mt-1 line-clamp-2 block text-sm text-ink-soft">{t.description}</span>
+                        {Array.isArray(t.subtasks) && t.subtasks.length ? (
+                          <span className="mt-1 inline-block rounded-full bg-plum/15 px-2 py-0.5 text-xs font-bold text-plum">
+                            🔁 {tr("b.routine.label")} · {tr(t.subtasks.length === 1 ? "b.chores.stepOne" : "b.chores.stepMany", { n: t.subtasks.length })}
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-black ${
@@ -125,7 +142,7 @@ export function TemplatePicker({
                       />
                       {t.unit_label ? <span className="text-xs font-bold text-ink-soft">/ {t.unit_label} ×{t.max_quantity}</span> : null}
                       <select
-                        aria-label="Repeat"
+                        aria-label={tr("b.tpl.repeat")}
                         value={toValue(s.repeat_kind, s.repeat_every_days)}
                         onChange={(e) => {
                           const v = e.target.value;
@@ -155,7 +172,7 @@ export function TemplatePicker({
       })}
 
       <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur">
-        <span className="font-bold text-ink-soft">{selected.length} chores selected</span>
+        <span className="font-bold text-ink-soft">{tr("b.tpl.selected", { n: selected.length })}</span>
         <Button
           size="lg"
           disabled={busy}
@@ -181,14 +198,15 @@ export function PriceInput({
   onChange: (cents: number) => void;
   autoFocus?: boolean;
 }) {
-  const [text, setText] = useState((cents / 100).toFixed(2).replace(/\.00$/, ""));
+  const [text, setText] = useState(amountInput(cents, locale, true));
   const [bad, setBad] = useState(false);
+  const tr = parentT(asLocale(locale));
   return (
     <span className="inline-flex items-center rounded-full bg-gold/60 pl-3 font-black text-ink ring-amber focus-within:ring-2">
       <span aria-hidden>{formatPrice(0, currency, locale).replace(/[\d.,\s]/g, "") || "$"}</span>
       <input
         inputMode="decimal"
-        aria-label="Price"
+        aria-label={tr("b.tpl.price")}
         autoFocus={autoFocus}
         value={text}
         onChange={(e) => {

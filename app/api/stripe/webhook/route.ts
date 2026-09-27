@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe, subscriptionIdFromInvoice, syncSubscription } from "@/lib/billing/stripe";
 import { requireEnv, appUrl } from "@/lib/env";
 import { emailLayout, sendEmail } from "@/lib/email/send";
+import { paymentFailedEmail } from "@/lib/email/parentEmails";
+import { asLocale } from "@/lib/i18n";
+import { brand } from "@/lib/brand";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,18 +78,12 @@ async function emailOwnersPaymentFailed(subscriptionId: string) {
   const admin = createAdminClient();
   const { data: sub } = await admin.from("subscriptions").select("household_id").eq("stripe_subscription_id", subscriptionId).maybeSingle();
   if (!sub) return;
+  const { data: home } = await admin.from("households").select("locale").eq("id", sub.household_id).maybeSingle();
   const { data: owners } = await admin.from("household_members").select("user_id").eq("household_id", sub.household_id).eq("role", "owner");
   const emails = (
     await Promise.all((owners ?? []).map(async (o) => (await admin.auth.admin.getUserById(o.user_id)).data.user?.email))
   ).filter((e): e is string => Boolean(e));
   if (!emails.length) return;
-  await sendEmail({
-    to: emails,
-    subject: "Your First Payday payment didn't go through",
-    html: emailLayout(
-      "Payment failed",
-      `<p>We couldn't charge your card. Your board keeps working for 7 days while you update it.</p>
-       <p><a href="${appUrl()}/admin/settings/billing">Update billing</a></p>`,
-    ),
-  });
+  const mail = paymentFailedEmail({ locale: asLocale(home?.locale), brand: brand.name, billingUrl: `${appUrl()}/admin/settings/billing` });
+  await sendEmail({ to: emails, subject: mail.subject, html: emailLayout(mail.title, mail.body) });
 }

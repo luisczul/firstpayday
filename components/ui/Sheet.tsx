@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { useParentT } from "@/lib/i18n/parent/client";
 
 /** Side sheet on tablet/desktop, full-height sheet on phones. */
 export function Sheet({
@@ -16,6 +17,7 @@ export function Sheet({
   children: ReactNode;
   wide?: boolean;
 }) {
+  const t = useParentT();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -40,7 +42,7 @@ export function Sheet({
       >
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <h2 className="font-display text-2xl font-bold text-ink">{title}</h2>
-          <button type="button" onClick={onClose} className="min-h-11 min-w-11 rounded-full text-xl text-ink-soft hover:bg-paper-deep" aria-label="Close">
+          <button type="button" onClick={onClose} className="min-h-11 min-w-11 rounded-full text-xl text-ink-soft hover:bg-paper-deep" aria-label={t("a.common.close")}>
             ✕
           </button>
         </div>

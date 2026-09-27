@@ -32,3 +32,4 @@ npm-debug.log*
 pnpm-debug.log*
 .next-e2e/
 .next-build/
+.next-prodtest/

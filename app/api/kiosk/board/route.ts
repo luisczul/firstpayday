@@ -13,7 +13,7 @@ const Query = z.object({
 
 export function GET(req: NextRequest) {
   return kioskRoute(async (ctx) => {
-    const parsed = Query.safeParse(Object.fromEntries(req.nextUrl.searchParams));
+    const parsed = Query.safeParse(Object.fromEntries(new URL(req.url).searchParams));
     if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
     const board = await getBoard(ctx, parsed.data.kidId, {
       markSeen: parsed.data.markSeen === "1",

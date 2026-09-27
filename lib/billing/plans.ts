@@ -1,6 +1,6 @@
 // Pricing and limits live here and only here. Enforced server-side.
 //
-// Model: the first kid is free forever. Each additional kid is $5 CAD/month
+// Model: the first kid is free. Each additional kid is $5 CAD/month
 // (one Stripe subscription whose quantity = active kids − 1). New households
 // get a 14-day trial where extra kids are free, so onboarding never blocks.
 
@@ -9,7 +9,16 @@ export type PlanId = "trial" | "family" | "family_plus" | "comp" | "free";
 export const FREE_KIDS = 1;
 export const PRICE_PER_EXTRA_KID_CENTS = 500;
 export const EXTRA_KID_LOOKUP_KEY = "extra_kid_monthly";
-export const MAX_KIDS = 10;
+export const MAX_KIDS = 30;
+
+/**
+ * Billing is switched off for now: every household has full access, unlimited
+ * kids (up to MAX_KIDS) and nothing is charged. Set BILLING_ENABLED=true (and
+ * flip public.billing_enforced() in SQL) to turn the per-kid pricing back on.
+ */
+export function billingEnabled(): boolean {
+  return process.env.BILLING_ENABLED === "true";
+}
 
 export interface PlanLimits {
   devices: number;

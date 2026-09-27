@@ -47,7 +47,7 @@ test("1. a new parent sets up a household and a kids' tablet", async ({ browser 
   await page.getByRole("button", { name: /pick chores/ }).click();
 
   await expect(page.getByRole("heading", { name: /Pick your chores/ })).toBeVisible();
-  await expect(page.getByText("16 chores selected")).toBeVisible();
+  await expect(page.getByText("20 chores selected")).toBeVisible();
   await page.getByRole("button", { name: /the tablet/ }).click();
 
   await page.getByRole("button", { name: /Use this device as the kids/ }).click();
@@ -61,15 +61,16 @@ test("2. a kid taps their face, a card and “I did it!” without typing", asyn
   const page = tabletPage;
   await page.getByRole("button", { name: /Mateo/ }).click();
   await expect(page.getByRole("heading", { name: "Mateo" })).toBeVisible();
-  await expect(page.locator("input, textarea")).toHaveCount(0);
+  // No typing needed: the only text box is the optional chore search.
+  await expect(page.locator("textarea, input:not([type=search])")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Baseboards" }).click();
   await page.getByRole("button", { name: "More" }).click();
-  await expect(page.getByText("= $10.00")).toBeVisible();
+  await expect(page.getByText("= $4.00")).toBeVisible();
   await page.getByRole("button", { name: /I did it/ }).click();
 
   await expect(page.getByText("Sent to Mom/Dad for checking!")).toBeVisible();
-  await expect(page.getByText("$10.00 waiting for check")).toBeVisible();
+  await expect(page.getByText("$4.00 waiting for check")).toBeVisible();
   await expect(page.getByRole("heading", { name: /Waiting for check/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Baseboards" })).toHaveCount(0);
 
@@ -93,10 +94,10 @@ test("3. a parent on a phone sends it back, the kid fixes it, the parent approve
   await kid.getByRole("button", { name: "Back" }).click();
   await kid.getByRole("button", { name: /Mateo/ }).click();
   await expect(kid.getByRole("heading", { name: /Needs fixing/ })).toBeVisible();
-  await expect(kid.getByText("Missed a spot")).toBeVisible();
-  await kid.getByRole("button", { name: "Baseboards" }).first().click();
-  await kid.getByRole("button", { name: /Fixed it!/ }).last().click();
-  await expect(kid.getByText(/Nice fix!/)).toBeVisible();
+  await expect(kid.getByText("Missed a spot").first()).toBeVisible();
+  await kid.locator("#needs-fixing").getByRole("button", { name: /Baseboards/ }).click();
+  await kid.getByRole("button", { name: "Fixed it! 🔧", exact: true }).click();
+  await expect(kid.locator("#needs-fixing")).toHaveCount(0);
 
   // Realtime: the phone's queue shows it again without a reload.
   await expect(page.getByText("FIXED")).toBeVisible({ timeout: 15_000 });
@@ -104,13 +105,13 @@ test("3. a parent on a phone sends it back, the kid fixes it, the parent approve
   await expect(page.getByText("All caught up!")).toBeVisible();
 
   // Balance updates on the tablet (polling).
-  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$10.00 in my bank", { timeout: 10_000 });
+  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$4.00 in my bank", { timeout: 10_000 });
 
-  // A $5 payout reduces the balance.
+  // A $3 payout reduces the balance.
   await page.goto("/admin/payouts");
-  await page.getByLabel("Amount").fill("5");
+  await page.getByLabel("Amount").fill("3");
   await page.getByRole("button", { name: "Record payout" }).click();
-  await expect(page.getByText("Paid $5.00 to Mateo")).toBeVisible();
-  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$5.00 in my bank", { timeout: 10_000 });
+  await expect(page.getByText("Paid $3.00 to Mateo")).toBeVisible();
+  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$1.00 in my bank", { timeout: 10_000 });
   await ctx.close();
 });

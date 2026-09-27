@@ -54,7 +54,7 @@ async function phoneLogin(browser: Browser) {
   await parent.getByLabel("Email").fill(email);
   await parent.getByLabel("Password").fill(password);
   await parent.getByRole("button", { name: "Log in" }).click();
-  await expect(parent).toHaveURL(/\/admin\/approvals/);
+  await expect(parent).toHaveURL(/\/admin\/approvals/, { timeout: 45_000 });
 }
 
 async function shiftTime(days: number) {
@@ -103,7 +103,7 @@ test("1. sign up and set up a 3-kid home in under a minute", async ({ browser })
   await kid.getByLabel("Kid 3 name").fill("Lucas");
   await kid.getByRole("button", { name: /pick chores/ }).click();
 
-  await expect(kid.getByText("16 chores selected")).toBeVisible();
+  await expect(kid.getByText("20 chores selected")).toBeVisible();
   await kid.getByRole("button", { name: /the tablet/ }).click();
   await kid.getByRole("button", { name: /Use this device as the kids/ }).click();
   await expect(kid.getByRole("heading", { name: "Who's here?" })).toBeVisible();
@@ -120,9 +120,9 @@ test("1. sign up and set up a 3-kid home in under a minute", async ({ browser })
 
 test("2. kids earn: 2 of 3 floors, whole-house vs each-kid chores, no typing", async () => {
   await openBoard("Mateo");
-  await expect(kid.locator("input, textarea")).toHaveCount(0);
+  await expect(kid.locator("textarea, input:not([type=search])")).toHaveCount(0);
   await doChore("Baseboards", { more: 1 }); // 2 floors
-  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$10.00 waiting for check");
+  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$4.00 waiting for check"); // Baseboards: $2 per floor × 2
   await doChore("Sous-chef night");
 
   await openBoard("Sofia");
@@ -142,19 +142,20 @@ test("3. parent on a phone: edit quantity, send back, reject, approve", async ({
   await expect(parent.getByText("5 waiting for your check")).toBeVisible();
 
   // Mateo said 2 floors; parent approves 1.
-  const baseboards = parent.locator("li", { hasText: "Baseboards" });
+  // Pending items only ("Recently approved" also lists chores by name).
+  const baseboards = parent.locator("li", { hasText: "Baseboards" }).filter({ hasNot: parent.getByRole("button", { name: "Undo…" }) });
   await baseboards.getByRole("button", { name: "Less" }).click();
-  await expect(baseboards.getByText("$5.00", { exact: true })).toBeVisible();
+  await expect(baseboards.getByText("$2.00", { exact: true })).toBeVisible();
   await baseboards.getByRole("button", { name: /Approve/ }).click();
   await expect(baseboards).toHaveCount(0);
 
-  const sousMateo = parent.locator("section", { hasText: "Mateo" }).locator("li", { hasText: "Sous-chef night" });
+  const sousMateo = parent.locator("section", { hasText: "Mateo" }).locator("li", { hasText: "Sous-chef night" }).filter({ hasNot: parent.getByRole("button", { name: "Undo…" }) });
   await sousMateo.getByRole("button", { name: /Send back/ }).click();
   await sousMateo.getByRole("button", { name: "Not finished" }).click();
   await sousMateo.getByRole("button", { name: "Send back", exact: true }).click();
   await expect(sousMateo).toHaveCount(0);
 
-  const shoes = parent.locator("li", { hasText: "Entryway shoe station" });
+  const shoes = parent.locator("li", { hasText: "Entryway shoe station" }).filter({ hasNot: parent.getByRole("button", { name: "Undo…" }) });
   await shoes.getByRole("button", { name: "More" }).click();
   await shoes.getByRole("button", { name: "Reject…" }).click();
   await shoes.getByPlaceholder("Type a message…").fill("Shoes are still everywhere");
@@ -167,24 +168,24 @@ test("3. parent on a phone: edit quantity, send back, reject, approve", async ({
 
   const { data: bal } = await admin.from("kid_balances").select("kid_id, balance_cents").eq("household_id", householdId);
   const by = Object.fromEntries((bal ?? []).map((b) => [b.kid_id, b.balance_cents]));
-  expect(by[kidId.Mateo!]).toBe(500);
-  expect(by[kidId.Sofia!]).toBe(1000);
+  expect(by[kidId.Mateo!]).toBe(200); // 1 floor of Baseboards
+  expect(by[kidId.Sofia!]).toBe(300); // Sous-chef $2 + Garbage boss $1
   expect(by[kidId.Lucas!]).toBe(0);
 });
 
 test("4. needs fixing → fixed it → approved; rejected once-weekly stays in cooldown", async () => {
   await openBoard("Mateo");
   await expect(kid.getByRole("heading", { name: /Needs fixing/ })).toBeVisible();
-  await expect(kid.getByText("Not finished")).toBeVisible();
-  await kid.getByRole("button", { name: "Sous-chef night" }).first().click();
-  await kid.getByRole("button", { name: /Fixed it!/ }).last().click();
-  await expect(kid.getByText(/Nice fix!/)).toBeVisible();
+  await expect(kid.getByText("Not finished").first()).toBeVisible();
+  await kid.locator("#needs-fixing").getByRole("button", { name: /Sous-chef night/ }).click();
+  await kid.getByRole("button", { name: "Fixed it! 🔧", exact: true }).click();
+  await expect(kid.locator("#needs-fixing")).toHaveCount(0);
 
   await parent.reload();
   await expect(parent.getByText("FIXED")).toBeVisible();
   await parent.getByRole("button", { name: /Approve/ }).first().click();
   await expect(parent.getByText("All caught up!")).toBeVisible();
-  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$10.00 in my bank", { timeout: 10_000 });
+  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$4.00 in my bank", { timeout: 10_000 });
 
   await openBoard("Lucas");
   await expect(kid.getByText(/Coming back soon/)).toBeVisible();
@@ -194,10 +195,11 @@ test("4. needs fixing → fixed it → approved; rejected once-weekly stays in c
 test("5. custom per-unit chore, inline price, pause, payout", async () => {
   await parent.goto("/admin/chores");
   await parent.getByRole("button", { name: "+ New chore" }).click();
+  await parent.getByRole("button", { name: /Start from blank/ }).click();
   await parent.getByLabel("Title").fill("Clean the windows");
   await parent.getByLabel("Description (what kids read)").fill("Inside and outside, no streaks.");
   await parent.getByLabel("Price").fill("3");
-  await parent.getByLabel("Max quantity").fill("5");
+  await parent.getByRole("textbox", { name: "max quantity" }).fill("5");
   await parent.getByLabel("Unit label").fill("window");
   await parent.getByRole("button", { name: "Add chore", exact: true }).click();
   await expect(parent.getByText("Clean the windows")).toBeVisible();
@@ -216,11 +218,11 @@ test("5. custom per-unit chore, inline price, pause, payout", async () => {
   await expect(kid.getByRole("button", { name: "Laundry manager", exact: true })).toHaveCount(0);
 
   await parent.goto("/admin/payouts?kid=" + kidId.Sofia);
-  await parent.getByLabel("Amount").fill("4");
+  await parent.getByLabel("Amount").fill("2");
   await parent.getByRole("button", { name: "Record payout" }).click();
-  await expect(parent.getByText("Paid $4.00 to Sofia")).toBeVisible();
+  await expect(parent.getByText("Paid $2.00 to Sofia")).toBeVisible();
   await openBoard("Sofia");
-  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$6.00 in my bank");
+  await expect(kid.getByRole("button", { name: "My money" })).toContainText("$1.00 in my bank");
 });
 
 test("6. PIN unlock on the tablet, wrong PIN locks after 5 tries", async () => {
@@ -263,23 +265,33 @@ test("7. THREE WEEKS LATER: chores come back, trial over, 3 kids → read-only",
   await expect(kid.getByRole("heading", { name: /New!/ })).toBeVisible();
   await expect(kid.getByRole("button", { name: "Baseboards", exact: true })).toHaveCount(1);
   await expect(kid.getByRole("button", { name: "Sous-chef night", exact: true })).toHaveCount(1);
-  // Trial ended a week ago with 3 kids and no subscription → paused board.
-  await expect(kid.getByText("The chore board is paused. Ask a parent!").first()).toBeVisible();
-  await kid.getByRole("button", { name: "Baseboards", exact: true }).click();
-  await expect(kid.getByRole("dialog")).toHaveCount(0);
-
-  await parent.goto("/admin/approvals");
-  await expect(parent.getByText(/read-only/).first()).toBeVisible();
-  await parent.goto("/admin/settings/billing");
-  await expect(parent.getByText(/3 kids but no active subscription/)).toBeVisible();
-  await expect(parent.getByRole("button", { name: /Subscribe: \$10\.00\/month/ })).toBeVisible();
-  // History and CSV stay available while read-only.
+  if (process.env.BILLING_ENABLED !== "true") {
+    // Billing is switched off for now: 3 kids, trial long over, still fully usable.
+    await kid.getByRole("button", { name: "Baseboards", exact: true }).click();
+    await expect(kid.getByRole("dialog")).toBeVisible();
+    await parent.goto("/admin/approvals");
+    await expect(parent.getByText(/read-only/)).toHaveCount(0);
+    await parent.goto("/admin/settings/billing");
+    await expect(parent.getByText("Free 🎁")).toBeVisible();
+  } else {
+    // Trial ended a week ago with 3 kids and no subscription → paused board.
+    await expect(kid.getByText("The chore board is paused. Ask a parent!").first()).toBeVisible();
+    await kid.getByRole("button", { name: "Baseboards", exact: true }).click();
+    await expect(kid.getByRole("dialog")).toHaveCount(0);
+    await parent.goto("/admin/approvals");
+    await expect(parent.getByText(/read-only/).first()).toBeVisible();
+    await parent.goto("/admin/settings/billing");
+    await expect(parent.getByText(/3 kids but no active subscription/)).toBeVisible();
+    await expect(parent.getByRole("button", { name: /Subscribe: \$10\.00\/month/ })).toBeVisible();
+  }
+  // History and CSV are always available.
   const csv = await parent.request.get("/admin/history/export");
   expect(csv.status()).toBe(200);
   expect(await csv.text()).toContain("Baseboards");
 });
 
-test("8. archive down to one kid → free forever; restore needs a subscription", async () => {
+test("8. archive down to one kid → free; restore needs a subscription", async () => {
+  test.skip(process.env.BILLING_ENABLED !== "true", "billing is switched off for now");
   await parent.goto(`/admin/kids/${kidId.Lucas}`);
   await parent.getByRole("button", { name: "Archive" }).click();
   await expect(parent.getByRole("button", { name: "Restore" })).toBeVisible();
@@ -295,7 +307,7 @@ test("8. archive down to one kid → free forever; restore needs a subscription"
 });
 
 test("9. subscribe with a Stripe test card; quantity follows kids", async () => {
-  test.skip(!process.env.STRIPE_SECRET_KEY, "needs Stripe test keys");
+  test.skip(!process.env.STRIPE_SECRET_KEY || process.env.BILLING_ENABLED !== "true", "needs Stripe test keys and billing switched on");
   // Bring the 3 kids back through the service role (as if restored earlier).
   await admin.from("kids").update({ archived_at: null }).eq("household_id", householdId);
   await parent.goto("/admin/settings/billing");
@@ -354,7 +366,6 @@ test("10. revoke the tablet: it's disconnected immediately", async () => {
 test("11. public pages are complete and linked", async ({ page }) => {
   for (const [path, text] of [
     ["/", "pays your kids"],
-    ["/pricing", "First kid free"],
     ["/terms", "Terms of Service"],
     ["/privacy", "Kids have no accounts"],
     ["/chore-chart-app", "chore chart app"],

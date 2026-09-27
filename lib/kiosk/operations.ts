@@ -1,9 +1,14 @@
 import "server-only";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordCheckin } from "@/lib/reports/checkins";
 import { buildBoard, type BoardChoreRow, type BoardSections, type BoardSubmissionRow } from "@/lib/board/buildBoard";
 import { getHouseholdAccess } from "@/lib/billing/access";
 import { asLocale, type Locale } from "@/lib/i18n";
+import { choreTextFor } from "@/lib/translate";
+import { localizeSubtasks, parseSubtasks } from "@/lib/schedule/checklist";
 import type { KioskContext } from "./auth";
+import { loadKioskMoneyExtras, type KioskMoneyExtras } from "./taxPromo";
 
 /*
  * THE KIOSK WHITELIST (SPEC §4 "Row-Level Security").
@@ -16,6 +21,7 @@ import type { KioskContext } from "./auth";
  *   3. createSubmission  – "I did it!"
  *   4. resubmit          – "Fixed it!"
  *   5. getKidHistory     – one kid's recent money
+ *   6. toggleSubtask     – tick / untick one step of a checklist chore
  * Nothing else. Do not add operations here without updating the spec.
  */
 
@@ -38,6 +44,8 @@ export interface KioskKid {
   avatarUrl: string | null;
   balanceCents: number;
   pendingCents: number;
+  /** Chores a parent sent back or asked to revise. */
+  revisions: number;
 }
 
 async function loadHousehold(ctx: KioskContext): Promise<KioskHousehold> {
@@ -62,8 +70,10 @@ async function loadHousehold(ctx: KioskContext): Promise<KioskHousehold> {
 }
 
 async function signAvatars(paths: (string | null)[]): Promise<Map<string, string>> {
-  const wanted = paths.filter((p): p is string => Boolean(p));
   const out = new Map<string, string>();
+  // Cartoon avatars ("preset:fox") aren't files: pass them through for <KidAvatar>.
+  for (const p of paths) if (p?.startsWith("preset:")) out.set(p, p);
+  const wanted = paths.filter((p): p is string => Boolean(p) && !p!.startsWith("preset:"));
   if (wanted.length === 0) return out;
   const { data } = await createAdminClient().storage.from("avatars").createSignedUrls(wanted, 60 * 60 * 6);
   for (const row of data ?? []) {
@@ -82,10 +92,13 @@ async function kidsWithBalances(householdId: string, kidId?: string): Promise<Ki
     .order("sort_order")
     .order("created_at");
   if (kidId) kidsQuery = kidsQuery.eq("id", kidId);
-  const [{ data: kids }, { data: balances }] = await Promise.all([
+  const [{ data: kids }, { data: balances }, { data: sentBack }] = await Promise.all([
     kidsQuery,
     admin.from("kid_balances").select("*").eq("household_id", householdId),
+    admin.from("submissions").select("kid_id").eq("household_id", householdId).eq("status", "sent_back"),
   ]);
+  const revisions = new Map<string, number>();
+  for (const r of sentBack ?? []) revisions.set(r.kid_id, (revisions.get(r.kid_id) ?? 0) + 1);
   const avatars = await signAvatars((kids ?? []).map((k) => k.avatar_path));
   const bal = new Map((balances ?? []).map((b) => [b.kid_id, b]));
   return (kids ?? []).map((k) => ({
@@ -95,6 +108,7 @@ async function kidsWithBalances(householdId: string, kidId?: string): Promise<Ki
     avatarUrl: k.avatar_path ? (avatars.get(k.avatar_path) ?? null) : null,
     balanceCents: bal.get(k.id)?.balance_cents ?? 0,
     pendingCents: bal.get(k.id)?.pending_cents ?? 0,
+    revisions: revisions.get(k.id) ?? 0,
   }));
 }
 
@@ -113,7 +127,7 @@ export async function loadBoardData(
     client
       .from("chores")
       .select(
-        "id, title, description, emoji, color, price_cents, unit_label, max_quantity, repeat_kind, repeat_every_days, scope, note_for_kids, available_from, available_until, sort_order, created_at",
+        "id, title, description, emoji, color, price_cents, unit_label, max_quantity, repeat_kind, repeat_every_days, scope, note_for_kids, available_from, available_until, sort_order, created_at, category, template_key, translations, subtasks",
       )
       .eq("household_id", householdId)
       .eq("active", true),
@@ -148,6 +162,9 @@ export interface KioskBoard {
   now: string;
   /** last_seen_board_at before this visit; polls send it back so "New!" badges don't vanish. */
   seenBefore: string | null;
+  /** Family tax (taxes this kid paid so far) and promotions live right now. */
+  tax: KioskMoneyExtras["tax"];
+  promos: KioskMoneyExtras["promos"];
 }
 
 export async function getBoard(
@@ -158,7 +175,7 @@ export async function getBoard(
   const admin = createAdminClient();
   const { data: kidRow } = await admin
     .from("kids")
-    .select("id, last_seen_board_at")
+    .select("id, last_seen_board_at, locale")
     .eq("household_id", ctx.householdId)
     .eq("id", kidId)
     .is("archived_at", null)
@@ -170,6 +187,26 @@ export async function getBoard(
     kidsWithBalances(ctx.householdId, kidId),
     loadBoardData(admin, ctx.householdId),
   ]);
+  // The kid's own language: screens, plus each chore's saved translation
+  // (or, for older starter chores the parent hasn't renamed, the template text).
+  const kidLocale = asLocale(kidRow.locale ?? household.locale);
+  if (kidLocale !== household.locale) {
+    data.chores = await translateTemplateChores(admin, data.chores, household.locale, kidLocale);
+  }
+  data.chores = data.chores.map((c) => {
+    const t = choreTextFor(c.translations, kidLocale);
+    if (!t) return c;
+    const { subtasks: steps, ...text } = t;
+    return { ...c, ...text, subtasks: localizeSubtasks(parseSubtasks(c.subtasks), steps) };
+  });
+  household.locale = kidLocale;
+  // Checklist ticks for the current period of each checklist chore.
+  const { data: progress } = await admin.rpc("kiosk_checklist_progress", { p_household_id: ctx.householdId, p_kid_id: kidId });
+  const checks: Record<string, string[]> = {};
+  for (const [choreId, p] of Object.entries((progress ?? {}) as Record<string, { checked?: string[] }>)) {
+    checks[choreId] = p.checked ?? [];
+  }
+
   const now = new Date();
   const seenBefore = opts.markSeen ? kidRow.last_seen_board_at : (opts.seenBefore ?? kidRow.last_seen_board_at);
   const sections = buildBoard({
@@ -178,24 +215,53 @@ export async function getBoard(
     kidLastSeenBoardAt: seenBefore,
     household: { timezone: household.timezone, week_starts_on: household.weekStartsOn },
     now,
+    checks,
   });
 
   if (opts.markSeen) {
+    // A board open from the picker is a "check-in" (parent usage stats, weekly report).
+    after(() => recordCheckin(ctx, kidId));
     await admin
       .from("kids")
       .update({ last_seen_board_at: now.toISOString() })
       .eq("household_id", ctx.householdId)
       .eq("id", kidId);
   }
-  return { household, kid: kids[0]!, sections, now: now.toISOString(), seenBefore };
+  const extras = await loadKioskMoneyExtras(admin, ctx.householdId, kidId, now);
+  return { household, kid: kids[0]!, sections, now: now.toISOString(), seenBefore, ...extras };
+}
+
+/** Swap in the template text in `to` for starter chores still using the `from` template text. */
+async function translateTemplateChores(
+  client: ReturnType<typeof createAdminClient>,
+  chores: BoardChoreRow[],
+  from: Locale,
+  to: Locale,
+): Promise<BoardChoreRow[]> {
+  const keys = [...new Set(chores.map((c) => c.template_key).filter((k): k is string => Boolean(k)))];
+  if (keys.length === 0) return chores;
+  const { data } = await client.from("chore_templates").select("key, locale, title, description, unit_label").in("key", keys);
+  const t = new Map((data ?? []).map((r) => [`${r.key}:${r.locale}`, r]));
+  return chores.map((c) => {
+    const src = c.template_key ? t.get(`${c.template_key}:${from}`) : undefined;
+    const dst = c.template_key ? t.get(`${c.template_key}:${to}`) : undefined;
+    if (!src || !dst) return c;
+    return {
+      ...c,
+      title: c.title === src.title ? dst.title : c.title,
+      description: c.description === src.description ? dst.description : c.description,
+      unit_label: c.unit_label === src.unit_label ? dst.unit_label : c.unit_label,
+    };
+  });
 }
 
 // 3 ---------------------------------------------------------------------------
 export type SubmitResult =
   | { ok: true; submissionId: string }
-  | { ok: false; reason: "taken" | "paused" | "invalid" | "error" };
+  | { ok: false; reason: "taken" | "paused" | "invalid" | "incomplete" | "error" };
 
-function reasonFromError(message: string): "taken" | "paused" | "invalid" | "error" {
+function reasonFromError(message: string): "taken" | "paused" | "invalid" | "incomplete" | "error" {
+  if (message.includes("checklist_incomplete")) return "incomplete";
   if (message.includes("already_taken") || message.includes("chore_unavailable")) return "taken";
   if (message.includes("board_paused")) return "paused";
   if (message.includes("quantity") || message.includes("kid_not_found")) return "invalid";
@@ -258,4 +324,30 @@ export async function getKidHistory(ctx: KioskContext, kidId: string): Promise<K
     note: r.note,
     createdAt: r.created_at,
   }));
+}
+
+// 6 ---------------------------------------------------------------------------
+export type ToggleSubtaskResult =
+  | { ok: true; checked: string[] }
+  | { ok: false; reason: "paused" | "invalid" | "error" };
+
+/** Tick or untick one checklist step for the chore's current period (kiosk_toggle_subtask). */
+export async function toggleSubtask(
+  ctx: KioskContext,
+  input: { kidId: string; choreId: string; subtaskId: string; checked: boolean },
+): Promise<ToggleSubtaskResult> {
+  const { data, error } = await createAdminClient().rpc("kiosk_toggle_subtask", {
+    p_household_id: ctx.householdId,
+    p_kid_id: input.kidId,
+    p_chore_id: input.choreId,
+    p_subtask_id: input.subtaskId,
+    p_checked: input.checked,
+    p_device_id: ctx.deviceId,
+  });
+  if (error) {
+    if (error.message.includes("board_paused")) return { ok: false, reason: "paused" };
+    if (/chore_unavailable|kid_not_found|subtask_not_found/.test(error.message)) return { ok: false, reason: "invalid" };
+    return { ok: false, reason: "error" };
+  }
+  return { ok: true, checked: ((data as { checked?: string[] } | null)?.checked ?? []).map(String) };
 }

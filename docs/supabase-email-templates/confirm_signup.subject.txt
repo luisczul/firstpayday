@@ -1,0 +1,1 @@
+{{ if eq .Data.locale "fr" }}Confirme ton compte First Payday{{ else if eq .Data.locale "es" }}Confirma tu cuenta de First Payday{{ else if eq .Data.locale "pt" }}Confirme sua conta do First Payday{{ else }}Confirm your First Payday account{{ end }}

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export function GET(req: NextRequest) {
   return kioskRoute(async (ctx) => {
-    const kidId = z.uuid().safeParse(req.nextUrl.searchParams.get("kidId"));
+    const kidId = z.uuid().safeParse(new URL(req.url).searchParams.get("kidId"));
     if (!kidId.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
     return NextResponse.json({ items: await getKidHistory(ctx, kidId.data) });
   });

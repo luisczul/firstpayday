@@ -3,7 +3,25 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 export type Database = {
   
-  "public": {
+  "graphql_public": {
+          Tables: {
+            [_ in never]: never
+          }
+          Views: {
+            [_ in never]: never
+          }
+          Functions: {
+            "graphql":
+{ Args: { "extensions"?: Json,"operationName"?: string,"query"?: string,"variables"?: Json }; Returns: Json
+                           }
+          }
+          Enums: {
+            [_ in never]: never
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        },"public": {
           Tables: {
             "audit_log": {
                   Row: {
@@ -61,28 +79,71 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"chore_templates": {
+                },"chore_subtask_checks": {
                   Row: {
-                    "category": string | null,"description": string | null,"emoji": string | null,"key": string,"locale": string,"max_quantity": number,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"scope": string,"season": string | null,"sort_order": number,"title": string,"unit_label": string | null
+                    "checked_at": string,"chore_id": string,"device_id": string | null,"household_id": string,"kid_id": string,"period_key": string,"subtask_id": string
                   }
                   Insert: {
-                    "category"?: string | null,"description"?: string | null,"emoji"?: string | null,"key": string,"locale"?: string,"max_quantity"?: number,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"scope"?: string,"season"?: string | null,"sort_order"?: number,"title": string,"unit_label"?: string | null
+                    "checked_at"?: string,"chore_id": string,"device_id"?: string | null,"household_id": string,"kid_id": string,"period_key": string,"subtask_id": string
                   }
                   Update: {
-                    "category"?: string | null,"description"?: string | null,"emoji"?: string | null,"key"?: string,"locale"?: string,"max_quantity"?: number,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"scope"?: string,"season"?: string | null,"sort_order"?: number,"title"?: string,"unit_label"?: string | null
+                    "checked_at"?: string,"chore_id"?: string,"device_id"?: string | null,"household_id"?: string,"kid_id"?: string,"period_key"?: string,"subtask_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chore_subtask_checks_chore_id_fkey"
+      columns: ["chore_id"]
+isOneToOne: false
+      referencedRelation: "chores"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_subtask_checks_device_id_fkey"
+      columns: ["device_id"]
+isOneToOne: false
+      referencedRelation: "devices"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_subtask_checks_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_subtask_checks_kid_id_fkey"
+      columns: ["kid_id"]
+isOneToOne: false
+      referencedRelation: "kid_balances"
+      referencedColumns: ["kid_id"]
+    },{
+      foreignKeyName: "chore_subtask_checks_kid_id_fkey"
+      columns: ["kid_id"]
+isOneToOne: false
+      referencedRelation: "kids"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"chore_templates": {
+                  Row: {
+                    "category": string | null,"description": string | null,"emoji": string | null,"key": string,"locale": string,"max_quantity": number,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"scope": string,"season": string | null,"sort_order": number,"subtasks": NonNullable<Json>,"title": string,"unit_label": string | null
+                  }
+                  Insert: {
+                    "category"?: string | null,"description"?: string | null,"emoji"?: string | null,"key": string,"locale"?: string,"max_quantity"?: number,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"scope"?: string,"season"?: string | null,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"title": string,"unit_label"?: string | null
+                  }
+                  Update: {
+                    "category"?: string | null,"description"?: string | null,"emoji"?: string | null,"key"?: string,"locale"?: string,"max_quantity"?: number,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"scope"?: string,"season"?: string | null,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"title"?: string,"unit_label"?: string | null
                   }
                   Relationships: [
                     
                   ]
                 },"chores": {
                   Row: {
-                    "active": boolean,"available_from": string | null,"available_until": string | null,"color": string | null,"created_at": string,"description": string | null,"emoji": string | null,"household_id": string,"id": string,"max_quantity": number,"note_for_kids": string | null,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"requires_approval": boolean,"scope": string,"sort_order": number,"template_key": string | null,"title": string,"unit_label": string | null,"updated_at": string
+                    "active": boolean,"available_from": string | null,"available_until": string | null,"category": string,"color": string | null,"created_at": string,"description": string | null,"emoji": string | null,"household_id": string,"id": string,"max_quantity": number,"note_for_kids": string | null,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"requires_approval": boolean,"scope": string,"sort_order": number,"subtasks": NonNullable<Json>,"template_key": string | null,"title": string,"translations": NonNullable<Json>,"unit_label": string | null,"updated_at": string
                   }
                   Insert: {
-                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id": string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"requires_approval"?: boolean,"scope"?: string,"sort_order"?: number,"template_key"?: string | null,"title": string,"unit_label"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id": string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"requires_approval"?: boolean,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title": string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id"?: string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"requires_approval"?: boolean,"scope"?: string,"sort_order"?: number,"template_key"?: string | null,"title"?: string,"unit_label"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id"?: string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"requires_approval"?: boolean,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title"?: string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -112,6 +173,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"email_log": {
+                  Row: {
+                    "household_id": string,"id": string,"kind": string,"recipient_user_id": string | null,"sent_at": string
+                  }
+                  Insert: {
+                    "household_id": string,"id"?: string,"kind": string,"recipient_user_id"?: string | null,"sent_at"?: string
+                  }
+                  Update: {
+                    "household_id"?: string,"id"?: string,"kind"?: string,"recipient_user_id"?: string | null,"sent_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "email_log_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"family_pot_spends": {
+                  Row: {
+                    "amount_cents": number,"created_at": string,"created_by": string | null,"household_id": string,"id": string,"note": string
+                  }
+                  Insert: {
+                    "amount_cents": number,"created_at"?: string,"created_by"?: string | null,"household_id": string,"id"?: string,"note": string
+                  }
+                  Update: {
+                    "amount_cents"?: number,"created_at"?: string,"created_by"?: string | null,"household_id"?: string,"id"?: string,"note"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "family_pot_spends_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"household_invites": {
                   Row: {
                     "accepted_at": string | null,"created_at": string,"email": string,"expires_at": string,"household_id": string,"id": string,"invited_by": string | null,"role": string,"token_hash": string
@@ -133,13 +232,13 @@ isOneToOne: false
                   ]
                 },"household_members": {
                   Row: {
-                    "created_at": string,"display_name": string | null,"household_id": string,"pin_failed_attempts": number,"pin_hash": string | null,"pin_locked_until": string | null,"role": string,"user_id": string
+                    "created_at": string,"display_name": string | null,"household_id": string,"pin_failed_attempts": number,"pin_hash": string | null,"pin_locked_until": string | null,"review_email_sent_at": string | null,"review_emails_enabled": boolean,"role": string,"user_id": string,"weekly_report_enabled": boolean
                   }
                   Insert: {
-                    "created_at"?: string,"display_name"?: string | null,"household_id": string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"role": string,"user_id": string
+                    "created_at"?: string,"display_name"?: string | null,"household_id": string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"review_email_sent_at"?: string | null,"review_emails_enabled"?: boolean,"role": string,"user_id": string,"weekly_report_enabled"?: boolean
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string | null,"household_id"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"role"?: string,"user_id"?: string
+                    "created_at"?: string,"display_name"?: string | null,"household_id"?: string,"pin_failed_attempts"?: number,"pin_hash"?: string | null,"pin_locked_until"?: string | null,"review_email_sent_at"?: string | null,"review_emails_enabled"?: boolean,"role"?: string,"user_id"?: string,"weekly_report_enabled"?: boolean
                   }
                   Relationships: [
                     {
@@ -152,26 +251,63 @@ isOneToOne: false
                   ]
                 },"households": {
                   Row: {
-                    "admin_timeout_minutes": number,"created_at": string,"created_by": string | null,"currency": string,"id": string,"kid_idle_seconds": number,"last_activity_at": string,"locale": string,"name": string,"savings_match_percent": number,"theme": string,"timezone": string,"week_starts_on": number
+                    "admin_timeout_minutes": number,"created_at": string,"created_by": string | null,"currency": string,"id": string,"kid_idle_seconds": number,"last_activity_at": string,"locale": string,"name": string,"savings_match_percent": number,"tax_enabled": boolean,"tax_percent": number,"theme": string,"timezone": string,"week_starts_on": number,"weekly_report_dow": number,"weekly_report_hour": number,"weekly_report_last_sent_at": string | null
                   }
                   Insert: {
-                    "admin_timeout_minutes"?: number,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"id"?: string,"kid_idle_seconds"?: number,"last_activity_at"?: string,"locale"?: string,"name": string,"savings_match_percent"?: number,"theme"?: string,"timezone"?: string,"week_starts_on"?: number
+                    "admin_timeout_minutes"?: number,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"id"?: string,"kid_idle_seconds"?: number,"last_activity_at"?: string,"locale"?: string,"name": string,"savings_match_percent"?: number,"tax_enabled"?: boolean,"tax_percent"?: number,"theme"?: string,"timezone"?: string,"week_starts_on"?: number,"weekly_report_dow"?: number,"weekly_report_hour"?: number,"weekly_report_last_sent_at"?: string | null
                   }
                   Update: {
-                    "admin_timeout_minutes"?: number,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"id"?: string,"kid_idle_seconds"?: number,"last_activity_at"?: string,"locale"?: string,"name"?: string,"savings_match_percent"?: number,"theme"?: string,"timezone"?: string,"week_starts_on"?: number
+                    "admin_timeout_minutes"?: number,"created_at"?: string,"created_by"?: string | null,"currency"?: string,"id"?: string,"kid_idle_seconds"?: number,"last_activity_at"?: string,"locale"?: string,"name"?: string,"savings_match_percent"?: number,"tax_enabled"?: boolean,"tax_percent"?: number,"theme"?: string,"timezone"?: string,"week_starts_on"?: number,"weekly_report_dow"?: number,"weekly_report_hour"?: number,"weekly_report_last_sent_at"?: string | null
                   }
                   Relationships: [
                     
                   ]
-                },"kids": {
+                },"kid_checkins": {
                   Row: {
-                    "archived_at": string | null,"avatar_path": string | null,"color": string,"created_at": string,"household_id": string,"id": string,"last_seen_board_at": string | null,"name": string,"sort_order": number
+                    "created_at": string,"device_id": string | null,"household_id": string,"id": string,"kid_id": string
                   }
                   Insert: {
-                    "archived_at"?: string | null,"avatar_path"?: string | null,"color"?: string,"created_at"?: string,"household_id": string,"id"?: string,"last_seen_board_at"?: string | null,"name": string,"sort_order"?: number
+                    "created_at"?: string,"device_id"?: string | null,"household_id": string,"id"?: string,"kid_id": string
                   }
                   Update: {
-                    "archived_at"?: string | null,"avatar_path"?: string | null,"color"?: string,"created_at"?: string,"household_id"?: string,"id"?: string,"last_seen_board_at"?: string | null,"name"?: string,"sort_order"?: number
+                    "created_at"?: string,"device_id"?: string | null,"household_id"?: string,"id"?: string,"kid_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "kid_checkins_device_id_fkey"
+      columns: ["device_id"]
+isOneToOne: false
+      referencedRelation: "devices"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kid_checkins_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "kid_checkins_kid_id_fkey"
+      columns: ["kid_id"]
+isOneToOne: false
+      referencedRelation: "kid_balances"
+      referencedColumns: ["kid_id"]
+    },{
+      foreignKeyName: "kid_checkins_kid_id_fkey"
+      columns: ["kid_id"]
+isOneToOne: false
+      referencedRelation: "kids"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"kids": {
+                  Row: {
+                    "archived_at": string | null,"avatar_path": string | null,"color": string,"created_at": string,"household_id": string,"id": string,"last_seen_board_at": string | null,"locale": string | null,"name": string,"sort_order": number
+                  }
+                  Insert: {
+                    "archived_at"?: string | null,"avatar_path"?: string | null,"color"?: string,"created_at"?: string,"household_id": string,"id"?: string,"last_seen_board_at"?: string | null,"locale"?: string | null,"name": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"avatar_path"?: string | null,"color"?: string,"created_at"?: string,"household_id"?: string,"id"?: string,"last_seen_board_at"?: string | null,"locale"?: string | null,"name"?: string,"sort_order"?: number
                   }
                   Relationships: [
                     {
@@ -184,13 +320,13 @@ isOneToOne: false
                   ]
                 },"ledger_entries": {
                   Row: {
-                    "amount_cents": number,"created_at": string,"created_by": string | null,"household_id": string,"id": string,"kid_id": string,"kind": string,"method": string | null,"note": string | null,"submission_id": string | null
+                    "amount_cents": number,"created_at": string,"created_by": string | null,"household_id": string,"id": string,"kid_id": string,"kind": string,"method": string | null,"note": string | null,"payout_id": string | null,"submission_id": string | null
                   }
                   Insert: {
-                    "amount_cents": number,"created_at"?: string,"created_by"?: string | null,"household_id": string,"id"?: string,"kid_id": string,"kind": string,"method"?: string | null,"note"?: string | null,"submission_id"?: string | null
+                    "amount_cents": number,"created_at"?: string,"created_by"?: string | null,"household_id": string,"id"?: string,"kid_id": string,"kind": string,"method"?: string | null,"note"?: string | null,"payout_id"?: string | null,"submission_id"?: string | null
                   }
                   Update: {
-                    "amount_cents"?: number,"created_at"?: string,"created_by"?: string | null,"household_id"?: string,"id"?: string,"kid_id"?: string,"kind"?: string,"method"?: string | null,"note"?: string | null,"submission_id"?: string | null
+                    "amount_cents"?: number,"created_at"?: string,"created_by"?: string | null,"household_id"?: string,"id"?: string,"kid_id"?: string,"kind"?: string,"method"?: string | null,"note"?: string | null,"payout_id"?: string | null,"submission_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -212,6 +348,12 @@ isOneToOne: false
       referencedRelation: "kids"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "ledger_entries_payout_id_fkey"
+      columns: ["payout_id"]
+isOneToOne: false
+      referencedRelation: "ledger_entries"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "ledger_entries_submission_id_fkey"
       columns: ["submission_id"]
 isOneToOne: false
@@ -231,6 +373,25 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"promotions": {
+                  Row: {
+                    "bonus_kind": string,"bonus_value": number,"created_at": string,"created_by": string | null,"ends_at": string,"household_id": string,"id": string,"name": string,"starts_at": string,"updated_at": string
+                  }
+                  Insert: {
+                    "bonus_kind": string,"bonus_value": number,"created_at"?: string,"created_by"?: string | null,"ends_at": string,"household_id": string,"id"?: string,"name": string,"starts_at": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "bonus_kind"?: string,"bonus_value"?: number,"created_at"?: string,"created_by"?: string | null,"ends_at"?: string,"household_id"?: string,"id"?: string,"name"?: string,"starts_at"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "promotions_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"stripe_events": {
                   Row: {
@@ -326,6 +487,25 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"support_messages": {
+                  Row: {
+                    "created_at": string,"email": string | null,"household_id": string | null,"id": string,"kind": string,"message": string,"page": string | null,"status": string,"user_agent": string | null,"user_id": string | null
+                  }
+                  Insert: {
+                    "created_at"?: string,"email"?: string | null,"household_id"?: string | null,"id"?: string,"kind": string,"message": string,"page"?: string | null,"status"?: string,"user_agent"?: string | null,"user_id"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"email"?: string | null,"household_id"?: string | null,"id"?: string,"kind"?: string,"message"?: string,"page"?: string | null,"status"?: string,"user_agent"?: string | null,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "support_messages_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -352,7 +532,7 @@ isOneToOne: false
           }
           Functions: {
             "approve_submission":
-{ Args: { "p_comment"?: string,"p_quantity"?: number,"p_submission_id": string }; Returns: {
+{ Args: { "p_bonus_cents"?: number,"p_comment"?: string,"p_quantity"?: number,"p_submission_id": string }; Returns: {
               "amount_cents": number,
 "chore_id": string,
 "chore_title_snapshot": string,
@@ -378,8 +558,14 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"billing_enforced":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "can_write":
 { Args: { "hid": string }; Returns: boolean
+                           },
+"checklist_period_key":
+{ Args: { "p_at": string,"p_chore_id": string,"p_kid_id": string }; Returns: string
                            },
 "create_household":
 { Args: { "p_currency": string,"p_locale": string,"p_name": string,"p_timezone": string }; Returns: string
@@ -395,6 +581,9 @@ isOneToOne: false
                            },
 "is_platform_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"kiosk_checklist_progress":
+{ Args: { "p_household_id": string,"p_kid_id": string }; Returns: Json
                            },
 "kiosk_create_submission":
 { Args: { "p_chore_id": string,"p_device_id": string,"p_expected_last_id": string,"p_household_id": string,"p_idempotency_key": string,"p_kid_id": string,"p_quantity": number }; Returns: {
@@ -450,8 +639,46 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"kiosk_toggle_subtask":
+{ Args: { "p_checked": boolean,"p_chore_id": string,"p_device_id": string,"p_household_id": string,"p_kid_id": string,"p_subtask_id": string }; Returns: Json
+                           },
+"promo_bonus_at":
+{ Args: { "p_amount_cents": number,"p_at": string,"p_household_id": string }; Returns: {
+              "bonus_cents": number,"name": string,"promotion_id": string
+            }[]
+                           },
+"record_payout":
+{ Args: { "p_allow_negative"?: boolean,"p_gross_cents": number,"p_kid_id": string,"p_method": string,"p_note"?: string }; Returns: Json
+                           },
 "reject_submission":
 { Args: { "p_reason": string,"p_submission_id": string }; Returns: {
+              "amount_cents": number,
+"chore_id": string,
+"chore_title_snapshot": string,
+"created_at": string,
+"device_id": string | null,
+"household_id": string,
+"id": string,
+"idempotency_key": string | null,
+"kid_id": string,
+"photo_path": string | null,
+"quantity": number,
+"resubmitted_at": string | null,
+"review_comment": string | null,
+"reviewed_at": string | null,
+"reviewed_by": string | null,
+"status": string,
+"submitted_at": string,
+"unit_price_cents": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "submissions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"reopen_submission":
+{ Args: { "p_comment": string,"p_mode": string,"p_submission_id": string }; Returns: {
               "amount_cents": number,
 "chore_id": string,
 "chore_title_snapshot": string,
@@ -503,7 +730,10 @@ isOneToOne: false
         to: "submissions"
         isOneToOne: true
         isSetofReturn: false
-      } }
+      } },
+"valid_subtasks":
+{ Args: { "p": Json }; Returns: boolean
+                           }
           }
           Enums: {
             [_ in never]: never
@@ -620,7 +850,11 @@ export type CompositeTypes<
   : never
 
 export const Constants = {
-  "public": {
+  "graphql_public": {
+          Enums: {
+            
+          }
+        },"public": {
           Enums: {
             
           }

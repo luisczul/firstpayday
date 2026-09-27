@@ -3,20 +3,12 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { appSecret, hmacHex, randomToken } from "@/lib/crypto";
-import { KIOSK_COOKIE } from "@/lib/auth/adminMode";
+import { KIOSK_COOKIE, kioskCookieOptions } from "@/lib/auth/adminMode";
 
 // Kiosk (kitchen tablet) identity, SPEC §7. The raw token only ever lives in
 // the httpOnly cookie; the database stores HMAC(KIOSK_COOKIE_SECRET, token).
 
-const ONE_YEAR = 60 * 60 * 24 * 365;
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: ONE_YEAR,
-};
+const cookieOptions = kioskCookieOptions;
 
 export interface KioskContext {
   deviceId: string;

@@ -3,23 +3,35 @@ import { brand } from "@/lib/brand";
 
 /**
  * Transactional email via Resend's HTTP API. Without RESEND_API_KEY this is a
- * no-op that returns false (SPEC §19.5: "skip in v1 if no key").
+ * no-op that returns false (SPEC §19.5: "skip in v1 if no key"). Network
+ * failures and timeouts also return false instead of throwing.
  */
-export async function sendEmail(input: { to: string | string[]; subject: string; html: string }): Promise<boolean> {
+export async function sendEmail(input: { to: string | string[]; subject: string; html: string; replyTo?: string }): Promise<boolean> {
+  // Local testing only: deliver to the Supabase stack's Mailpit inbox instead of Resend.
+  const mailpit = process.env.EMAIL_DEV_MAILPIT_URL;
+  if (mailpit && /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(mailpit)) return sendToMailpit(mailpit, input);
   const key = process.env.RESEND_API_KEY;
   if (!key) return false;
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from: `${brand.name} <${process.env.EMAIL_FROM || `no-reply@${brand.domain}`}>`,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-    }),
-  });
-  if (!res.ok) console.error("Resend error", res.status);
-  return res.ok;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: `${brand.name} <${process.env.EMAIL_FROM || `no-reply@${brand.domain}`}>`,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        ...(input.replyTo ? { reply_to: input.replyTo } : {}),
+      }),
+      // Never hang a caller on a slow or unreachable Resend.
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) console.error("Resend error", res.status);
+    return res.ok;
+  } catch (e) {
+    console.error("Resend unreachable", e instanceof Error ? e.name : "error");
+    return false;
+  }
 }
 
 export function emailLayout(title: string, body: string): string {
@@ -29,4 +41,27 @@ export function emailLayout(title: string, body: string): string {
 <div style="background:#FFFAF1;border-radius:16px;padding:24px;border:1px solid #EAD8B8">
 <h1 style="font-size:22px;margin:0 0 12px">${title}</h1>${body}</div>
 <p style="font-size:12px;color:#7A5A48;margin-top:16px">${brand.legalEntityName}</p></div></body></html>`;
+}
+
+async function sendToMailpit(
+  base: string,
+  input: { to: string | string[]; subject: string; html: string; replyTo?: string },
+): Promise<boolean> {
+  try {
+    const res = await fetch(`${base}/api/v1/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        From: { Email: process.env.EMAIL_FROM || `no-reply@${brand.domain}`, Name: brand.name },
+        To: (Array.isArray(input.to) ? input.to : [input.to]).map((Email) => ({ Email })),
+        ...(input.replyTo ? { ReplyTo: [{ Email: input.replyTo }] } : {}),
+        Subject: input.subject,
+        HTML: input.html,
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }

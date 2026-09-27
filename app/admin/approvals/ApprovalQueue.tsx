@@ -2,12 +2,17 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { fr as frLocale } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/i18n/dateFns";
 import { approveAllForKid, approveSubmission, rejectSubmission, sendBackSubmission } from "@/app/actions/approvals";
 import { KidAvatar } from "@/components/kid/KidAvatar";
 import { Alert, Button, EmptyState, Input } from "@/components/ui";
-import { formatMoney } from "@/lib/money/format";
+import { amountInput, formatMoney, formatPrice, parseMoneyToCents } from "@/lib/money/format";
 import { matchFor } from "@/lib/money/ledger";
+import { bestPromo, type Promotion } from "@/lib/money/promotions";
+import { taxPromoCopy } from "@/lib/i18n/taxPromoCopy";
+import { type Locale } from "@/lib/i18n";
+import { groupSubtasks, type Subtask } from "@/lib/schedule/checklist";
+import { useParentT } from "@/lib/i18n/parent/client";
 
 export interface QueueItem {
   id: string;
@@ -24,10 +29,35 @@ export interface QueueItem {
   submittedAt: string;
   resubmitted: boolean;
   previousComment: string | null;
+  /** Checklist chore: every step was ticked before the kid could send it. */
+  subtasks?: Subtask[];
+  /** Promotions live when this was submitted; the best one is added on approval. */
+  promos: Promotion[];
 }
 
-const QUICK = ["Missed a spot", "Not finished", "Please redo carefully"];
-const QUICK_FR = ["Un endroit oublié", "Pas terminé", "Refais-le avec soin"];
+const STEPS_DONE: Record<Locale, (n: number) => string> = {
+  en: (n) => `All ${n} steps done`,
+  fr: (n) => `Les ${n} étapes sont faites`,
+  es: (n) => `Los ${n} pasos listos`,
+  pt: (n) => `Os ${n} passos feitos`,
+};
+
+/** Quick send-back comments go to the kid, so they follow the household language. */
+export const QUICK: Record<Locale, string[]> = {
+  en: ["Missed a spot", "Not finished", "Please redo carefully"],
+  fr: ["Il manque un coin", "Pas terminé", "Refais-le avec soin"],
+  es: ["Faltó un rincón", "No está terminado", "Vuelve a hacerlo con cuidado"],
+  pt: ["Faltou um cantinho", "Ficou incompleto", "Refaça com cuidado"],
+};
+
+const TIP_COPY: Record<Locale, { group: string; label: string; other: string; amount: string; none: string; range: (max: string) => string; approve: string; plus: (p: string) => string }> = {
+  en: { group: "Add a tip", label: "Add a tip:", other: "Other…", amount: "Tip amount", none: "No tip", range: (m) => `Between 0 and ${m}`, approve: "✓ Approve", plus: (p) => ` + ${p} tip` },
+  fr: { group: "Ajouter un bonus", label: "Bonus :", other: "Autre…", amount: "Montant du bonus", none: "Aucun bonus", range: (m) => `Entre 0 et ${m}`, approve: "✓ Approuver", plus: (p) => ` + ${p} de bonus` },
+  es: { group: "Agregar un bono", label: "Bono:", other: "Otro…", amount: "Monto del bono", none: "Sin bono", range: (m) => `Entre 0 y ${m}`, approve: "✓ Aprobar", plus: (p) => ` + ${p} de bono` },
+  pt: { group: "Adicionar um bônus", label: "Bônus:", other: "Outro…", amount: "Valor do bônus", none: "Sem bônus", range: (m) => `Entre 0 e ${m}`, approve: "✓ Aprovar", plus: (p) => ` + ${p} de bônus` },
+};
+const TIPS = [50, 100, 200];
+const MAX_TIP = 10_000;
 
 export function ApprovalQueue({
   items,
@@ -38,10 +68,11 @@ export function ApprovalQueue({
 }: {
   items: QueueItem[];
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
   readOnly: boolean;
   matchPercent: number;
 }) {
+  const t = useParentT();
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const visible = items.filter((i) => !hidden.has(i.id));
@@ -61,8 +92,8 @@ export function ApprovalQueue({
 
   if (visible.length === 0) {
     return (
-      <EmptyState emoji="🎉" title="All caught up!">
-        When your kids tap “I did it!”, their chores show up here right away.
+      <EmptyState emoji="🎉" title={t("a.appr.emptyTitle")}>
+        {t("a.appr.emptyBody")}
       </EmptyState>
     );
   }
@@ -99,13 +130,14 @@ function KidGroup({
 }: {
   items: QueueItem[];
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
   readOnly: boolean;
   matchPercent: number;
   onHide: (id: string) => void;
   onUnhide: (id: string) => void;
   onError: (m: string | null) => void;
 }) {
+  const t = useParentT();
   const kid = items[0]!;
   const [confirmAll, setConfirmAll] = useState(false);
   const [pending, start] = useTransition();
@@ -120,7 +152,7 @@ function KidGroup({
           confirmAll ? (
             <span className="ml-auto flex items-center gap-2 rounded-xl bg-moss/10 px-3 py-1.5">
               <span className="text-sm font-bold text-moss">
-                Approve {items.length} for {formatMoney(total, currency, locale)}?
+                {t("a.appr.confirmAll", { n: items.length, amount: formatMoney(total, currency, locale) })}
               </span>
               <Button
                 variant="success"
@@ -136,13 +168,13 @@ function KidGroup({
                   })
                 }
               >
-                Yes, approve all
+                {t("a.appr.yesAll")}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setConfirmAll(false)}>Cancel</Button>
+              <Button variant="ghost" size="sm" onClick={() => setConfirmAll(false)}>{t("a.common.cancel")}</Button>
             </span>
           ) : (
             <Button variant="secondary" size="sm" className="ml-auto" onClick={() => setConfirmAll(true)}>
-              Approve all ({items.length})
+              {t("a.appr.approveAll", { n: items.length })}
             </Button>
           )
         ) : null}
@@ -178,21 +210,30 @@ function ApprovalItem({
 }: {
   item: QueueItem;
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
   readOnly: boolean;
   matchPercent: number;
   onHide: (id: string) => void;
   onUnhide: (id: string) => void;
   onError: (m: string | null) => void;
 }) {
+  const t = useParentT();
   const [qty, setQty] = useState(item.quantity);
   const [mode, setMode] = useState<"idle" | "sendBack" | "reject">("idle");
   const [comment, setComment] = useState("");
   const [menu, setMenu] = useState(false);
+  const [tip, setTip] = useState(0);
+  const [customTip, setCustomTip] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const money = (c: number) => formatMoney(c, currency, locale);
+  const price = (c: number) => formatPrice(c, currency, locale);
   const amount = qty * item.unitPriceCents;
+  const tc = TIP_COPY[locale] ?? TIP_COPY.en;
+  const parsedCustom = customTip === null || customTip.trim() === "" ? 0 : parseMoneyToCents(customTip);
+  const customInvalid = customTip !== null && (parsedCustom === null || parsedCustom < 0 || parsedCustom > MAX_TIP);
+  const bonus = customTip !== null ? (customInvalid ? 0 : (parsedCustom ?? 0)) : tip;
   const match = matchFor(amount, matchPercent);
+  const promo = bestPromo(item.promos, new Date(item.submittedAt), amount);
 
   const act = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     start(async () => {
@@ -202,7 +243,7 @@ function ApprovalItem({
       // The action's revalidation already removed it from the list; stop hiding
       // so the same submission can reappear later (e.g. after "Fixed it!").
       onUnhide(item.id);
-      if (!r.ok) onError(r.message ?? "Something went wrong.");
+      if (!r.ok) onError(r.message ?? t("a.common.error"));
     });
 
   return (
@@ -212,20 +253,20 @@ function ApprovalItem({
         <div className="min-w-0 flex-1">
           <p className="font-display text-xl font-bold leading-tight text-ink">
             {item.title}
-            {item.resubmitted ? <span className="ml-2 rounded-full bg-plum/10 px-2 py-0.5 align-middle font-sans text-xs font-black text-plum">FIXED</span> : null}
+            {item.resubmitted ? <span className="ml-2 rounded-full bg-plum/10 px-2 py-0.5 align-middle font-sans text-xs font-black text-plum">{t("a.appr.fixed")}</span> : null}
           </p>
           <p className="text-sm text-ink-soft">
-            {formatDistanceToNow(new Date(item.submittedAt), { addSuffix: true, locale: locale === "fr" ? frLocale : undefined })}
-            {item.previousComment ? ` · you said “${item.previousComment}”` : ""}
+            {formatDistanceToNow(new Date(item.submittedAt), { addSuffix: true, locale: dateFnsLocale(locale) })}
+            {item.previousComment ? ` · ${t("a.appr.youSaid", { comment: item.previousComment })}` : ""}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {item.maxQuantity > 1 ? (
             <span className="flex items-center gap-1 rounded-xl bg-paper px-1 py-1">
-              <button type="button" className="h-9 w-9 rounded-lg text-xl font-black disabled:opacity-30" disabled={qty <= 1 || readOnly} onClick={() => setQty(qty - 1)} aria-label="Less">−</button>
+              <button type="button" className="h-9 w-9 rounded-lg text-xl font-black disabled:opacity-30" disabled={qty <= 1 || readOnly} onClick={() => setQty(qty - 1)} aria-label={t("a.appr.less")}>−</button>
               <span className="w-6 text-center font-black">{qty}</span>
-              <button type="button" className="h-9 w-9 rounded-lg text-xl font-black disabled:opacity-30" disabled={qty >= item.maxQuantity || readOnly} onClick={() => setQty(qty + 1)} aria-label="More">+</button>
+              <button type="button" className="h-9 w-9 rounded-lg text-xl font-black disabled:opacity-30" disabled={qty >= item.maxQuantity || readOnly} onClick={() => setQty(qty + 1)} aria-label={t("a.appr.more")}>+</button>
             </span>
           ) : null}
           <span className="text-right">
@@ -234,27 +275,110 @@ function ApprovalItem({
               {item.unitLabel ? ` / ${item.unitLabel}` : ""}
             </span>
             <span className="block font-display text-2xl font-bold text-moss">{money(amount)}</span>
-            {match > 0 ? <span className="block text-xs font-bold text-amber">+ {money(match)} match</span> : null}
+            {match > 0 ? <span className="block text-xs font-bold text-amber">{t("a.appr.match", { amount: money(match) })}</span> : null}
+            {promo ? (
+              <span className="block text-xs font-bold text-maple" data-testid="promo-bonus">
+                🎉 {taxPromoCopy(locale).promoOnApproval(money(promo.bonusCents), promo.promo.name)}
+              </span>
+            ) : null}
           </span>
         </div>
       </div>
 
+      {item.subtasks?.length ? (
+        <div className="mt-3 rounded-xl bg-moss/10 px-4 py-3" data-testid="approval-steps">
+          <p className="text-sm font-black text-moss">☑ {(STEPS_DONE[locale] ?? STEPS_DONE.en)(item.subtasks.length)}</p>
+          {groupSubtasks(item.subtasks).map((g, gi) => (
+            <div key={gi} className="mt-1">
+              {g.section ? <p className="text-xs font-black text-ink-soft">{g.section}</p> : null}
+              <ul className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink">
+                {g.items.map((s) => (
+                  <li key={s.id}>✓ {s.title}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {!readOnly && mode === "idle" ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={tc.group}>
+          <span className="text-sm font-bold text-ink-soft">{tc.label}</span>
+          {TIPS.map((c) => {
+            const on = customTip === null && tip === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  setCustomTip(null);
+                  setTip(on ? 0 : c);
+                }}
+                className={`min-h-10 rounded-full px-4 text-sm font-bold ${on ? "bg-amber text-white" : "bg-paper text-ink ring-1 ring-line"}`}
+              >
+                +{price(c)}
+              </button>
+            );
+          })}
+          {customTip === null ? (
+            <button
+              type="button"
+              onClick={() => {
+                setTip(0);
+                setCustomTip("");
+              }}
+              className="min-h-10 rounded-full bg-paper px-4 text-sm font-bold text-ink ring-1 ring-line"
+            >
+              {tc.other}
+            </button>
+          ) : (
+            <span className="flex items-center gap-1">
+              <Input
+                value={customTip}
+                onChange={(e) => setCustomTip(e.target.value)}
+                inputMode="decimal"
+                placeholder={amountInput(0, locale)}
+                aria-label={tc.amount}
+                aria-invalid={customInvalid}
+                className="min-h-10! w-24!"
+                autoFocus
+              />
+              <button
+                type="button"
+                aria-label={tc.none}
+                onClick={() => setCustomTip(null)}
+                className="h-10 w-10 rounded-full text-lg font-black text-ink-soft"
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {customInvalid ? (
+            <span className="w-full text-xs font-bold text-danger">
+              {tc.range(price(MAX_TIP))}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!readOnly && mode === "idle" ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button
             variant="success"
             size="lg"
             className="min-w-36 flex-1 sm:flex-none"
-            disabled={pending}
-            onClick={() => act(() => approveSubmission(item.id, qty))}
+            disabled={pending || customInvalid}
+            onClick={() => act(() => approveSubmission(item.id, qty, undefined, bonus > 0 ? bonus : undefined))}
           >
-            ✓ Approve
+            {tc.approve}
+            {bonus > 0 ? tc.plus(price(bonus)) : ""}
           </Button>
           <Button variant="secondary" size="lg" disabled={pending} onClick={() => setMode("sendBack")}>
-            ↩ Send back
+            {t("a.appr.sendBackOpen")}
           </Button>
           <div className="relative ml-auto">
-            <Button variant="ghost" size="lg" aria-label="More" onClick={() => setMenu((m) => !m)}>⋯</Button>
+            <Button variant="ghost" size="lg" aria-label={t("a.appr.more")} onClick={() => setMenu((m) => !m)}>⋯</Button>
             {menu ? (
               <div className="absolute right-0 z-10 mt-1 w-40 rounded-xl bg-card p-1 shadow-[var(--shadow-pop)] ring-1 ring-line">
                 <button
@@ -265,7 +389,7 @@ function ApprovalItem({
                     setMode("reject");
                   }}
                 >
-                  Reject…
+                  {t("a.appr.rejectOpen")}
                 </button>
               </div>
             ) : null}
@@ -283,11 +407,11 @@ function ApprovalItem({
           }}
         >
           <p className="text-sm font-bold text-ink">
-            {mode === "sendBack" ? "What needs fixing? Your kid will see this." : "Why are you rejecting it? (No money, it won't come back.)"}
+            {mode === "sendBack" ? t("a.appr.sendBackQ") : t("a.appr.rejectQ")}
           </p>
           {mode === "sendBack" ? (
             <div className="flex flex-wrap gap-2">
-              {(locale === "fr" ? QUICK_FR : QUICK).map((q) => (
+              {(QUICK[locale] ?? QUICK.en).map((q) => (
                 <button
                   key={q}
                   type="button"
@@ -299,12 +423,12 @@ function ApprovalItem({
               ))}
             </div>
           ) : null}
-          <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Type a message…" maxLength={300} autoFocus />
+          <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t("a.appr.typeMessage")} maxLength={300} autoFocus />
           <div className="flex gap-2">
             <Button type="submit" variant={mode === "reject" ? "danger" : "primary"} disabled={!comment.trim() || pending}>
-              {mode === "sendBack" ? "Send back" : "Reject"}
+              {mode === "sendBack" ? t("a.appr.sendBack") : t("a.appr.reject")}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => { setMode("idle"); setComment(""); }}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => { setMode("idle"); setComment(""); }}>{t("a.common.cancel")}</Button>
           </div>
         </form>
       ) : null}

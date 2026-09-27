@@ -9,16 +9,17 @@ export interface LocalDate {
 
 const partsFormatters = new Map<string, Intl.DateTimeFormat>();
 
-function formatterFor(timeZone: string): Intl.DateTimeFormat {
-  let f = partsFormatters.get(timeZone);
+// Explicit "timeZone: zone" on purpose: the production minifier mangles a shorthand { timeZone } when it inlines this helper.
+function formatterFor(zone: string): Intl.DateTimeFormat {
+  let f = partsFormatters.get(zone);
   if (!f) {
     f = new Intl.DateTimeFormat("en-US", {
-      timeZone,
+      timeZone: zone,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     });
-    partsFormatters.set(timeZone, f);
+    partsFormatters.set(zone, f);
   }
   return f;
 }
@@ -60,4 +61,24 @@ const pad = (n: number, w = 2) => String(n).padStart(w, "0");
 /** The instant of local midnight (start of day) for `date` in `timeZone`. */
 export function startOfLocalDay(date: LocalDate, timeZone: string): Date {
   return fromZonedTime(`${pad(date.year, 4)}-${pad(date.month)}-${pad(date.day)}T00:00:00`, timeZone);
+}
+
+/** The instant a wall-clock date ("YYYY-MM-DD") and time ("HH:MM") happen in `timeZone`. */
+export function zonedDateTimeToInstant(date: string, time: string, timeZone: string): Date {
+  return fromZonedTime(`${date}T${time}:00`, timeZone);
+}
+
+/** Wall-clock date ("YYYY-MM-DD") and time ("HH:MM", 24h) of `instant` in `timeZone`. */
+export function instantToZonedDateTime(instant: Date, zone: string): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(instant);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)!.value;
+  return { date: `${get("year")}-${get("month")}-${get("day")}`, time: `${get("hour")}:${get("minute")}` };
 }

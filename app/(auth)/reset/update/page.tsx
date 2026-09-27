@@ -1,21 +1,21 @@
-"use client";
-
-import { useActionState } from "react";
-import { updatePassword } from "../../actions";
+import type { Metadata } from "next";
+import { marketing } from "@/lib/i18n/marketing";
+import { getSiteLang } from "@/lib/i18n/marketing/server";
 import { AuthShell } from "../../AuthShell";
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { authMetadata } from "../../authMeta";
+import { UpdatePasswordForm } from "./UpdatePasswordForm";
 
-export default function UpdatePasswordPage() {
-  const [state, action, pending] = useActionState(updatePassword, undefined);
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getSiteLang();
+  return authMetadata(lang, "/reset/update", marketing(lang).auth.newPasswordTitle);
+}
+
+export default async function UpdatePasswordPage() {
+  const lang = await getSiteLang();
+  const t = marketing(lang).auth;
   return (
-    <AuthShell title="Choose a new password">
-      <form action={action} className="flex flex-col gap-4">
-        <Field label="New password" hint="At least 8 characters.">
-          <Input name="password" type="password" autoComplete="new-password" minLength={8} required />
-        </Field>
-        {state?.error ? <Alert tone="bad">{state.error}</Alert> : null}
-        <Button type="submit" size="lg" disabled={pending}>Save password</Button>
-      </form>
+    <AuthShell lang={lang} title={t.newPasswordTitle}>
+      <UpdatePasswordForm t={{ newPassword: t.newPassword, passwordHint: t.passwordHint, savePassword: t.savePassword }} />
     </AuthShell>
   );
 }

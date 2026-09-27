@@ -95,6 +95,8 @@ const TABLES = [
   "devices",
   "subscriptions",
   "household_invites",
+  "kid_checkins",
+  "email_log",
 ] as const;
 
 describe("tenant isolation", () => {
@@ -222,12 +224,152 @@ describe("ledger is append-only", () => {
   });
 });
 
+describe("approval bonus tip", () => {
+  let kidId: string;
+  let submissionId: string;
+  const balance = async () => {
+    const { data } = await A.client.from("kid_balances").select("balance_cents").eq("kid_id", kidId).single();
+    return data?.balance_cents;
+  };
+
+  beforeAll(async () => {
+    const { data: kid } = await A.client.from("kids").insert({ household_id: A.householdId, name: "Tipped kid" }).select("id").single();
+    const { data: chore } = await A.client
+      .from("chores")
+      .insert({ household_id: A.householdId, title: "Bonus chore", price_cents: 300, repeat_kind: "daily" })
+      .select("id")
+      .single();
+    kidId = kid!.id;
+    const { data: sub, error } = await admin.rpc("kiosk_create_submission", {
+      p_household_id: A.householdId,
+      p_kid_id: kidId,
+      p_chore_id: chore!.id,
+      p_quantity: 1,
+      p_idempotency_key: randomUUID(),
+      p_device_id: randomUUID(),
+      p_expected_last_id: null as unknown as string,
+    });
+    if (error) throw error;
+    submissionId = sub!.id;
+  });
+
+  it("rejects a bonus outside 0..$100", async () => {
+    for (const bonus of [-1, 10001]) {
+      const { error } = await A.client.rpc("approve_submission", { p_submission_id: submissionId, p_bonus_cents: bonus });
+      expect(error?.message).toMatch(/bonus out of range/);
+    }
+    expect(await balance()).toBe(0);
+  });
+
+  it("pays price + bonus as separate rows; approving again never pays it twice", async () => {
+    const { error } = await A.client.rpc("approve_submission", { p_submission_id: submissionId, p_bonus_cents: 150 });
+    expect(error).toBeNull();
+    await A.client.rpc("approve_submission", { p_submission_id: submissionId, p_bonus_cents: 150 });
+    const { data: rows } = await A.client
+      .from("ledger_entries")
+      .select("kind, amount_cents, note")
+      .eq("submission_id", submissionId);
+    const bonus = rows!.filter((r) => r.kind === "bonus");
+    expect(bonus).toEqual([{ kind: "bonus", amount_cents: 150, note: "Bonus: Bonus chore" }]);
+    expect(rows!.find((r) => r.kind === "earning")?.amount_cents).toBe(300);
+    const match = rows!.filter((r) => r.kind === "match").reduce((s, r) => s + r.amount_cents, 0);
+    expect(await balance()).toBe(300 + match + 150);
+  });
+
+  it("undoing the approval takes back the price and the bonus", async () => {
+    const { error } = await A.client.rpc("reopen_submission", {
+      p_submission_id: submissionId,
+      p_comment: "Oops",
+      p_mode: "reverse",
+    });
+    expect(error).toBeNull();
+    expect(await balance()).toBe(0);
+  });
+
+  it("parents can't insert bonus rows directly", async () => {
+    const { error } = await A.client.from("ledger_entries").insert({
+      household_id: A.householdId,
+      kid_id: kidId,
+      kind: "bonus",
+      amount_cents: 500,
+      created_by: A.userId,
+    });
+    expect(error).not.toBeNull();
+  });
+});
+
 describe("privilege boundaries", () => {
   it("a member cannot promote themselves or read PIN hashes", async () => {
     const promote = await A.client.from("household_members").update({ role: "owner" }).eq("user_id", A.userId);
     expect(promote.error).not.toBeNull();
     const pins = await A.client.from("household_members").select("pin_hash");
     expect(pins.error).not.toBeNull();
+  });
+
+  it("a member toggles their own review emails but never the throttle stamp or someone else's flag", async () => {
+    const off = await A.client
+      .from("household_members")
+      .update({ review_emails_enabled: false })
+      .eq("user_id", A.userId)
+      .select("review_emails_enabled");
+    expect(off.error).toBeNull();
+    expect(off.data?.[0]?.review_emails_enabled).toBe(false);
+    await A.client.from("household_members").update({ review_emails_enabled: true }).eq("user_id", A.userId);
+
+    const stamp = await A.client.from("household_members").update({ review_email_sent_at: null }).eq("user_id", A.userId);
+    expect(stamp.error).not.toBeNull();
+
+    await A.client.from("household_members").update({ review_emails_enabled: false }).eq("user_id", B.userId);
+    const { data: b } = await admin.from("household_members").select("review_emails_enabled").eq("user_id", B.userId).single();
+    expect(b?.review_emails_enabled).toBe(true);
+  });
+
+  it("parents read their own kid check-ins, never another household's, and can't write them", async () => {
+    const seeded = await admin.from("kid_checkins").insert([
+      { household_id: A.householdId, kid_id: A.kidId },
+      { household_id: A.householdId, kid_id: A.kidId },
+      { household_id: B.householdId, kid_id: B.kidId },
+    ]);
+    expect(seeded.error).toBeNull();
+
+    const own = await A.client.from("kid_checkins").select("kid_id, household_id");
+    expect(own.error).toBeNull();
+    expect(own.data).toHaveLength(2);
+    expect(own.data!.every((r) => r.household_id === A.householdId)).toBe(true);
+    const theirs = await A.client.from("kid_checkins").select("id").eq("kid_id", B.kidId);
+    expect(theirs.data).toEqual([]);
+
+    const forgeOwn = await A.client.from("kid_checkins").insert({ household_id: A.householdId, kid_id: A.kidId });
+    expect(forgeOwn.error).not.toBeNull();
+    const forgeB = await A.client.from("kid_checkins").insert({ household_id: B.householdId, kid_id: B.kidId });
+    expect(forgeB.error).not.toBeNull();
+    await A.client.from("kid_checkins").delete().eq("household_id", A.householdId);
+    const { count } = await admin.from("kid_checkins").select("id", { count: "exact", head: true }).eq("household_id", A.householdId);
+    expect(count).toBe(2);
+
+    const log = await A.client.from("email_log").insert({ household_id: A.householdId, kind: "review_ready" });
+    expect(log.error).not.toBeNull();
+  });
+
+  it("a member toggles their own weekly report, and parents set the household's day/hour", async () => {
+    const off = await A.client
+      .from("household_members")
+      .update({ weekly_report_enabled: false })
+      .eq("user_id", A.userId)
+      .select("weekly_report_enabled");
+    expect(off.error).toBeNull();
+    expect(off.data?.[0]?.weekly_report_enabled).toBe(false);
+    await A.client.from("household_members").update({ weekly_report_enabled: false }).eq("user_id", B.userId);
+    const { data: b } = await admin.from("household_members").select("weekly_report_enabled").eq("user_id", B.userId).single();
+    expect(b?.weekly_report_enabled).toBe(true);
+
+    const { data: hh } = await A.client.from("households").select("weekly_report_dow, weekly_report_hour").eq("id", A.householdId).single();
+    expect(hh).toEqual({ weekly_report_dow: 6, weekly_report_hour: 12 });
+    const bad = await A.client.from("households").update({ weekly_report_hour: 24 }).eq("id", A.householdId);
+    expect(bad.error).not.toBeNull();
+    await A.client.from("households").update({ weekly_report_dow: 0 }).eq("id", B.householdId);
+    const { data: bh } = await admin.from("households").select("weekly_report_dow").eq("id", B.householdId).single();
+    expect(bh?.weekly_report_dow).toBe(6);
   });
 
   it("kiosk functions are not callable from a browser session", async () => {

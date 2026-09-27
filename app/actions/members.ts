@@ -9,20 +9,24 @@ import { appSecret, hashPin, randomToken, sha256Hex } from "@/lib/crypto";
 import { appUrl } from "@/lib/env";
 import { emailLayout, sendEmail } from "@/lib/email/send";
 import { brand } from "@/lib/brand";
+import { parentT } from "@/lib/i18n/parent";
+import { inviteEmail } from "@/lib/email/parentEmails";
 
 async function ownerCtx() {
   const ctx = await getParentContext();
   if (!ctx) throw new ActionError("forbidden", "Please log in again.");
-  if (!ctx.isOwner) throw new ActionError("forbidden", "Only the household owner can manage members.");
-  if (ctx.access !== "full") throw new ActionError("read_only", "Your board is read-only. Upgrade to invite parents.");
+  const t = parentT(ctx.locale);
+  if (!ctx.isOwner) throw new ActionError("forbidden", t("b.err.ownerOnlyMembers"));
+  if (ctx.access !== "full") throw new ActionError("read_only", t("b.err.readOnlyInvite"));
   return ctx;
 }
 
 export async function inviteMember(input: { email: string; role: "owner" | "parent" }) {
   return runAction(async () => {
     const ctx = await ownerCtx();
-    const email = z.email("Enter a valid email.").safeParse(input.email.trim().toLowerCase());
-    if (!email.success) throw new ActionError("invalid", "Enter a valid email.");
+    const t = parentT(ctx.locale);
+    const email = z.email().safeParse(input.email.trim().toLowerCase());
+    if (!email.success) throw new ActionError("invalid", t("b.err.validEmail"));
     const role = z.enum(["owner", "parent"]).parse(input.role);
 
     const admin = createAdminClient();
@@ -36,7 +40,7 @@ export async function inviteMember(input: { email: string; role: "owner" | "pare
         .gt("expires_at", new Date().toISOString()),
     ]);
     if (!withinLimit("parents", (members ?? 0) + (invites ?? 0))) {
-      throw new ActionError("limit", `Your plan includes ${LIMITS.parents} parents. Remove one first.`);
+      throw new ActionError("limit", t("b.err.parentLimit", { n: LIMITS.parents }));
     }
 
     const token = randomToken(24);
@@ -51,16 +55,8 @@ export async function inviteMember(input: { email: string; role: "owner" | "pare
     if (error) throw error;
 
     const link = `${appUrl()}/invite/${token}`;
-    const sent = await sendEmail({
-      to: email.data,
-      subject: `You're invited to ${ctx.household.name} on ${brand.name}`,
-      html: emailLayout(
-        `Join ${ctx.household.name}`,
-        `<p>${ctx.user.email} invited you to help run the chore board.</p>
-         <p><a href="${link}" style="display:inline-block;background:#B8431F;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:800">Accept invite</a></p>
-         <p style="font-size:13px;color:#7A5A48">This link expires in 7 days.</p>`,
-      ),
-    });
+    const mail = inviteEmail({ locale: ctx.locale, home: ctx.household.name, inviter: ctx.user.email, brand: brand.name, link });
+    const sent = await sendEmail({ to: email.data, subject: mail.subject, html: emailLayout(mail.title, mail.body) });
     revalidatePath("/admin/settings/members");
     return { link, emailed: sent };
   });
@@ -84,14 +80,15 @@ export async function removeMember(userId: string) {
     const ctx = await getParentContext();
     if (!ctx) throw new ActionError("forbidden", "Please log in again.");
     const id = z.uuid().parse(userId);
-    if (id !== ctx.user.id && !ctx.isOwner) throw new ActionError("forbidden", "Only the owner can remove parents.");
+    const t = parentT(ctx.locale);
+    if (id !== ctx.user.id && !ctx.isOwner) throw new ActionError("forbidden", t("b.err.ownerOnlyRemove"));
     const { data: owners } = await ctx.supabase
       .from("household_members")
       .select("user_id")
       .eq("household_id", ctx.household.id)
       .eq("role", "owner");
     if (owners?.length === 1 && owners[0]!.user_id === id) {
-      throw new ActionError("invalid", "The last owner can't be removed. Make someone else an owner first.");
+      throw new ActionError("invalid", t("b.err.lastOwner"));
     }
     const { error } = await ctx.supabase
       .from("household_members")
@@ -110,7 +107,7 @@ export async function setMyPin(pin: string) {
     if (!ctx) throw new ActionError("forbidden", "Please log in again.");
     let pinHash: string | null = null;
     if (pin) {
-      if (!/^\d{4,6}$/.test(pin)) throw new ActionError("invalid", "Use 4 to 6 digits.");
+      if (!/^\d{4,6}$/.test(pin)) throw new ActionError("invalid", parentT(ctx.locale)("b.err.pinDigits"));
       pinHash = await hashPin(pin, randomToken(8), await appSecret("ADMIN_MODE_SECRET"));
     }
     // Service role: pin_hash is not something the member's own session should read back.
@@ -131,6 +128,36 @@ export async function setMyDisplayName(name: string) {
     const { error } = await ctx.supabase
       .from("household_members")
       .update({ display_name: z.string().trim().max(40).parse(name) || null })
+      .eq("household_id", ctx.household.id)
+      .eq("user_id", ctx.user.id);
+    if (error) throw error;
+    revalidatePath("/admin/settings");
+  });
+}
+
+/** "Email me when a chore is ready for review" (own row only; column-level grant). */
+export async function setMyReviewEmails(enabled: boolean) {
+  return runAction(async () => {
+    const ctx = await getParentContext();
+    if (!ctx) throw new ActionError("forbidden", "Please log in again.");
+    const { error } = await ctx.supabase
+      .from("household_members")
+      .update({ review_emails_enabled: z.boolean().parse(enabled) })
+      .eq("household_id", ctx.household.id)
+      .eq("user_id", ctx.user.id);
+    if (error) throw error;
+    revalidatePath("/admin/settings");
+  });
+}
+
+/** Per-parent opt-out of the weekly report email (default on). */
+export async function setMyWeeklyReport(enabled: boolean) {
+  return runAction(async () => {
+    const ctx = await getParentContext();
+    if (!ctx) throw new ActionError("forbidden", "Please log in again.");
+    const { error } = await ctx.supabase
+      .from("household_members")
+      .update({ weekly_report_enabled: z.boolean().parse(enabled) })
       .eq("household_id", ctx.household.id)
       .eq("user_id", ctx.user.id);
     if (error) throw error;

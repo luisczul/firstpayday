@@ -1,11 +1,15 @@
 import { requireParent } from "@/lib/auth/session";
+import { parentT } from "@/lib/i18n/parent";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LIMITS } from "@/lib/billing/plans";
 import { PageHeader } from "@/components/ui";
 import { SettingsNav } from "../SettingsNav";
 import { MembersList } from "./MembersList";
 
-export const metadata = { title: "Parents" };
+export async function generateMetadata() {
+  const ctx = await requireParent();
+  return { title: parentT(ctx.locale)("b.tabs.parents") };
+}
 
 export default async function MembersPage() {
   const ctx = await requireParent();
@@ -25,8 +29,8 @@ export default async function MembersPage() {
   );
   return (
     <>
-      <PageHeader title="Settings" />
-      <SettingsNav active="/admin/settings/members" />
+      <PageHeader title={parentT(ctx.locale)("b.common.settings")} />
+      <SettingsNav active="/admin/settings/members" locale={ctx.locale} />
       <MembersList
         members={withEmail}
         invites={(invites ?? []).filter((i) => new Date(i.expires_at) > new Date())}

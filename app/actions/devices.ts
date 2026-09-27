@@ -8,6 +8,7 @@ import { ActionError, getParentContext, runAction } from "@/lib/auth/session";
 import { LIMITS, withinLimit } from "@/lib/billing/plans";
 import { registerKioskDevice, clearKioskCookie } from "@/lib/kiosk/auth";
 import { ADMIN_MODE_COOKIE } from "@/lib/auth/adminMode";
+import { parentT } from "@/lib/i18n/parent";
 
 /**
  * "Use this device as the kids' tablet" (SPEC §7): register the device,
@@ -24,16 +25,19 @@ export async function enableKioskOnThisDevice(name?: string) {
       .eq("household_id", ctx.household.id)
       .is("revoked_at", null);
     if (!withinLimit("devices", count ?? 0)) {
-      throw new ActionError(
-        "limit",
-        `Your plan includes ${LIMITS.devices} tablets. Revoke an old one first.`,
-      );
+      throw new ActionError("limit", parentT(ctx.locale)("b.err.tabletLimit", { n: LIMITS.devices }));
     }
     await clearKioskCookie();
     await registerKioskDevice({
       householdId: ctx.household.id,
       userId: ctx.user.id,
-      name: z.string().trim().min(1).max(60).catch("Kitchen tablet").parse(name ?? "Kitchen tablet"),
+      name: z
+        .string()
+        .trim()
+        .min(1)
+        .max(60)
+        .catch(parentT(ctx.locale)("b.devices.defaultName"))
+        .parse(name ?? parentT(ctx.locale)("b.devices.defaultName")),
     });
     await ctx.supabase.auth.signOut({ scope: "local" });
     (await cookies()).delete(ADMIN_MODE_COOKIE);

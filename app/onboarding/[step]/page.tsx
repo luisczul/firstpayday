@@ -4,6 +4,9 @@ import { HomeStep } from "./HomeStep";
 import { KidsStep } from "./KidsStep";
 import { ChoresStep } from "./ChoresStep";
 import { TabletStep } from "./TabletStep";
+import { parentT } from "@/lib/i18n/parent";
+import { ParentLocaleProvider } from "@/lib/i18n/parent/client";
+import { onboardingLocale } from "../locale";
 
 const STEPS = ["home", "kids", "chores", "tablet"] as const;
 type Step = (typeof STEPS)[number];
@@ -17,9 +20,13 @@ export default async function OnboardingStep({ params }: { params: Promise<{ ste
   if (!ctx && step !== "home") redirect("/onboarding/home");
 
   const index = STEPS.indexOf(step as Step);
+  // Re-provided per step: the layout can stay mounted while the household language changes.
+  const locale = await onboardingLocale();
+  const t = parentT(locale);
   return (
+    <ParentLocaleProvider locale={locale}>
     <div className="mx-auto mt-6">
-      <ol className="mb-8 flex gap-2" aria-label="Progress">
+      <ol className="mb-8 flex gap-2" aria-label={t("a.onb.progress")}>
         {STEPS.map((s, i) => (
           <li key={s} className={`h-2 flex-1 rounded-full ${i <= index ? "bg-maple" : "bg-line"}`} aria-current={i === index ? "step" : undefined} />
         ))}
@@ -27,12 +34,20 @@ export default async function OnboardingStep({ params }: { params: Promise<{ ste
       {step === "home" ? (
         <HomeStep
           initial={ctx ? { name: ctx.household.name, timezone: ctx.household.timezone, currency: ctx.household.currency, locale: ctx.locale } : null}
+          defaultLocale={locale}
         />
       ) : null}
       {step === "kids" && ctx ? <KidsLoader /> : null}
       {step === "chores" && ctx ? <ChoresLoader /> : null}
-      {step === "tablet" && ctx ? <TabletStep /> : null}
+      {step === "tablet" && ctx ? (
+        <TabletStep
+          familyTax={{ enabled: ctx.household.tax_enabled, percent: ctx.household.tax_percent }}
+          currency={ctx.household.currency}
+          locale={ctx.locale}
+        />
+      ) : null}
     </div>
+    </ParentLocaleProvider>
   );
 }
 

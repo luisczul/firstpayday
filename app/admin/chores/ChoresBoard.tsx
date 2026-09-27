@@ -7,17 +7,21 @@ import {
   deleteChore,
   duplicateChore,
   reorderChores,
+  retranslateChores,
   setChoreActive,
   updateChorePrice,
 } from "@/app/actions/chores";
 import { ChoreCard } from "@/components/kid/ChoreCard";
 import { BLANK_CHORE, ChoreEditor, type EditableChore } from "@/components/admin/ChoreEditor";
 import { PriceInput, TemplatePicker, repeatLabel } from "@/components/admin/TemplatePicker";
+import { TemplateChooser, templateToEditable } from "@/components/admin/TemplateChooser";
 import { Alert, Badge, Button, EmptyState, PageHeader } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { formatPrice } from "@/lib/money/format";
 import type { ParentChoreStatus } from "@/lib/board/parentStatus";
 import type { ChoreTemplate } from "@/lib/templates";
+import { intlLocale, type Locale } from "@/lib/i18n";
+import { useParentT } from "@/lib/i18n/parent/client";
 
 export interface AdminChore extends Omit<EditableChore, "id"> {
   id: string;
@@ -28,7 +32,7 @@ export interface AdminChore extends Omit<EditableChore, "id"> {
   status: ParentChoreStatus;
 }
 
-type Filter = "active" | "paused" | "seasonal" | "all";
+type Filter = "active" | "paused" | "seasonal" | "routines" | "all";
 
 export function ChoresBoard({
   chores,
@@ -42,18 +46,33 @@ export function ChoresBoard({
   kids: { id: string; name: string; color: string }[];
   templates: ChoreTemplate[];
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
   readOnly: boolean;
 }) {
   const router = useRouter();
+  const t = useParentT();
   const [filter, setFilter] = useState<Filter>("active");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<EditableChore | null>(null);
   const [picking, setPicking] = useState(false);
+  const [choosing, setChoosing] = useState<"menu" | "templates" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<string[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [notice, setNotice] = useState<string | null>(null);
+  const translate = (id?: string) =>
+    start(async () => {
+      setError(null);
+      setNotice(id ? t("b.chores.translating") : t("b.chores.translatingAll"));
+      const r = await retranslateChores(id);
+      if (!r.ok) {
+        setNotice(null);
+        return setError(r.message);
+      }
+      setNotice(t("b.chores.translated", { done: r.data?.translated ?? 0, total: r.data?.total ?? 0 }));
+      router.refresh();
+    });
 
   const ordered = useMemo(() => {
     if (!order) return chores;
@@ -66,6 +85,7 @@ export function ChoresBoard({
     if (filter === "active") return c.active;
     if (filter === "paused") return !c.active;
     if (filter === "seasonal") return Boolean(c.available_from || c.available_until);
+    if (filter === "routines") return c.subtasks.length > 0;
     return true;
   });
 
@@ -73,7 +93,7 @@ export function ChoresBoard({
     start(async () => {
       setError(null);
       const r = await fn();
-      if (!r.ok) setError(r.message ?? "Something went wrong.");
+      if (!r.ok) setError(r.message ?? t("b.common.somethingWrong"));
       router.refresh();
     });
 
@@ -101,32 +121,33 @@ export function ChoresBoard({
   return (
     <>
       <PageHeader
-        title="Chores"
-        subtitle="These are the exact cards your kids see."
+        title={t("b.chores.title")}
+        subtitle={t("b.chores.subtitle")}
         actions={
           readOnly ? null : (
             <>
-              <Button variant="secondary" onClick={() => setPicking(true)}>📋 Add from templates</Button>
-              <Button onClick={() => setEditing(BLANK_CHORE)}>+ New chore</Button>
+              <Button variant="secondary" disabled={pending} onClick={() => translate()}>{t("b.chores.translateAll")}</Button>
+              <Button variant="secondary" onClick={() => setPicking(true)}>{t("b.chores.addFromTemplates")}</Button>
+              <Button onClick={() => setChoosing("menu")}>{t("b.chores.newChore")}</Button>
             </>
           )
         }
       />
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        {(["active", "paused", "seasonal", "all"] as const).map((f) => (
+        {(["active", "paused", "seasonal", "routines", "all"] as const).map((f) => (
           <button
             key={f}
             type="button"
             onClick={() => setFilter(f)}
             className={`min-h-10 rounded-full px-4 text-sm font-bold capitalize ${filter === f ? "bg-ink text-paper" : "bg-card ring-1 ring-line"}`}
           >
-            {f}
+            {t(`b.chores.filter.${f}`)}
           </button>
         ))}
         <input
           type="search"
-          placeholder="Search…"
+          placeholder={t("b.chores.search")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="ml-auto min-h-10 w-full rounded-full border border-line bg-card px-4 text-sm sm:w-56"
@@ -134,9 +155,10 @@ export function ChoresBoard({
       </div>
 
       {error ? <div className="mb-4"><Alert tone="bad">{error}</Alert></div> : null}
+      {notice ? <div className="mb-4"><Alert tone="good">{notice}</Alert></div> : null}
 
       {visible.length === 0 && filter === "active" && !query ? (
-        <EmptyState emoji="🧹" title="No active chores yet">Add some from the templates to get started.</EmptyState>
+        <EmptyState emoji="🧹" title={t("b.chores.emptyTitle")}>{t("b.chores.emptyBody")}</EmptyState>
       ) : null}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -149,25 +171,30 @@ export function ChoresBoard({
             onDrop={() => dropOn(c.id)}
             className={`flex flex-col gap-2 ${dragId === c.id ? "opacity-40" : ""}`}
           >
-            <div className={c.active ? "" : "opacity-50 grayscale"}>
+            <div
+              className={`${c.active ? "" : "opacity-50 grayscale"} ${
+                c.subtasks.length ? "rounded-[var(--radius-card)] border-t-[6px] border-plum ring-2 ring-plum/30" : ""
+              }`}
+            >
               <ChoreCardAdmin chore={c} currency={currency} locale={locale} readOnly={readOnly} onPrice={(cents) => run(() => updateChorePrice(c.id, cents))} />
             </div>
             <div><StatusLine status={c.status} locale={locale} /></div>
             <p className="text-xs font-semibold text-ink-soft">
-              {repeatLabel(c.repeat_kind, c.repeat_every_days, locale)} · {c.scope === "household" ? "Whole house" : "Each kid"}
+              {repeatLabel(c.repeat_kind, c.repeat_every_days, locale)} · {c.scope === "household" ? t("b.chores.wholeHouse") : t("b.chores.eachKid")}
               {c.assignee_ids.length ? ` · ${c.assignee_ids.map((id) => kids.find((k) => k.id === id)?.name).filter(Boolean).join(", ")}` : ""}
             </p>
             {!readOnly ? (
               <div className="flex flex-wrap items-center gap-1.5">
-                <Button size="sm" variant="secondary" onClick={() => setEditing({ ...c })}>Edit</Button>
+                <Button size="sm" variant="secondary" onClick={() => setEditing({ ...c })}>{t("b.chores.edit")}</Button>
                 <Button size="sm" variant="secondary" disabled={pending} onClick={() => run(() => setChoreActive(c.id, !c.active))}>
-                  {c.active ? "⏸ Pause" : "▶ Resume"}
+                  {c.active ? t("b.chores.pause") : t("b.chores.resume")}
                 </Button>
-                <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => duplicateChore(c.id))}>Duplicate</Button>
+                <Button size="sm" variant="secondary" disabled={pending} onClick={() => translate(c.id)}>{t("b.chores.translate")}</Button>
+                <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => duplicateChore(c.id))}>{t("b.chores.duplicate")}</Button>
                 <DeleteButton chore={c} onDelete={() => run(() => deleteChore(c.id))} onPause={() => run(() => setChoreActive(c.id, false))} />
                 <span className="ml-auto flex">
-                  <Button size="sm" variant="ghost" aria-label="Move earlier" disabled={idx === 0} onClick={() => move(c.id, -1)}>↑</Button>
-                  <Button size="sm" variant="ghost" aria-label="Move later" disabled={idx === visible.length - 1} onClick={() => move(c.id, 1)}>↓</Button>
+                  <Button size="sm" variant="ghost" aria-label={t("b.chores.moveEarlier")} disabled={idx === 0} onClick={() => move(c.id, -1)}>↑</Button>
+                  <Button size="sm" variant="ghost" aria-label={t("b.chores.moveLater")} disabled={idx === visible.length - 1} onClick={() => move(c.id, 1)}>↓</Button>
                 </span>
               </div>
             ) : null}
@@ -177,16 +204,16 @@ export function ChoresBoard({
         {!readOnly && filter !== "paused" ? (
           <button
             type="button"
-            onClick={() => setEditing(BLANK_CHORE)}
+            onClick={() => setChoosing("menu")}
             className="flex h-[300px] flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 border-dashed border-line text-ink-soft hover:border-amber hover:text-amber"
           >
             <span className="text-5xl">+</span>
-            <span className="font-bold">Add chore</span>
+            <span className="font-bold">{t("b.chores.addChore")}</span>
           </button>
         ) : null}
       </div>
 
-      <Sheet open={Boolean(editing)} title={editing?.id ? "Edit chore" : "New chore"} onClose={() => setEditing(null)}>
+      <Sheet open={Boolean(editing)} title={editing?.id ? t("b.chores.editChore") : t("b.chores.newChoreTitle")} onClose={() => setEditing(null)}>
         {editing ? (
           <ChoreEditor
             key={editing.id ?? "new"}
@@ -201,9 +228,52 @@ export function ChoresBoard({
         ) : null}
       </Sheet>
 
-      <Sheet open={picking} title="Add from templates" onClose={() => setPicking(false)} wide>
+      <Sheet
+        open={choosing !== null}
+        title={choosing === "templates" ? t("b.new.pickTemplate") : t("b.chores.newChoreTitle")}
+        onClose={() => setChoosing(null)}
+        wide={choosing === "templates"}
+      >
+        {choosing === "menu" ? (
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setChoosing("templates")}
+              className="flex min-h-24 flex-col items-start justify-center gap-1 rounded-2xl bg-card p-5 text-left ring-2 ring-line hover:ring-amber"
+            >
+              <span className="font-display text-xl font-bold text-ink">{t("b.new.fromTemplate")}</span>
+              <span className="text-sm text-ink-soft">{t("b.new.fromTemplateHint")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setChoosing(null);
+                setEditing(BLANK_CHORE);
+              }}
+              className="flex min-h-24 flex-col items-start justify-center gap-1 rounded-2xl bg-card p-5 text-left ring-2 ring-line hover:ring-amber"
+            >
+              <span className="font-display text-xl font-bold text-ink">{t("b.new.blank")}</span>
+              <span className="text-sm text-ink-soft">{t("b.new.blankHint")}</span>
+            </button>
+          </div>
+        ) : choosing === "templates" ? (
+          <TemplateChooser
+            templates={templates}
+            onBoardKeys={existingKeys}
+            currency={currency}
+            locale={locale}
+            onBack={() => setChoosing("menu")}
+            onPick={(tpl) => {
+              setChoosing(null);
+              setEditing(templateToEditable(tpl, new Date()));
+            }}
+          />
+        ) : null}
+      </Sheet>
+
+      <Sheet open={picking} title={t("b.chores.templatesTitle")} onClose={() => setPicking(false)} wide>
         {existingKeys.length >= templates.length ? (
-          <EmptyState emoji="✅" title="You already have every template." />
+          <EmptyState emoji="✅" title={t("b.chores.haveAllTemplates")} />
         ) : (
           <TemplatePicker
             templates={templates}
@@ -211,7 +281,7 @@ export function ChoresBoard({
             currency={currency}
             locale={locale}
             busy={pending}
-            submitLabel="Add selected"
+            submitLabel={t("b.chores.addSelected")}
             onSubmit={(picks) =>
               start(async () => {
                 const r = await addChoresFromTemplates(picks);
@@ -236,10 +306,11 @@ function ChoreCardAdmin({
 }: {
   chore: AdminChore;
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
   readOnly: boolean;
   onPrice: (cents: number) => void;
 }) {
+  const t = useParentT();
   const [editingPrice, setEditingPrice] = useState(false);
   const [draft, setDraft] = useState(chore.price_cents);
   return (
@@ -256,6 +327,13 @@ function ChoreCardAdmin({
       currency={currency}
       locale={locale}
       perLabel={chore.unit_label ? `/ ${chore.unit_label}` : undefined}
+      footer={
+        chore.subtasks.length ? (
+          <span className="rounded-full bg-plum/15 px-2.5 py-0.5 text-sm font-bold text-plum" title={chore.subtasks.map((s) => s.title).join(" · ")}>
+            🔁 {t("b.routine.label")} · {t(chore.subtasks.length === 1 ? "b.chores.stepOne" : "b.chores.stepMany", { n: chore.subtasks.length })}
+          </span>
+        ) : undefined
+      }
       size="md"
       priceSlot={
         readOnly ? undefined : editingPrice ? (
@@ -268,13 +346,13 @@ function ChoreCardAdmin({
             }}
           >
             <PriceInput cents={chore.price_cents} currency={currency} locale={locale} onChange={setDraft} autoFocus />
-            <button type="submit" className="h-9 w-9 rounded-full bg-moss font-black text-white" aria-label="Save price">✓</button>
+            <button type="submit" className="h-9 w-9 rounded-full bg-moss font-black text-white" aria-label={t("b.chores.savePrice")}>✓</button>
           </form>
         ) : (
           <button
             type="button"
             onClick={() => setEditingPrice(true)}
-            title="Tap to change the price"
+            title={t("b.chores.tapPrice")}
             className="inline-flex items-center rounded-full bg-gold px-3.5 py-1.5 text-lg font-black text-ink shadow-[0_2px_0_rgb(59_36_24/0.15)] hover:ring-2 hover:ring-amber"
           >
             {formatPrice(chore.price_cents, currency, locale)}
@@ -287,51 +365,61 @@ function ChoreCardAdmin({
   );
 }
 
-function StatusLine({ status, locale }: { status: ParentChoreStatus; locale: "en" | "fr" }) {
-  const date = (iso: string) => new Date(iso).toLocaleDateString(locale === "fr" ? "fr-CA" : "en-CA", { month: "short", day: "numeric" });
+function StatusLine({ status, locale }: { status: ParentChoreStatus; locale: Locale }) {
+  const t = useParentT();
+  const date = (iso: string) => new Date(iso).toLocaleDateString(intlLocale(locale), { month: "short", day: "numeric" });
   switch (status.kind) {
     case "paused":
-      return <Badge>⏸ Paused</Badge>;
+      return <Badge>{t("b.chores.status.paused")}</Badge>;
     case "available":
-      return <Badge tone="good">● Available</Badge>;
+      return <Badge tone="good">{t("b.chores.status.available")}</Badge>;
     case "waiting":
-      return <Badge tone="warn">⏳ Waiting for your check{status.count > 1 ? ` (${status.count})` : ""}</Badge>;
+      return (
+        <Badge tone="warn">
+          {status.count > 1 ? t("b.chores.status.waitingCount", { count: status.count }) : t("b.chores.status.waiting")}
+        </Badge>
+      );
     case "done":
-      return <Badge>✓ Done for good</Badge>;
+      return <Badge>{t("b.chores.status.done")}</Badge>;
     case "out_of_season":
-      return <Badge>🍂 Out of season{status.startsAt ? `, starts ${date(status.startsAt)}` : ""}</Badge>;
+      return (
+        <Badge>
+          {status.startsAt ? t("b.chores.status.outOfSeasonStarts", { date: date(status.startsAt) }) : t("b.chores.status.outOfSeason")}
+        </Badge>
+      );
     case "cooldown":
       return (
         <Badge tone="bad">
-          🌙 Back in {status.days} day{status.days === 1 ? "" : "s"}
-          {status.lastKidName ? ` (last done by ${status.lastKidName} on ${date(status.lastDate)})` : ""}
+          {status.days === 1 ? t("b.chores.status.backInOne") : t("b.chores.status.backIn", { days: status.days })}
+          {status.lastKidName ? t("b.chores.status.lastDoneBy", { name: status.lastKidName, date: date(status.lastDate) }) : ""}
         </Badge>
       );
   }
 }
 
 function DeleteButton({ chore, onDelete, onPause }: { chore: AdminChore; onDelete: () => void; onPause: () => void }) {
+  const t = useParentT();
   const [asking, setAsking] = useState(false);
   if (!asking) {
     return (
       <Button size="sm" variant="ghost" onClick={() => setAsking(true)}>
-        Delete
+        {t("b.chores.delete")}
       </Button>
     );
   }
   if (chore.hasHistory) {
     return (
       <span className="flex w-full flex-wrap items-center gap-2 rounded-xl bg-gold/30 p-2 text-xs font-semibold text-ink">
-        This chore has history, so it stays for your records. Pause it to hide it from kids.
-        {chore.active ? <Button size="sm" variant="secondary" onClick={() => { setAsking(false); onPause(); }}>Pause instead</Button> : null}
-        <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>OK</Button>
+        {t("b.chores.hasHistory")}
+        {chore.active ? <Button size="sm" variant="secondary" onClick={() => { setAsking(false); onPause(); }}>{t("b.chores.pauseInstead")}</Button> : null}
+        <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>{t("b.common.ok")}</Button>
       </span>
     );
   }
   return (
     <span className="flex items-center gap-1">
-      <Button size="sm" variant="danger" onClick={onDelete}>Yes, delete</Button>
-      <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>Cancel</Button>
+      <Button size="sm" variant="danger" onClick={onDelete}>{t("b.chores.yesDelete")}</Button>
+      <Button size="sm" variant="ghost" onClick={() => setAsking(false)}>{t("b.common.cancel")}</Button>
     </span>
   );
 }

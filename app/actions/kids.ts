@@ -2,10 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { PRESET_PREFIX, isPresetId } from "@/lib/avatarPresets";
 import { ActionError, requireWritableParent, runAction, type ParentContext } from "@/lib/auth/session";
 import { MAX_KIDS } from "@/lib/billing/plans";
 import { needsPaymentForAnotherKid } from "@/lib/billing/access";
 import { syncKidQuantity } from "@/lib/billing/stripe";
+import { parentT, type ParentKey } from "@/lib/i18n/parent";
+
+/** Zod messages are parent-dictionary keys; anything else (zod defaults) becomes "Check the form." */
+function issueMessage(ctx: ParentContext, message: string | undefined): string {
+  const t = parentT(ctx.locale);
+  return message?.startsWith("a.") ? t(message as ParentKey) : t("a.common.checkForm");
+}
 
 const KID_COLORS = ["#E08A1E", "#B8431F", "#6B7A2E", "#7A3B4A", "#2F6F8F", "#C9962B", "#8A5A9E", "#3C8D6E"];
 const color = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
@@ -18,15 +26,12 @@ async function assertKidRoom(ctx: ParentContext, adding: number) {
     .is("archived_at", null);
   const current = count ?? 0;
   if (current + adding > MAX_KIDS) {
-    throw new ActionError("invalid", `A household can have up to ${MAX_KIDS} kids.`);
+    throw new ActionError("invalid", parentT(ctx.locale)("a.err.maxKids", { max: MAX_KIDS }));
   }
   // Each kid beyond the first needs the $5/month subscription (free during the trial).
   for (let i = 0; i < adding; i++) {
     if (needsPaymentForAnotherKid(ctx.subscription, new Date(), current + i)) {
-      throw new ActionError(
-        "limit",
-        "Your first kid is free. Each extra kid is $5/month: start your subscription in Billing to add more.",
-      );
+      throw new ActionError("limit", parentT(ctx.locale)("a.err.kidLimit"));
     }
   }
   return current;
@@ -45,9 +50,10 @@ async function syncBilling(householdId: string) {
 export async function addKids(names: string[]) {
   return runAction(async () => {
     const ctx = await requireWritableParent();
+    const t = parentT(ctx.locale);
     const clean = names.map((n) => n.trim()).filter(Boolean);
-    if (clean.length === 0) throw new ActionError("invalid", "Add at least one kid.");
-    if (clean.some((n) => n.length > 40)) throw new ActionError("invalid", "Names can be up to 40 characters.");
+    if (clean.length === 0) throw new ActionError("invalid", t("a.onb.kids.atLeastOne"));
+    if (clean.some((n) => n.length > 40)) throw new ActionError("invalid", t("a.err.nameLength"));
     const existing = await assertKidRoom(ctx, clean.length);
     const { data, error } = await ctx.supabase
       .from("kids")
@@ -68,16 +74,18 @@ export async function addKids(names: string[]) {
 }
 
 const KidInput = z.object({
-  name: z.string().trim().min(1, "Name is required.").max(40),
+  name: z.string().trim().min(1, "a.err.nameRequired" satisfies ParentKey).max(40, "a.err.nameLength" satisfies ParentKey),
   color,
   sort_order: z.coerce.number().int().min(0).max(1000).optional(),
+  /** null = same as the household. */
+  locale: z.enum(["en", "fr", "es", "pt"]).nullable().optional(),
 });
 
 export async function createKid(input: z.input<typeof KidInput>) {
   return runAction(async () => {
     const ctx = await requireWritableParent();
     const parsed = KidInput.safeParse(input);
-    if (!parsed.success) throw new ActionError("invalid", parsed.error.issues[0]?.message ?? "Check the form.");
+    if (!parsed.success) throw new ActionError("invalid", issueMessage(ctx, parsed.error.issues[0]?.message));
     const existing = await assertKidRoom(ctx, 1);
     const { data, error } = await ctx.supabase
       .from("kids")
@@ -95,7 +103,7 @@ export async function updateKid(kidId: string, input: z.input<typeof KidInput>) 
   return runAction(async () => {
     const ctx = await requireWritableParent();
     const parsed = KidInput.safeParse(input);
-    if (!parsed.success) throw new ActionError("invalid", parsed.error.issues[0]?.message ?? "Check the form.");
+    if (!parsed.success) throw new ActionError("invalid", issueMessage(ctx, parsed.error.issues[0]?.message));
     const { error } = await ctx.supabase
       .from("kids")
       .update(parsed.data)
@@ -107,13 +115,17 @@ export async function updateKid(kidId: string, input: z.input<typeof KidInput>) 
   });
 }
 
-/** After the browser uploaded avatars/{household}/{kid}.webp. */
-export async function setKidAvatar(kidId: string, hasPhoto: boolean) {
+/**
+ * After the browser uploaded avatars/{household}/{kid}.webp (true), removed it (false),
+ * or picked a cartoon avatar (its preset id, stored as "preset:<id>").
+ */
+export async function setKidAvatar(kidId: string, avatar: boolean | string) {
   return runAction(async () => {
     const ctx = await requireWritableParent();
     const id = z.uuid().parse(kidId);
-    const path = hasPhoto ? `${ctx.household.id}/${id}.webp` : null;
-    if (!hasPhoto) await ctx.supabase.storage.from("avatars").remove([`${ctx.household.id}/${id}.webp`]);
+    const preset = typeof avatar === "string" ? z.string().refine(isPresetId).parse(avatar) : null;
+    const path = preset ? `${PRESET_PREFIX}${preset}` : avatar ? `${ctx.household.id}/${id}.webp` : null;
+    if (avatar !== true) await ctx.supabase.storage.from("avatars").remove([`${ctx.household.id}/${id}.webp`]);
     const { error } = await ctx.supabase
       .from("kids")
       .update({ avatar_path: path })

@@ -1,8 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { getHouseholdAccess, hasPaidSubscription, inFreeTrial, needsPaymentForAnotherKid, trialDaysLeft } from "./access";
 import { billableExtraKids, monthlyPriceCents, mrrCents, planFromLookupKey, withinLimit } from "./plans";
 
 const now = new Date("2026-09-26T12:00:00Z");
+
+// These rules describe billing when it is switched on.
+beforeAll(() => vi.stubEnv("BILLING_ENABLED", "true"));
+afterAll(() => vi.unstubAllEnvs());
+
+describe("billing switched off (current default)", () => {
+  it("gives everyone full access, unlimited kids, no trial countdown", () => {
+    vi.stubEnv("BILLING_ENABLED", "");
+    const expired = { plan: "trial", status: "active", trial_ends_at: "2026-01-01T00:00:00Z" };
+    expect(getHouseholdAccess(expired, now, 8)).toBe("full");
+    expect(needsPaymentForAnotherKid(expired, now, 8)).toBe(false);
+    expect(trialDaysLeft({ plan: "trial", status: "active", trial_ends_at: "2026-10-01T00:00:00Z" }, now)).toBe(0);
+    vi.stubEnv("BILLING_ENABLED", "true");
+  });
+});
 const trial = { plan: "trial", status: "trialing", trial_ends_at: "2026-10-01T00:00:00Z" };
 const expiredTrial = { plan: "trial", status: "trialing", trial_ends_at: "2026-09-20T00:00:00Z" };
 const paid = { plan: "family", status: "active", trial_ends_at: null, stripe_subscription_id: "sub_1" };
@@ -15,7 +30,7 @@ describe("getHouseholdAccess (first kid free, $5 per extra kid)", () => {
     expect(getHouseholdAccess({ ...paid, status: "trialing" }, now, 3)).toBe("full");
   });
 
-  it("one kid is free forever", () => {
+  it("one kid is free", () => {
     expect(getHouseholdAccess(expiredTrial, now, 1)).toBe("full");
     expect(getHouseholdAccess(null, now, 0)).toBe("full");
     expect(getHouseholdAccess({ ...paid, status: "canceled" }, now, 1)).toBe("full");

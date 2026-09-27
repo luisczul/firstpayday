@@ -1,0 +1,22 @@
+<div style="background:#FBF3E4;font-family:Nunito,Arial,sans-serif;padding:32px 20px">
+<div style="max-width:520px;margin:0 auto">
+<div style="font-size:22px;font-weight:800;color:#B8431F;margin-bottom:16px">First Payday</div>
+<div style="background:#FFFAF1;border-radius:16px;padding:24px;border:1px solid #EAD8B8">
+{{ if eq .Data.locale "fr" }}
+<h1 style="font-size:22px;margin:0 0 12px;color:#3B2418">Bienvenue sur First Payday!</h1>
+<p style="font-size:16px;line-height:1.5;color:#3B2418">Touche le bouton pour confirmer ton courriel et préparer le tableau de tâches de ta famille.</p>
+<p style="margin:24px 0"><a href="{{ .ConfirmationURL }}" style="background:#B8431F;color:#fff;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:999px;display:inline-block">Confirmer mon courriel</a></p>
+{{ else if eq .Data.locale "es" }}
+<h1 style="font-size:22px;margin:0 0 12px;color:#3B2418">¡Bienvenido a First Payday!</h1>
+<p style="font-size:16px;line-height:1.5;color:#3B2418">Toca el botón para confirmar tu correo y preparar el tablero de tareas de tu familia.</p>
+<p style="margin:24px 0"><a href="{{ .ConfirmationURL }}" style="background:#B8431F;color:#fff;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:999px;display:inline-block">Confirmar mi correo</a></p>
+{{ else if eq .Data.locale "pt" }}
+<h1 style="font-size:22px;margin:0 0 12px;color:#3B2418">Boas-vindas ao First Payday!</h1>
+<p style="font-size:16px;line-height:1.5;color:#3B2418">Toque no botão para confirmar seu e-mail e montar o quadro de tarefas da sua família.</p>
+<p style="margin:24px 0"><a href="{{ .ConfirmationURL }}" style="background:#B8431F;color:#fff;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:999px;display:inline-block">Confirmar meu e-mail</a></p>
+{{ else }}
+<h1 style="font-size:22px;margin:0 0 12px;color:#3B2418">Welcome to First Payday!</h1>
+<p style="font-size:16px;line-height:1.5;color:#3B2418">Tap the button to confirm your email and set up your family's chore board.</p>
+<p style="margin:24px 0"><a href="{{ .ConfirmationURL }}" style="background:#B8431F;color:#fff;text-decoration:none;font-weight:800;padding:14px 22px;border-radius:999px;display:inline-block">Confirm my email</a></p>
+{{ end }}
+</div></div></div>

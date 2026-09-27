@@ -5,7 +5,7 @@ import { loadHistory, toCsv, type HistoryFilters } from "@/lib/history";
 export async function GET(req: NextRequest) {
   const ctx = await getParentContext();
   if (!ctx) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const p = req.nextUrl.searchParams;
+  const p = new URL(req.url).searchParams; // not req.nextUrl: see app/api/cron/weekly-report
   const filters: HistoryFilters = {
     kid: p.get("kid") || undefined,
     chore: p.get("chore") || undefined,

@@ -1,3 +1,5 @@
+import { emojiColor } from "@/lib/emojiColors";
+import { checklistProgress, parseSubtasks, type Subtask } from "@/lib/schedule/checklist";
 import {
   comingBack,
   getChoreState,
@@ -28,6 +30,11 @@ export interface BoardChoreRow {
   available_until: string | null;
   sort_order: number;
   created_at: string;
+  category: string;
+  template_key?: string | null;
+  translations?: unknown;
+  /** Checklist steps (chores.subtasks jsonb); empty for a plain chore. */
+  subtasks?: unknown;
   assignee_ids: string[];
 }
 
@@ -54,6 +61,7 @@ export interface BoardCard {
   unitLabel: string | null;
   maxQuantity: number;
   noteForKids: string | null;
+  category: string;
   state: ChoreStateName;
   isNew: boolean;
   availableAt: string | null;
@@ -67,6 +75,8 @@ export interface BoardCard {
   } | null;
   /** Echoed back on submit for optimistic concurrency (kiosk_create_submission). */
   expectedLastId: string | null;
+  /** Checklist chore: its steps and the ones this kid ticked this period. */
+  checklist: { subtasks: Subtask[]; done: string[] } | null;
 }
 
 export interface BoardSections {
@@ -79,8 +89,10 @@ export interface BoardSections {
 
 const PALETTE = ["#B8431F", "#E08A1E", "#6B7A2E", "#7A3B4A", "#C9962B"];
 
-/** Stable fallback stripe color when a chore has none. */
-export function choreColor(chore: Pick<BoardChoreRow, "id" | "color">): string {
+/** Stripe color: driven by the card's icon; stable fallback when a chore has none. */
+export function choreColor(chore: Pick<BoardChoreRow, "id" | "color" | "emoji">): string {
+  const fromIcon = emojiColor(chore.emoji);
+  if (fromIcon) return fromIcon;
   if (chore.color) return chore.color;
   let h = 0;
   for (const ch of chore.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
@@ -90,9 +102,10 @@ export function choreColor(chore: Pick<BoardChoreRow, "id" | "color">): string {
 function toCard(
   chore: BoardChoreRow,
   state: ReturnType<typeof getChoreState<BoardSubmissionRow>>,
-  opts: { isNew: boolean; now: Date; timeZone: string },
+  opts: { isNew: boolean; now: Date; timeZone: string; checked?: readonly string[] },
 ): BoardCard {
   const sub = state.submission;
+  const steps = parseSubtasks(chore.subtasks);
   return {
     choreId: chore.id,
     title: chore.title,
@@ -103,6 +116,7 @@ function toCard(
     unitLabel: chore.unit_label,
     maxQuantity: chore.max_quantity,
     noteForKids: chore.note_for_kids,
+    category: chore.category,
     state: state.state,
     isNew: opts.isNew,
     availableAt: state.availableAt?.toISOString() ?? null,
@@ -117,6 +131,7 @@ function toCard(
         }
       : null,
     expectedLastId: state.latestRelevant?.id ?? null,
+    checklist: steps.length ? { subtasks: steps, done: checklistProgress(steps, opts.checked ?? []).doneIds } : null,
   };
 }
 
@@ -128,6 +143,8 @@ export function buildBoard(input: {
   kidLastSeenBoardAt: string | null;
   household: ScheduleHousehold;
   now: Date;
+  /** Checklist ticks for the current period, by chore id. */
+  checks?: Readonly<Record<string, readonly string[]>>;
 }): BoardSections {
   const { chores, submissions, kidId, household, now } = input;
   const byChore = new Map<string, BoardSubmissionRow[]>();
@@ -150,7 +167,7 @@ export function buildBoard(input: {
       household,
     );
     const fresh = isNew(state, now, input.kidLastSeenBoardAt);
-    const card = toCard(chore, state, { isNew: fresh, now, timeZone: household.timezone });
+    const card = toCard(chore, state, { isNew: fresh, now, timeZone: household.timezone, checked: input.checks?.[chore.id] });
     switch (state.state) {
       case "needs_fixing":
         sections.fix.push(card);

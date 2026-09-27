@@ -8,6 +8,11 @@ describe("format", () => {
     expect(formatMoney(-2000, "CAD", "en")).toBe("-$20.00");
     expect(formatMoney(1250, "CAD", "fr").replace(/\s/g, " ")).toBe("12,50 $");
     expect(formatMoney(500, "USD", "en-US")).toBe("$5.00");
+    // Latin American Spanish (es-419), not Spain's "12,50 $".
+    expect(formatMoney(1250, "CAD", "es")).toBe("$12.50");
+    expect(formatMoney(123450, "MXN", "es")).toBe("$1,234.50");
+    expect(formatMoney(1250, "BRL", "pt").replace(/\s/g, " ")).toBe("R$ 12,50");
+    expect(formatPrice(200, "CAD", "pt").replace(/\s/g, " ")).toBe("$ 2");
   });
 
   it("price chips drop .00 but keep cents", () => {
@@ -19,6 +24,9 @@ describe("format", () => {
   it("parses parent-typed amounts", () => {
     expect(parseMoneyToCents("12")).toBe(1200);
     expect(parseMoneyToCents("12.5")).toBe(1250);
+    expect(parseMoneyToCents("0.50")).toBe(50);
+    expect(parseMoneyToCents(".50")).toBe(50);
+    expect(parseMoneyToCents(".")).toBeNull();
     expect(parseMoneyToCents("12,05")).toBe(1205);
     expect(parseMoneyToCents(" $7.99 ")).toBe(799);
     expect(parseMoneyToCents("-3")).toBe(-300);

@@ -4,7 +4,7 @@ import type { ParentContext } from "@/lib/auth/session";
 export interface HistoryFilters {
   kid?: string;
   chore?: string;
-  type?: "all" | "submissions" | "earning" | "payout" | "adjustment" | "match";
+  type?: "all" | "submissions" | "earning" | "bonus" | "promo" | "payout" | "tax" | "adjustment" | "match";
   from?: string;
   to?: string;
 }
@@ -19,13 +19,19 @@ export interface HistoryRow {
   status: string | null;
   amountCents: number;
   note: string | null;
+  /** Name of the tablet a submission came from; null when unknown or not a submission. */
+  tablet: string | null;
 }
 
 /** Combined feed of submissions and ledger events (SPEC §8 A5). */
 export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit = 500): Promise<HistoryRow[]> {
   const hid = ctx.household.id;
-  const { data: kids } = await ctx.supabase.from("kids").select("id, name").eq("household_id", hid);
+  const [{ data: kids }, { data: devices }] = await Promise.all([
+    ctx.supabase.from("kids").select("id, name").eq("household_id", hid),
+    ctx.supabase.from("devices").select("id, name").eq("household_id", hid),
+  ]);
   const kidName = new Map((kids ?? []).map((k) => [k.id, k.name]));
+  const deviceName = new Map((devices ?? []).map((d) => [d.id, d.name]));
   const type = f.type ?? "all";
   const rows: HistoryRow[] = [];
   // Date filters are inclusive local days; the day after `to` is exclusive.
@@ -34,7 +40,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
   if (type === "all" || type === "submissions") {
     let q = ctx.supabase
       .from("submissions")
-      .select("id, kid_id, chore_id, chore_title_snapshot, status, amount_cents, submitted_at, review_comment")
+      .select("id, kid_id, chore_id, chore_title_snapshot, status, amount_cents, submitted_at, review_comment, device_id")
       .eq("household_id", hid)
       .order("submitted_at", { ascending: false })
       .limit(limit);
@@ -54,6 +60,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
         status: s.status,
         amountCents: s.amount_cents,
         note: s.review_comment,
+        tablet: s.device_id ? (deviceName.get(s.device_id) ?? null) : null,
       });
     }
   }
@@ -81,6 +88,7 @@ export async function loadHistory(ctx: ParentContext, f: HistoryFilters, limit =
         status: null,
         amountCents: l.amount_cents,
         note: l.note,
+        tablet: null,
       });
     }
   }
@@ -95,9 +103,9 @@ export function toCsv(rows: HistoryRow[]): string {
     const safe = /^[=+\-@]/.test(s) && typeof v === "string" ? `'${s}` : s;
     return `"${safe.replace(/"/g, '""')}"`;
   };
-  const header = ["date", "kid", "type", "title", "status", "amount", "note"];
+  const header = ["date", "kid", "type", "title", "status", "amount", "note", "tablet"];
   const lines = rows.map((r) =>
-    [r.at, r.kidName, r.type, r.title, r.status, (r.amountCents / 100).toFixed(2), r.note].map(esc).join(","),
+    [r.at, r.kidName, r.type, r.title, r.status, (r.amountCents / 100).toFixed(2), r.note, r.tablet].map(esc).join(","),
   );
   return [header.join(","), ...lines].join("\n");
 }

@@ -7,6 +7,8 @@ import { addChoresFromTemplates } from "@/app/actions/chores";
 import { TemplatePicker } from "@/components/admin/TemplatePicker";
 import { Alert } from "@/components/ui";
 import type { ChoreTemplate } from "@/lib/templates";
+import { type Locale } from "@/lib/i18n";
+import { useParentT } from "@/lib/i18n/parent/client";
 
 export function ChoresStep({
   templates,
@@ -17,22 +19,23 @@ export function ChoresStep({
   templates: ChoreTemplate[];
   existingKeys: string[];
   currency: string;
-  locale: "en" | "fr";
+  locale: Locale;
 }) {
   const router = useRouter();
+  const t = useParentT();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-bold text-ink">Pick your chores 🧹</h1>
+          <h1 className="font-display text-4xl font-bold text-ink">{t("a.onb.chores.title")}</h1>
           <p className="mt-1 text-ink-soft">
-            Everything is selected. Tap a card to skip it, and tweak prices or how often it repeats.
+            {t("a.onb.chores.intro")}
           </p>
         </div>
         {existingKeys.length ? (
-          <Link href="/onboarding/tablet" className="shrink-0 font-bold text-maple">Skip →</Link>
+          <Link href="/onboarding/tablet" className="shrink-0 font-bold text-maple">{t("a.onb.chores.skip")}</Link>
         ) : null}
       </div>
       {error ? <Alert tone="bad">{error}</Alert> : null}
@@ -42,7 +45,7 @@ export function ChoresStep({
         currency={currency}
         locale={locale}
         busy={pending}
-        submitLabel={pending ? "Adding…" : "Next: the tablet →"}
+        submitLabel={pending ? t("a.onb.chores.adding") : t("a.onb.chores.next")}
         onSubmit={(picks) =>
           start(async () => {
             const r = await addChoresFromTemplates(picks);

@@ -1,5 +1,7 @@
 "use client";
 
+import { ParentLocaleProvider } from "@/lib/i18n/parent/client";
+import { parentT } from "@/lib/i18n/parent";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -33,6 +35,7 @@ export function AdminShell(props: {
   children: React.ReactNode;
 }) {
   const tr = translator(props.locale);
+  const pt = parentT(props.locale);
   const pathname = usePathname();
   const router = useRouter();
   const [pending, setPending] = useState(props.pendingCount);
@@ -85,7 +88,7 @@ export function AdminShell(props: {
           <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl bg-maple text-lg text-gold">$</span>
           {brand.name}
         </Link>
-        <nav className="flex flex-col gap-1" aria-label="Admin">
+        <nav className="flex flex-col gap-1" aria-label={pt("b.shell.nav")}>
           {NAV.map((n) => (
             <Link
               key={n.href}
@@ -106,6 +109,12 @@ export function AdminShell(props: {
           ))}
         </nav>
         <div className="mt-auto flex flex-col gap-2 px-1">
+          <Link
+            href="/admin/support"
+            className={`flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${isActive("/admin/support") ? "bg-maple text-white" : "text-ink-soft hover:bg-paper-deep"}`}
+          >
+            {pt("b.shell.help")}
+          </Link>
           <p className="truncate px-2 text-sm font-bold text-ink-soft">{props.householdName}</p>
           <form action={logout}>
             <button className="min-h-10 w-full rounded-xl px-3 text-left text-sm font-bold text-ink-soft hover:bg-paper-deep">
@@ -118,21 +127,21 @@ export function AdminShell(props: {
       <div className="flex min-w-0 flex-1 flex-col pb-24 md:pb-0">
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/90 px-4 py-2.5 backdrop-blur">
-          <span className="truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
+          <span className="min-w-0 truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
           <div className="ml-auto flex items-center gap-2">
             {props.onKiosk ? (
               <form action="/api/admin-mode/exit" method="post">
-                <button className={buttonClass("success", "sm")}>
+                <button className={`${buttonClass("success", "sm")} whitespace-nowrap`}>
                   🧒 <span className="hidden sm:inline">{tr("nav.backToKidsMode")}</span>
                   <span className="sm:hidden">{tr("nav.kidsMode")}</span>
                 </button>
               </form>
             ) : (
               <button
-                className={buttonClass("secondary", "sm")}
+                className={`${buttonClass("secondary", "sm")} whitespace-nowrap`}
                 disabled={switching}
                 onClick={() => {
-                  if (window.confirm("Turn this device into the kids' tablet? You'll be logged out here.")) {
+                  if (window.confirm(pt("b.shell.confirmKiosk"))) {
                     startSwitch(async () => {
                       const r = await enableKioskOnThisDevice();
                       if (r && !r.ok) window.alert(r.message);
@@ -145,7 +154,7 @@ export function AdminShell(props: {
               </button>
             )}
             <form action={logout} className="md:hidden">
-              <button className={buttonClass("ghost", "sm")}>{tr("nav.logout")}</button>
+              <button className={`${buttonClass("ghost", "sm")} whitespace-nowrap`}>{tr("nav.logout")}</button>
             </form>
           </div>
         </header>
@@ -168,24 +177,29 @@ export function AdminShell(props: {
 
         {props.onKiosk ? <AdminTimeout minutes={props.adminTimeoutMinutes} locale={props.locale} /> : null}
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8">{props.children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8">
+          <ParentLocaleProvider locale={props.locale}>{props.children}</ParentLocaleProvider>
+        </main>
       </div>
 
       {/* Bottom tabs (phone) */}
       <nav
         className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
-        aria-label="Admin"
+        aria-label={pt("b.shell.nav")}
       >
         {NAV.map((n) => (
           <Link
             key={n.href}
             href={n.href}
-            className={`relative flex min-h-16 flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${
+            className={`relative flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 text-[11px] font-bold ${
               isActive(n.href) ? "text-maple" : "text-ink-soft"
             }`}
           >
             <span className="text-xl" aria-hidden>{n.icon}</span>
-            {tr(n.key)}
+            {/* Six tabs share a phone's width: keep every label inside its tab. */}
+            <span className="w-full truncate px-0.5 text-center tracking-tight">
+              {tr(n.key === "nav.settings" ? "nav.settingsShort" : n.key === "nav.approvals" ? "nav.approvalsShort" : n.key)}
+            </span>
             {n.href === "/admin/approvals" && pending > 0 ? (
               <span className="absolute top-1.5 right-[22%] rounded-full bg-maple px-1.5 text-[10px] font-black text-white">{pending}</span>
             ) : null}

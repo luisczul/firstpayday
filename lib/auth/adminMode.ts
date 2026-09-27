@@ -30,6 +30,15 @@ export async function readAdminMode(value: string | undefined): Promise<AdminMod
   return { userId, until: Number(untilStr), timeoutMinutes: Number(timeoutStr) };
 }
 
+/** The kids' tablet key: one year, renewed on every visit, so parents never have to set it up again. */
+export const kioskCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+};
+
 export const adminModeCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",

@@ -1,3 +1,4 @@
+import { billingEnabled } from "./plans";
 import "server-only";
 import Stripe from "stripe";
 import { requireEnv } from "@/lib/env";
@@ -24,6 +25,7 @@ export async function extraKidPriceId(): Promise<string> {
  * kid is added, archived or restored. Prorated. No-op without a subscription.
  */
 export async function syncKidQuantity(householdId: string): Promise<void> {
+  if (!billingEnabled()) return;
   if (!process.env.STRIPE_SECRET_KEY) return;
   const admin = createAdminClient();
   const [{ data: sub }, { count }] = await Promise.all([

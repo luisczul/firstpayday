@@ -57,7 +57,14 @@ export function KidPicker({ initial }: { initial: { household: KioskHousehold; k
             whileTap={{ scale: 0.94 }}
             className="flex w-56 flex-col items-center gap-4 rounded-[2rem] p-4"
           >
-            <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={kids.length > 3 ? 150 : 180} />
+            <span className="relative">
+              <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={kids.length > 3 ? 150 : 180} />
+              {kid.revisions > 0 ? (
+                <span className="absolute -top-2 -right-2 flex h-14 min-w-14 animate-bounce items-center justify-center rounded-full bg-plum px-3 text-2xl font-black text-white shadow-[var(--shadow-pop)] ring-4 ring-paper">
+                  🛠 {kid.revisions}
+                </span>
+              ) : null}
+            </span>
             <span className="font-display text-4xl font-bold text-ink">{kid.name}</span>
             <span className="rounded-full bg-card px-5 py-2 text-3xl font-black text-moss shadow-[var(--shadow-card)]">
               {formatMoney(kid.balanceCents, household.currency, household.locale)}

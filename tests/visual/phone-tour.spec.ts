@@ -10,7 +10,6 @@ test("phone tour", async ({ browser }) => {
   const p = await ctx.newPage();
   const shot = (n: string) => p.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
   await p.goto("/"); await shot("01-landing");
-  await p.goto("/pricing"); await shot("02-pricing");
   await p.goto("/signup"); await shot("03-signup");
   await p.getByLabel("Email").fill(`tour-${randomUUID().slice(0, 6)}@example.test`);
   await p.getByLabel("Password").fill(`tour-${randomUUID()}`);

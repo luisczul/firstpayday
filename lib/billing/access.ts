@@ -1,4 +1,4 @@
-import { FREE_KIDS, type PlanId } from "./plans";
+import { FREE_KIDS, billingEnabled, type PlanId } from "./plans";
 
 export type HouseholdAccess = "full" | "read_only";
 
@@ -37,6 +37,7 @@ export function getHouseholdAccess(
   now: Date,
   activeKids: number,
 ): HouseholdAccess {
+  if (!billingEnabled()) return "full";
   if (sub?.plan === "comp") return "full";
   if (inFreeTrial(sub, now)) return "full";
   if (hasPaidSubscription(sub, now)) return "full";
@@ -49,12 +50,14 @@ export function needsPaymentForAnotherKid(
   now: Date,
   activeKids: number,
 ): boolean {
+  if (!billingEnabled()) return false;
   if (sub?.plan === "comp" || inFreeTrial(sub, now) || hasPaidSubscription(sub, now)) return false;
   return activeKids + 1 > FREE_KIDS;
 }
 
 /** Whole days left in the trial (0 when over). */
 export function trialDaysLeft(sub: SubscriptionLike | null | undefined, now: Date): number {
+  if (!billingEnabled()) return 0;
   if (!sub?.trial_ends_at || sub.plan !== "trial") return 0;
   return Math.max(0, Math.ceil((new Date(sub.trial_ends_at).getTime() - now.getTime()) / 86_400_000));
 }

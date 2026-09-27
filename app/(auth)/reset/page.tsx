@@ -1,22 +1,21 @@
-"use client";
-
-import { useActionState } from "react";
-import { requestReset } from "../actions";
+import type { Metadata } from "next";
+import { marketing } from "@/lib/i18n/marketing";
+import { getSiteLang } from "@/lib/i18n/marketing/server";
 import { AuthShell } from "../AuthShell";
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { authMetadata } from "../authMeta";
+import { ResetForm } from "./ResetForm";
 
-export default function ResetPage() {
-  const [state, action, pending] = useActionState(requestReset, undefined);
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getSiteLang();
+  return authMetadata(lang, "/reset", marketing(lang).auth.resetTitle);
+}
+
+export default async function ResetPage() {
+  const lang = await getSiteLang();
+  const t = marketing(lang).auth;
   return (
-    <AuthShell title="Reset your password">
-      <form action={action} className="flex flex-col gap-4">
-        <Field label="Email">
-          <Input name="email" type="email" autoComplete="email" required />
-        </Field>
-        {state?.error ? <Alert tone="bad">{state.error}</Alert> : null}
-        {state?.message ? <Alert tone="good">{state.message}</Alert> : null}
-        <Button type="submit" size="lg" disabled={pending}>Send reset link</Button>
-      </form>
+    <AuthShell lang={lang} path="/reset" title={t.resetTitle}>
+      <ResetForm t={{ email: t.email, resetButton: t.resetButton }} />
     </AuthShell>
   );
 }

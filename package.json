@@ -17,7 +17,7 @@
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres --schema public > lib/supabase/database.types.ts",
-    "secrets:check": "! git grep -nE 'sk_(live|test)_[A-Za-z0-9]{8,}|whsec_[A-Za-z0-9]{8,}|eyJhbGciOi[A-Za-z0-9_-]{20,}' -- ':!SPEC.md' ':!pnpm-lock.yaml' && echo 'secrets check: clean'",
+    "secrets:check": "! git grep -nE 'sk_(live|test)_[A-Za-z0-9]{8,}|sk-ant-[A-Za-z0-9_-]{20,}|whsec_[A-Za-z0-9]{8,}|eyJhbGciOi[A-Za-z0-9_-]{20,}' -- ':!SPEC.md' ':!pnpm-lock.yaml' && echo 'secrets check: clean'",
     "test:rls": "vitest run --config vitest.rls.config.mts"
   },
   "dependencies": {

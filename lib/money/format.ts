@@ -1,12 +1,18 @@
 const formatters = new Map<string, Intl.NumberFormat>();
 
+/** App locale -> Intl tag (kept inline so this module stays dictionary-free). */
+const INTL: Record<string, string> = { en: "en-CA", fr: "fr-CA", es: "es-419", pt: "pt-BR" };
+const NARROW = new Set(["es", "pt"]);
+
 function formatter(locale: string, currency: string, whole: boolean): Intl.NumberFormat {
   const key = `${locale}|${currency}|${whole}`;
   let f = formatters.get(key);
   if (!f) {
-    f = new Intl.NumberFormat(locale === "fr" ? "fr-CA" : locale === "en" ? "en-CA" : locale, {
+    f = new Intl.NumberFormat(INTL[locale] ?? locale, {
       style: "currency",
       currency,
+      // Spanish/Portuguese Intl data spells out "CAD"/"MXN"; kids read "$".
+      currencyDisplay: NARROW.has(locale) ? "narrowSymbol" : "symbol",
       minimumFractionDigits: whole ? 0 : 2,
       maximumFractionDigits: 2,
     });
@@ -28,9 +34,17 @@ export function formatPrice(cents: number, currency = "CAD", locale = "en"): str
 /** Parse a parent-typed amount ("12", "12.5", "12,50", "$12") to cents. */
 export function parseMoneyToCents(input: string): number | null {
   const cleaned = input.replace(/[\s$€£]/g, "").replace(",", ".");
-  if (!/^-?\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  // "12", "12.5", "0.50" and ".50" (50 cents).
+  if (!/^-?(\d+(\.\d{1,2})?|\.\d{1,2})$/.test(cleaned)) return null;
   const negative = cleaned.startsWith("-");
   const [whole, frac = ""] = cleaned.replace("-", "").split(".");
-  const cents = Number(whole) * 100 + Number(frac.padEnd(2, "0"));
+  const cents = Number(whole || 0) * 100 + Number(frac.padEnd(2, "0"));
   return negative ? -cents : cents;
+}
+
+/** Value for an amount text field, with the decimal comma where the language uses one: "1.10" / "1,10". */
+export function amountInput(cents: number, locale = "en", trimWhole = false): string {
+  let s = (cents / 100).toFixed(2);
+  if (trimWhole) s = s.replace(/\.00$/, "");
+  return locale === "fr" || locale === "pt" ? s.replace(".", ",") : s;
 }

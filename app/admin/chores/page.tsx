@@ -1,10 +1,15 @@
 import { requireParent } from "@/lib/auth/session";
+import { parentT } from "@/lib/i18n/parent";
 import { parentChoreStatus } from "@/lib/board/parentStatus";
 import type { BoardChoreRow } from "@/lib/board/buildBoard";
 import { choreColor } from "@/lib/board/buildBoard";
+import { parseSubtasks } from "@/lib/schedule/checklist";
 import { ChoresBoard, type AdminChore } from "./ChoresBoard";
 
-export const metadata = { title: "Chores" };
+export async function generateMetadata() {
+  const ctx = await requireParent();
+  return { title: parentT(ctx.locale)("b.chores.title") };
+}
 
 export default async function ChoresPage() {
   const ctx = await requireParent();
@@ -50,6 +55,7 @@ export default async function ChoresPage() {
       repeat_kind: row.repeat_kind,
       repeat_every_days: c.repeat_every_days,
       scope: row.scope,
+      category: c.category,
       requires_approval: c.requires_approval,
       note_for_kids: c.note_for_kids,
       available_from: c.available_from,
@@ -57,6 +63,7 @@ export default async function ChoresPage() {
       active: c.active,
       template_key: c.template_key,
       assignee_ids: row.assignee_ids,
+      subtasks: parseSubtasks(c.subtasks),
       hasHistory: (historyCount.get(c.id) ?? 0) > 0,
       status: parentChoreStatus({ chore: row, submissions: subs, kids: kids ?? [], household, now }),
     };

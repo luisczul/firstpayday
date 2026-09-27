@@ -3,6 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { emailLayout, sendEmail } from "@/lib/email/send";
 import { appUrl } from "@/lib/env";
 import { safeEqual } from "@/lib/crypto";
+import { brand } from "@/lib/brand";
+import { asLocale } from "@/lib/i18n";
+import { buildTrialEmail } from "@/lib/email/trialEmail";
+import { billingEnabled } from "@/lib/billing/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,8 +19,8 @@ export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization") ?? "";
   if (!secret || !safeEqual(auth, `Bearer ${secret}`)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  // First Payday is free for now: no trial reminders unless billing is switched on.
-  if (process.env.BILLING_ENABLED !== "true") return NextResponse.json({ skipped: "billing disabled" });
+  // First Payday is free: no trial reminders while billing is switched off.
+  if (!billingEnabled()) return NextResponse.json({ skipped: "billing disabled" });
   if (!process.env.RESEND_API_KEY) return NextResponse.json({ skipped: "no RESEND_API_KEY" });
 
   const admin = createAdminClient();
@@ -40,20 +44,12 @@ export async function GET(req: Request) {
     ).filter((e): e is string => Boolean(e));
     if (!emails.length) continue;
 
-    const link = `${appUrl()}/admin/settings/billing`;
-    const ok = await sendEmail(
-      reminder
-        ? {
-            to: emails,
-            subject: "3 days left in your First Payday trial",
-            html: emailLayout("3 days left", `<p>Your kids' board keeps running until your trial ends. Pick a plan any time to keep it going.</p><p><a href="${link}">Choose a plan</a></p>`),
-          }
-        : {
-            to: emails,
-            subject: "Your First Payday trial ended — your data is safe",
-            html: emailLayout("Your trial ended", `<p>Nothing was deleted. Balances and history are all still there, and the kids' tablet shows balances in read-only mode.</p><p><a href="${link}">Pick a plan to switch everything back on</a></p>`),
-          },
-    );
+    const { data: household } = await admin.from("households").select("locale").eq("id", t.household_id).maybeSingle();
+    const email = buildTrialEmail(reminder ? "reminder" : "ended", asLocale(household?.locale), {
+      brandName: brand.name,
+      billingUrl: `${appUrl()}/admin/settings/billing`,
+    });
+    const ok = await sendEmail({ to: emails, subject: email.subject, html: emailLayout(email.title, email.bodyHtml) });
     if (ok) {
       sent++;
       await admin

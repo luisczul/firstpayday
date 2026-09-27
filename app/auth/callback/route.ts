@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const next = url.searchParams.get("next") ?? "/admin";
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
+  // Relative paths only: "//host" and "/\host" (read as "//host") would leave the site.
+  const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/admin";
   const supabase = await createClient();
 
   const code = url.searchParams.get("code");
