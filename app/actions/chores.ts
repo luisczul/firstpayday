@@ -11,6 +11,7 @@ import type { Json } from "@/lib/supabase/database.types";
 import { LOCALES, asLocale, isLocale, type Locale } from "@/lib/i18n";
 import { parentT } from "@/lib/i18n/parent";
 import { zodErrorMessage } from "@/lib/i18n/parent/zodError";
+import { CLAIM_WINDOWS, DEFAULT_CLAIM_WINDOW } from "@/lib/schedule/claims";
 import { MAX_SECTION_LABEL, MAX_SUBTASKS, MAX_SUBTASK_TITLE, SUBTASK_ID, parseSubtasks, type Subtask } from "@/lib/schedule/checklist";
 
 const repeat = z
@@ -50,6 +51,8 @@ const ChoreInput = z
     available_until: dateOrNull,
     assignee_ids: z.array(z.uuid()).max(20),
     subtasks: z.array(SubtaskInput).max(MAX_SUBTASKS, "b.err.maxSteps").optional(),
+    /** How long a kid's "I'm on it!" lasts (whole-house chores only; ignored otherwise). */
+    claim_window: z.enum(CLAIM_WINDOWS).default(DEFAULT_CLAIM_WINDOW),
     /** A new chore started from a template (its ready-made translations are reused when the text is unchanged). */
     template_key: z.string().min(1).max(40).nullish(),
   })
@@ -295,6 +298,16 @@ export async function makeChoreAvailable(choreId: string) {
       .update({ reset_at: new Date().toISOString(), active: true })
       .eq("household_id", ctx.household.id)
       .eq("id", z.uuid().parse(choreId));
+    if (error) throw error;
+    revalidateChores();
+  });
+}
+
+/** A parent puts a claimed chore ("I'm on it!") back on the board for everyone. */
+export async function releaseChoreClaim(claimId: string) {
+  return runAction(async () => {
+    const ctx = await requireWritableParent();
+    const { error } = await ctx.supabase.rpc("parent_release_claim", { p_claim_id: z.uuid().parse(claimId) });
     if (error) throw error;
     revalidateChores();
   });

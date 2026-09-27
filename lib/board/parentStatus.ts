@@ -1,9 +1,11 @@
 import { comingBack, getChoreState, type ScheduleHousehold } from "@/lib/schedule/getChoreState";
+import { isClaimActive, isClaimableChore } from "@/lib/schedule/claims";
 import type { BoardChoreRow, BoardSubmissionRow } from "./buildBoard";
 
 export type ParentChoreStatus =
   | { kind: "paused" }
   | { kind: "available" }
+  | { kind: "claimed"; claimId: string; kidName: string; expiresAt: string }
   | { kind: "waiting"; count: number }
   | { kind: "cooldown"; days: number; lastKidName: string | null; lastDate: string }
   | { kind: "done" }
@@ -16,6 +18,8 @@ export function parentChoreStatus(input: {
   kids: readonly { id: string; name: string }[];
   household: ScheduleHousehold;
   now: Date;
+  /** The household's claims ("I'm on it!"); released or expired ones are ignored. */
+  claims?: readonly { id: string; chore_id: string; kid_id: string; expires_at: string; released_at: string | null }[];
 }): ParentChoreStatus {
   const { chore, submissions, kids, household, now } = input;
   if (!chore.active) return { kind: "paused" };
@@ -26,6 +30,10 @@ export function parentChoreStatus(input: {
   const eligible = chore.assignee_ids.length ? kids.filter((k) => chore.assignee_ids.includes(k.id)) : kids;
   const states = eligible.map((k) => getChoreState(chore, mine, k.id, now, household));
   if (states.length === 0 || states.some((s) => s.state === "available" || s.state === "needs_fixing")) {
+    const claim = isClaimableChore(chore) ? input.claims?.find((c) => c.chore_id === chore.id && isClaimActive(c, now)) : undefined;
+    if (claim) {
+      return { kind: "claimed", claimId: claim.id, kidName: kids.find((k) => k.id === claim.kid_id)?.name ?? "", expiresAt: claim.expires_at };
+    }
     return { kind: "available" };
   }
   if (states.every((s) => s.state === "done_forever")) return { kind: "done" };

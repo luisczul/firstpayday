@@ -1,4 +1,4 @@
-// Parent-side strings: "Share First Payday" (invite friends by email).
+// Parent-side strings: "Share First Payday" (invite friends by email) and chore claims ("I'm on it!").
 // Keys are namespaced "c.<screen>.<name>". en is the source of truth; fr/es/pt must mirror every key.
 export const en = {
   "c.shell.share": "💌 Share First Payday",
@@ -49,6 +49,19 @@ export const en = {
   "c.err.notFound": "That invitation wasn't found.",
   "c.err.alreadyJoined": "{email} already joined First Payday.",
   "c.err.sendFailed": "The email couldn't be sent. Please try again later.",
+
+  "c.claims.onIt": "🙋 {name} is on it · {until}",
+  "c.claims.until": "until {time}",
+  "c.claims.untilEndOfDay": "until the end of the day",
+  "c.claims.release": "Release",
+  "c.claims.releaseHint": "Put it back on the board for everyone",
+  "c.claims.window": "Time to finish once a kid claims it",
+  "c.claims.windowHint": "A kid can tap “I'm on it!” to save this chore. If it isn't done in time, it goes back on the board for everyone.",
+  "c.claims.window.2h": "2 hours",
+  "c.claims.window.4h": "4 hours",
+  "c.claims.window.end_of_day": "Until the end of the day",
+  "c.claims.window.24h": "24 hours",
+  "c.claims.window.48h": "48 hours",
 } as const satisfies Record<string, string>;
 
 export type AreaCKey = keyof typeof en;
@@ -102,6 +115,19 @@ export const fr: Record<AreaCKey, string> = {
   "c.err.notFound": "Invitation introuvable.",
   "c.err.alreadyJoined": "{email} est déjà inscrit à First Payday.",
   "c.err.sendFailed": "Le courriel n'a pas pu être envoyé. Réessayez plus tard.",
+
+  "c.claims.onIt": "🙋 {name} s'en occupe · {until}",
+  "c.claims.until": "jusqu'à {time}",
+  "c.claims.untilEndOfDay": "jusqu'à la fin de la journée",
+  "c.claims.release": "Libérer",
+  "c.claims.releaseHint": "La remettre sur le tableau pour tout le monde",
+  "c.claims.window": "Temps pour la finir une fois réservée",
+  "c.claims.windowHint": "Un enfant peut toucher « Je m'en occupe! » pour la réserver. Si elle n'est pas faite à temps, elle retourne sur le tableau pour tout le monde.",
+  "c.claims.window.2h": "2 heures",
+  "c.claims.window.4h": "4 heures",
+  "c.claims.window.end_of_day": "Jusqu'à la fin de la journée",
+  "c.claims.window.24h": "24 heures",
+  "c.claims.window.48h": "48 heures",
 };
 
 export const es: Record<AreaCKey, string> = {
@@ -153,6 +179,19 @@ export const es: Record<AreaCKey, string> = {
   "c.err.notFound": "No se encontró esa invitación.",
   "c.err.alreadyJoined": "{email} ya se unió a First Payday.",
   "c.err.sendFailed": "No se pudo enviar el correo. Inténtalo más tarde.",
+
+  "c.claims.onIt": "🙋 {name} se encarga · {until}",
+  "c.claims.until": "hasta {time}",
+  "c.claims.untilEndOfDay": "hasta el final del día",
+  "c.claims.release": "Liberar",
+  "c.claims.releaseHint": "Devolverla al tablero para todos",
+  "c.claims.window": "Tiempo para terminarla cuando un niño la aparta",
+  "c.claims.windowHint": "Un niño puede tocar «¡Yo me encargo!» para apartarla. Si no la termina a tiempo, vuelve al tablero para todos.",
+  "c.claims.window.2h": "2 horas",
+  "c.claims.window.4h": "4 horas",
+  "c.claims.window.end_of_day": "Hasta el final del día",
+  "c.claims.window.24h": "24 horas",
+  "c.claims.window.48h": "48 horas",
 };
 
 export const pt: Record<AreaCKey, string> = {
@@ -204,4 +243,17 @@ export const pt: Record<AreaCKey, string> = {
   "c.err.notFound": "Convite não encontrado.",
   "c.err.alreadyJoined": "{email} já entrou no First Payday.",
   "c.err.sendFailed": "Não foi possível enviar o e-mail. Tente mais tarde.",
+
+  "c.claims.onIt": "🙋 {name} está fazendo · {until}",
+  "c.claims.until": "até {time}",
+  "c.claims.untilEndOfDay": "até o fim do dia",
+  "c.claims.release": "Liberar",
+  "c.claims.releaseHint": "Devolver ao quadro para todos",
+  "c.claims.window": "Tempo para terminar depois que uma criança pega",
+  "c.claims.windowHint": "Uma criança pode tocar em “Deixa comigo!” para reservar. Se não terminar a tempo, ela volta ao quadro para todos.",
+  "c.claims.window.2h": "2 horas",
+  "c.claims.window.4h": "4 horas",
+  "c.claims.window.end_of_day": "Até o fim do dia",
+  "c.claims.window.24h": "24 horas",
+  "c.claims.window.48h": "48 horas",
 };

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireParent } from "@/lib/auth/session";
 import { parentT } from "@/lib/i18n/parent";
 import { PageHeader } from "@/components/ui";
+import { asClaimWindow } from "@/lib/schedule/claims";
 import { parseSubtasks } from "@/lib/schedule/checklist";
 import { ChorePageEditor } from "./ChorePageEditor";
 
@@ -31,6 +32,7 @@ export default async function ChorePage({ params }: { params: Promise<{ id: stri
           scope: chore.scope as "household" | "per_kid",
           assignee_ids: (assignees ?? []).map((a) => a.kid_id),
           subtasks: parseSubtasks(chore.subtasks),
+          claim_window: asClaimWindow(chore.claim_window),
         }}
         kids={kids ?? []}
       />

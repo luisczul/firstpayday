@@ -1,5 +1,6 @@
 import { emojiColor } from "@/lib/emojiColors";
 import { checklistProgress, parseSubtasks, type Subtask } from "@/lib/schedule/checklist";
+import { isClaimActive, isClaimableChore } from "@/lib/schedule/claims";
 import {
   comingBack,
   getChoreState,
@@ -77,9 +78,36 @@ export interface BoardCard {
   expectedLastId: string | null;
   /** Checklist chore: its steps and the ones this kid ticked this period. */
   checklist: { subtasks: Subtask[]; done: string[] } | null;
+  /** A free whole-house chore this kid can claim ("I'm on it!"). */
+  claimable: boolean;
+  /** Someone said "I'm on it!": this kid (In progress) or a sibling (locked card). */
+  claim: BoardCardClaim | null;
+}
+
+export interface BoardCardClaim {
+  id: string;
+  kidId: string;
+  kidName: string;
+  mine: boolean;
+  /** Units taken (1 for a chore without a quantity). */
+  quantity: number;
+  expiresAt: string;
+}
+
+/** A row of chore_claims (with the kid's name) as the kiosk loads it. */
+export interface BoardClaimRow {
+  id: string;
+  chore_id: string;
+  kid_id: string;
+  kid_name: string;
+  quantity: number;
+  expires_at: string;
+  released_at: string | null;
 }
 
 export interface BoardSections {
+  /** Whole-house chores this kid claimed ("I'm on it!"), soonest deadline first. */
+  inProgress: BoardCard[];
   new: BoardCard[];
   fix: BoardCard[];
   ready: BoardCard[];
@@ -132,6 +160,8 @@ function toCard(
       : null,
     expectedLastId: state.latestRelevant?.id ?? null,
     checklist: steps.length ? { subtasks: steps, done: checklistProgress(steps, opts.checked ?? []).doneIds } : null,
+    claimable: false,
+    claim: null,
   };
 }
 
@@ -145,6 +175,8 @@ export function buildBoard(input: {
   now: Date;
   /** Checklist ticks for the current period, by chore id. */
   checks?: Readonly<Record<string, readonly string[]>>;
+  /** Claims of the household; released or expired ones are ignored. */
+  claims?: readonly BoardClaimRow[];
 }): BoardSections {
   const { chores, submissions, kidId, household, now } = input;
   const byChore = new Map<string, BoardSubmissionRow[]>();
@@ -154,7 +186,10 @@ export function buildBoard(input: {
     else byChore.set(s.chore_id, [s]);
   }
 
-  const sections: BoardSections = { new: [], fix: [], ready: [], waiting: [], soon: [] };
+  const claimByChore = new Map<string, BoardClaimRow>();
+  for (const c of input.claims ?? []) if (isClaimActive(c, now)) claimByChore.set(c.chore_id, c);
+
+  const sections: BoardSections = { inProgress: [], new: [], fix: [], ready: [], waiting: [], soon: [] };
   const sorted = [...chores].sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title));
   const choreById = new Map(sorted.map((c) => [c.id, c]));
 
@@ -172,9 +207,23 @@ export function buildBoard(input: {
       case "needs_fixing":
         sections.fix.push(card);
         break;
-      case "available":
+      case "available": {
+        const claimable = isClaimableChore(chore);
+        const claim = claimable ? claimByChore.get(chore.id) : undefined;
+        if (claim) {
+          const mine = claim.kid_id === kidId;
+          card.claim = { id: claim.id, kidId: claim.kid_id, kidName: claim.kid_name, mine, quantity: claim.quantity, expiresAt: claim.expires_at };
+          // Mine: "In progress" at the top. A sibling's: stays in place, locked.
+          if (mine) {
+            sections.inProgress.push(card);
+            break;
+          }
+        } else {
+          card.claimable = claimable;
+        }
         (fresh ? sections.new : sections.ready).push(card);
         break;
+      }
       case "cooldown":
       case "out_of_season":
         if (isComingSoon(state, now)) sections.soon.push(card);
@@ -198,5 +247,6 @@ export function buildBoard(input: {
   }
 
   sections.soon.sort((a, b) => (a.availableAt ?? "").localeCompare(b.availableAt ?? ""));
+  sections.inProgress.sort((a, b) => a.claim!.expiresAt.localeCompare(b.claim!.expiresAt));
   return sections;
 }

@@ -256,7 +256,7 @@ Notes:
   1. read the `kiosk_token` httpOnly cookie,
   2. hash it and look up `devices` (not revoked) to get the `household_id`,
   3. use the **service-role client** on the server, **always filtered by that household_id**.
-  Kiosk endpoints may only do these things: list kids, list the chore board for a kid, create or resubmit a submission, and read balances and history for a kid. **Nothing else.** Put this whitelist in one module (`lib/kiosk/`) so it's easy to audit.
+  Kiosk endpoints may only do these things: list kids, list the chore board for a kid, create or resubmit a submission, tick checklist steps, give up a sent-back chore, claim a whole-house chore ("I'm on it!") or give that claim back, and read balances and history for a kid. **Nothing else.** Put this whitelist in one module (`lib/kiosk/`) so it's easy to audit.
 - The service-role key is used only in server code. Never ship it to the client.
 
 ---

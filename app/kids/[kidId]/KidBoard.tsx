@@ -14,7 +14,8 @@ import { bestPromo } from "@/lib/money/promotions";
 import { fireConfetti, playChime, useIdle, usePolling, useSoundPref, useWakeLock } from "@/components/kid/hooks";
 import { localizeLedgerNote } from "@/lib/i18n/ledgerNotes";
 import { formatMoney, formatPrice } from "@/lib/money/format";
-import { translator, weekdayName, type Locale } from "@/lib/i18n";
+import { intlLocale, translator, weekdayName, type Locale } from "@/lib/i18n";
+import { claimDeadline, claimTimeLeft } from "@/lib/schedule/claims";
 import type { BoardCard } from "@/lib/board/buildBoard";
 import type { KioskBoard, KidHistoryItem } from "@/lib/kiosk/operations";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/templates";
@@ -34,6 +35,15 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [soundOn, setSoundOn] = useSoundPref();
+  // "⏰ Garage sweep went back on the board": shown once, when the board opens.
+  const [nudges, setNudges] = useState(initial.expiredClaims ?? []);
+  // Claim countdowns tick every half minute, and whenever the board changes.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    setClock(Date.now());
+    const id = window.setInterval(() => setClock(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, [board]);
   const toastTimer = useRef<number | undefined>(undefined);
   const inFlight = useRef(false);
 
@@ -106,6 +116,80 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
     }
   };
 
+  // "I'm on it!": save a whole-house chore for this kid (it moves to In progress).
+  const claim = async (quantity: number) => {
+    const card = pending?.card;
+    if (!card || busy) return;
+    setBusy(true);
+    inFlight.current = true;
+    setPending(null);
+    try {
+      const res = await fetch("/api/kiosk/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kidId: kid.id, choreId: card.choreId, quantity }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; reason?: string };
+      if (res.ok && body.ok) {
+        showToast(tr("kid.claimed"));
+        if (soundOn) playChime();
+        // "In progress" is the first section: bring the kid back up to see it.
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        showToast(
+          body.reason === "limit"
+            ? tr("kid.claimLimit")
+            : body.reason === "claimed"
+              ? tr("kid.claimedByOther")
+              : body.reason === "taken"
+                ? tr("kid.taken")
+                : body.reason === "paused"
+                  ? tr("kid.paused")
+                  : tr("kid.oops"),
+          "sad",
+        );
+      }
+    } catch {
+      showToast(tr("kid.oops"), "sad");
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+      void refresh();
+    }
+  };
+
+  // "Give it back": the claimed chore is free again for everyone.
+  const giveBack = async () => {
+    const claimId = pending?.card.claim?.id;
+    if (!pending || busy || !claimId) return;
+    setBusy(true);
+    inFlight.current = true;
+    const before = board;
+    const choreId = pending.card.choreId;
+    setBoard({ ...board, sections: { ...board.sections, inProgress: board.sections.inProgress.filter((c) => c.choreId !== choreId) } });
+    setPending(null);
+    try {
+      const res = await fetch("/api/kiosk/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kidId: kid.id, claimId }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean };
+      if (res.ok && body.ok) showToast(tr("kid.gaveBack"));
+      else {
+        setBoard(before);
+        showToast(tr("kid.oops"), "sad");
+      }
+    } catch {
+      setBoard(before);
+      showToast(tr("kid.oops"), "sad");
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+      void refresh();
+    }
+  };
+
   const confirm = async (quantity: number) => {
     if (!pending || busy) return;
     const { card, mode, key } = pending;
@@ -131,6 +215,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
       kid: { ...kid, pendingCents: kid.pendingCents + amount },
       sections: {
         ...sections,
+        inProgress: sections.inProgress.filter((c) => c.choreId !== card.choreId),
         new: sections.new.filter((c) => c.choreId !== card.choreId),
         ready: sections.ready.filter((c) => c.choreId !== card.choreId),
         fix: sections.fix.filter((c) => c.submission?.id !== card.submission?.id),
@@ -172,7 +257,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
       } else {
         setBoard(before);
         showToast(
-          body.reason === "taken" ? tr("kid.taken") : body.reason === "paused" ? tr("kid.paused") : body.reason === "incomplete" ? tr("kid.checklistIncomplete") : tr("kid.oops"),
+          body.reason === "taken" ? tr("kid.taken") : body.reason === "claimed" ? tr("kid.claimedByOther") : body.reason === "paused" ? tr("kid.paused") : body.reason === "incomplete" ? tr("kid.checklistIncomplete") : tr("kid.oops"),
           "sad",
         );
       }
@@ -194,7 +279,49 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   };
   const stepsFooter = (c: BoardCard) =>
     c.checklist ? <ChecklistProgress done={c.checklist.done.length} total={c.checklist.subtasks.length} locale={locale} /> : undefined;
-  const nothingToDo = sections.new.length + sections.fix.length + sections.ready.length === 0;
+  const nothingToDo = sections.new.length + sections.fix.length + sections.ready.length + sections.inProgress.length === 0;
+
+  // Claims ("I'm on it!"): countdown on my cards, a lock on a sibling's.
+  const now = new Date(clock);
+  const qtyLabel = (c: BoardCard) => {
+    const q = c.claim?.quantity ?? 1;
+    if (c.maxQuantity <= 1) return null;
+    if (!c.unitLabel) return tr("kid.claimQtyPlain", { count: q });
+    return q === 1 ? tr("kid.claimQtyOne", { unit: c.unitLabel }) : tr("kid.claimQtyMany", { count: q, unit: c.unitLabel });
+  };
+  const untilLabel = (expiresAt: string) => {
+    const d = claimDeadline(expiresAt, now, intlLocale(locale), household.timezone);
+    return d.kind === "end_of_day" ? tr("kid.claimUntilEndOfDay") : tr("kid.claimUntil", { time: d.kind === "today" ? d.time : `${d.weekday} ${d.time}` });
+  };
+  const claimFooter = (c: BoardCard) => {
+    const left = claimTimeLeft(c.claim!.expiresAt, now);
+    const qty = qtyLabel(c);
+    return (
+      <span className="flex flex-col gap-1" data-testid="claim-countdown">
+        <span className={`text-xl font-black ${left.urgent ? "text-amber" : "text-moss"}`}>
+          ⏳ {qty ? `${qty} · ` : ""}
+          {left.hours > 0 ? tr("kid.claimLeftHours", { h: left.hours, m: left.minutes }) : tr("kid.claimLeftMinutes", { m: left.minutes })}
+        </span>
+        <span className="text-base font-bold text-ink-soft">{untilLabel(c.claim!.expiresAt)}</span>
+      </span>
+    );
+  };
+  const lockedBy = (c: BoardCard) => (c.claim && !c.claim.mine ? c.claim : null);
+  const lockedFooter = (c: BoardCard) => {
+    const qty = qtyLabel(c);
+    return (
+      <span className="text-lg font-extrabold text-plum" data-testid="claim-locked">
+        {tr("kid.claimLockedBy", { name: c.claim!.kidName })}
+        {qty ? ` · ${qty}` : ""} · {untilLabel(c.claim!.expiresAt)}
+      </span>
+    );
+  };
+  // A sibling's claimed chore stays on the board, locked: tapping explains why.
+  const press = (c: BoardCard) => {
+    const lock = lockedBy(c);
+    if (lock) return showToast(tr("kid.claimLockedToast", { name: lock.kidName }), "sad");
+    open(c, "submit");
+  };
 
   // Category menu: only categories that currently have something to do.
   // Search matches the card text in the kid's own language, ignoring accents ("menage" finds "ménage").
@@ -240,6 +367,8 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         reviewComment: pending.card.submission?.reviewComment ?? null,
         // Live ticks (another tablet, or saves that landed after the sheet opened).
         checklist: [...sections.new, ...sections.ready].find((c) => c.choreId === pending.card.choreId)?.checklist ?? pending.card.checklist,
+        claimable: pending.mode === "submit" && pending.card.claimable,
+        claim: pending.card.claim?.mine ? { mine: true, quantity: pending.card.claim.quantity } : null,
       }
     : null;
 
@@ -345,6 +474,53 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           </span>
           <span className="rounded-full bg-white px-5 py-2 text-lg font-black text-plum">{tr("kid.revisionSee")}</span>
         </button>
+      ) : null}
+
+      {nudges.length > 0 ? (
+        <div role="status" className="mx-6 mt-2 flex items-center gap-4 rounded-3xl bg-gold/40 px-6 py-4 text-ink shadow-[var(--shadow-card)] md:mx-8">
+          <span className="flex-1 font-display text-2xl font-bold">
+            {nudges.map((n) => (
+              <span key={n.choreId} className="block">
+                {tr("kid.claimExpired", { title: n.title })}
+              </span>
+            ))}
+          </span>
+          <button
+            type="button"
+            onClick={() => setNudges([])}
+            className="min-h-14 rounded-full bg-card px-6 text-lg font-black text-ink shadow-[var(--shadow-card)] active:scale-95"
+          >
+            OK
+          </button>
+        </div>
+      ) : null}
+
+      {sections.inProgress.length > 0 ? (
+        <SectionRow id="in-progress" title={tr("kid.section.inProgress")} count={sections.inProgress.length} tone="progress">
+          <AnimatePresence mode="popLayout">
+            {sections.inProgress.map((c) => (
+              <motion.div key={`claim-${c.choreId}`} {...cardMotion} className="h-full">
+                <ChoreCard
+                  fluid
+                  chore={c}
+                  currency={household.currency}
+                  locale={locale}
+                  perLabel={perLabel(c)}
+                  onPress={() => open(c, "submit")}
+                  footer={claimFooter(c)}
+                  badge={
+                    <>
+                      <span className="inline-flex items-center rounded-full bg-amber px-3 py-1 text-sm font-black tracking-wide text-white uppercase">
+                        {tr("kid.claimMine")}
+                      </span>
+                      {promoBadge(c)}
+                    </>
+                  }
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </SectionRow>
       ) : null}
 
       {available.length > 1 ? (
@@ -464,12 +640,12 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                 <ChoreCard
                   fluid
                   chore={c}
-                  variant="new"
+                  variant={lockedBy(c) ? "soon" : "new"}
                   currency={household.currency}
                   locale={locale}
                   perLabel={perLabel(c)}
-                  onPress={() => open(c, "submit")}
-                  footer={stepsFooter(c)}
+                  onPress={() => press(c)}
+                  footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
                   badge={
                     <>
                       <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide text-white uppercase">
@@ -498,12 +674,13 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                 <ChoreCard
                   fluid
                   chore={c}
+                  variant={lockedBy(c) ? "soon" : "ready"}
                   currency={household.currency}
                   locale={locale}
                   perLabel={perLabel(c)}
-                  onPress={() => open(c, "submit")}
-                  footer={stepsFooter(c)}
-                  badge={promoBadge(c)}
+                  onPress={() => press(c)}
+                  footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
+                  badge={lockedBy(c) ? null : promoBadge(c)}
                 />
               </motion.div>
             ))}
@@ -566,6 +743,8 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         kidId={kid.id}
         onStepsChange={patchSteps}
         onGiveUp={pending?.mode === "resubmit" ? () => void giveUp() : undefined}
+        onClaim={(q) => void claim(q)}
+        onGiveBack={() => void giveBack()}
       />
       <KidToast message={toast?.text ?? null} tone={toast?.tone} />
       {showMoney ? <MoneySheet board={board} onClose={() => setShowMoney(false)} /> : null}

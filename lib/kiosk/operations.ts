@@ -2,7 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recordCheckin } from "@/lib/reports/checkins";
-import { buildBoard, type BoardChoreRow, type BoardSections, type BoardSubmissionRow } from "@/lib/board/buildBoard";
+import { buildBoard, type BoardChoreRow, type BoardClaimRow, type BoardSections, type BoardSubmissionRow } from "@/lib/board/buildBoard";
 import { getHouseholdAccess } from "@/lib/billing/access";
 import { asLocale, type Locale } from "@/lib/i18n";
 import { choreTextFor } from "@/lib/translate";
@@ -23,6 +23,8 @@ import { loadKioskMoneyExtras, type KioskMoneyExtras } from "./taxPromo";
  *   5. getKidHistory     – one kid's recent money
  *   6. toggleSubtask     – tick / untick one step of a checklist chore
  *   7. withdraw          – give up a sent-back chore ("too hard for me")
+ *   8. claimChore        – "I'm on it!" on a whole-house chore (siblings see it locked)
+ *   9. releaseClaim      – give a claimed chore back
  * Nothing else. Do not add operations here without updating the spec.
  */
 
@@ -166,7 +168,15 @@ export interface KioskBoard {
   /** Family tax (taxes this kid paid so far) and promotions live right now. */
   tax: KioskMoneyExtras["tax"];
   promos: KioskMoneyExtras["promos"];
+  /**
+   * Chores this kid claimed whose time ran out since the last visit ("went back on
+   * the board"). Only filled when the board is opened (markSeen); each shows once.
+   */
+  expiredClaims: { choreId: string; title: string }[];
 }
+
+/** Claims whose time ran out in the last day are worth a nudge; older ones just close quietly. */
+const EXPIRED_NUDGE_MS = 24 * 60 * 60 * 1000;
 
 export async function getBoard(
   ctx: KioskContext,
@@ -209,6 +219,10 @@ export async function getBoard(
   }
 
   const now = new Date();
+  const [claims, expiredClaims] = await Promise.all([
+    loadActiveClaims(admin, ctx.householdId, now),
+    opts.markSeen ? closeExpiredClaims(admin, ctx.householdId, kidId, now) : Promise.resolve([]),
+  ]);
   const seenBefore = opts.markSeen ? kidRow.last_seen_board_at : (opts.seenBefore ?? kidRow.last_seen_board_at);
   const sections = buildBoard({
     ...data,
@@ -217,7 +231,9 @@ export async function getBoard(
     household: { timezone: household.timezone, week_starts_on: household.weekStartsOn },
     now,
     checks,
+    claims,
   });
+  const titles = new Map(data.chores.map((c) => [c.id, c.title]));
 
   if (opts.markSeen) {
     // A board open from the picker is a "check-in" (parent usage stats, weekly report).
@@ -229,7 +245,70 @@ export async function getBoard(
       .eq("id", kidId);
   }
   const extras = await loadKioskMoneyExtras(admin, ctx.householdId, kidId, now);
-  return { household, kid: kids[0]!, sections, now: now.toISOString(), seenBefore, ...extras };
+  return {
+    household,
+    kid: kids[0]!,
+    sections,
+    now: now.toISOString(),
+    seenBefore,
+    ...extras,
+    // Only chores still on the board (a paused or deleted chore needs no nudge).
+    expiredClaims: expiredClaims
+      .filter((c) => titles.has(c.chore_id))
+      .map((c) => ({ choreId: c.chore_id, title: titles.get(c.chore_id)! })),
+  };
+}
+
+/** Every unexpired, unreleased claim of the household, with the kid's name. */
+async function loadActiveClaims(
+  client: ReturnType<typeof createAdminClient>,
+  householdId: string,
+  now: Date,
+): Promise<BoardClaimRow[]> {
+  const { data } = await client
+    .from("chore_claims")
+    .select("id, chore_id, kid_id, quantity, expires_at, released_at, kids(name)")
+    .eq("household_id", householdId)
+    .is("released_at", null)
+    .gt("expires_at", now.toISOString());
+  return (data ?? []).map((c) => ({
+    id: c.id,
+    chore_id: c.chore_id,
+    kid_id: c.kid_id,
+    kid_name: c.kids?.name ?? "",
+    quantity: c.quantity,
+    expires_at: c.expires_at,
+    released_at: c.released_at,
+  }));
+}
+
+/**
+ * Lazy expiry: this kid's claims whose time ran out are closed as 'expired'.
+ * Returns the ones that ran out in the last day, for a one-time nudge.
+ */
+async function closeExpiredClaims(
+  client: ReturnType<typeof createAdminClient>,
+  householdId: string,
+  kidId: string,
+  now: Date,
+): Promise<{ id: string; chore_id: string }[]> {
+  const { data } = await client
+    .from("chore_claims")
+    .select("id, chore_id, expires_at")
+    .eq("household_id", householdId)
+    .eq("kid_id", kidId)
+    .is("released_at", null)
+    .lte("expires_at", now.toISOString());
+  const expired = data ?? [];
+  for (const c of expired) {
+    await client
+      .from("chore_claims")
+      .update({ released_at: c.expires_at, release_reason: "expired" })
+      .eq("id", c.id)
+      .is("released_at", null);
+  }
+  const cutoff = now.getTime() - EXPIRED_NUDGE_MS;
+  return expired.filter((c) => new Date(c.expires_at).getTime() > cutoff);
 }
 
 /** Swap in the template text in `to` for starter chores still using the `from` template text. */
@@ -259,10 +338,11 @@ async function translateTemplateChores(
 // 3 ---------------------------------------------------------------------------
 export type SubmitResult =
   | { ok: true; submissionId: string }
-  | { ok: false; reason: "taken" | "paused" | "invalid" | "incomplete" | "error" };
+  | { ok: false; reason: "taken" | "claimed" | "paused" | "invalid" | "incomplete" | "error" };
 
-function reasonFromError(message: string): "taken" | "paused" | "invalid" | "incomplete" | "error" {
+function reasonFromError(message: string): "taken" | "claimed" | "paused" | "invalid" | "incomplete" | "error" {
   if (message.includes("checklist_incomplete")) return "incomplete";
+  if (message.includes("chore_claimed")) return "claimed";
   if (message.includes("already_taken") || message.includes("chore_unavailable")) return "taken";
   if (message.includes("board_paused")) return "paused";
   if (message.includes("quantity") || message.includes("kid_not_found")) return "invalid";
@@ -366,4 +446,50 @@ export async function toggleSubtask(
     return { ok: false, reason: "error" };
   }
   return { ok: true, checked: ((data as { checked?: string[] } | null)?.checked ?? []).map(String) };
+}
+
+// 8 ---------------------------------------------------------------------------
+export type ClaimResult =
+  | { ok: true; claimId: string; expiresAt: string }
+  | { ok: false; reason: "claimed" | "limit" | "taken" | "paused" | "invalid" | "error" };
+
+/**
+ * "I'm on it!": save a free whole-house chore for this kid until its time limit
+ * (kiosk_claim_chore), for `quantity` units when the chore has a quantity.
+ */
+export async function claimChore(
+  ctx: KioskContext,
+  input: { kidId: string; choreId: string; quantity: number },
+): Promise<ClaimResult> {
+  const { data, error } = await createAdminClient().rpc("kiosk_claim_chore", {
+    p_household_id: ctx.householdId,
+    p_kid_id: input.kidId,
+    p_chore_id: input.choreId,
+    p_device_id: ctx.deviceId,
+    p_quantity: input.quantity,
+  });
+  if (error) {
+    const m = error.message;
+    if (m.includes("chore_claimed")) return { ok: false, reason: "claimed" };
+    if (m.includes("claim_limit")) return { ok: false, reason: "limit" };
+    if (m.includes("chore_unavailable")) return { ok: false, reason: "taken" };
+    if (m.includes("board_paused")) return { ok: false, reason: "paused" };
+    if (m.includes("kid_not_found") || m.includes("quantity")) return { ok: false, reason: "invalid" };
+    return { ok: false, reason: "error" };
+  }
+  return { ok: true, claimId: data.id, expiresAt: data.expires_at };
+}
+
+// 9 ---------------------------------------------------------------------------
+export type ReleaseClaimResult = { ok: true } | { ok: false; reason: "invalid" | "error" };
+
+/** "Give it back": the claimed chore is free again for everyone (kiosk_release_claim). */
+export async function releaseClaim(ctx: KioskContext, input: { kidId: string; claimId: string }): Promise<ReleaseClaimResult> {
+  const { error } = await createAdminClient().rpc("kiosk_release_claim", {
+    p_household_id: ctx.householdId,
+    p_kid_id: input.kidId,
+    p_claim_id: input.claimId,
+  });
+  if (error) return { ok: false, reason: error.message.includes("claim_not_found") ? "invalid" : "error" };
+  return { ok: true };
 }

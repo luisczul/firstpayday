@@ -16,6 +16,10 @@ export interface ConfirmTarget extends ChoreCardData {
   choreId?: string;
   /** Checklist chore: steps and the ones already ticked this period. */
   checklist?: { subtasks: Subtask[]; done: string[] } | null;
+  /** A free whole-house chore: "I'm on it!" is offered. */
+  claimable?: boolean;
+  /** This kid's claim: they send in at most the quantity they took. */
+  claim?: { mine: boolean; quantity: number } | null;
 }
 
 export function ConfirmSheet({
@@ -28,6 +32,8 @@ export function ConfirmSheet({
   kidId,
   onStepsChange,
   onGiveUp,
+  onClaim,
+  onGiveBack,
 }: {
   target: ConfirmTarget | null;
   currency: string;
@@ -41,6 +47,10 @@ export function ConfirmSheet({
   onStepsChange?: (choreId: string, done: string[]) => void;
   /** Needs fixing only: the kid gives the chore up ("too hard for me"). */
   onGiveUp?: () => void;
+  /** "I'm on it!" for this many units (shown when the target is claimable). */
+  onClaim?: (quantity: number) => void;
+  /** "Give it back" (shown when the target is this kid's claim). */
+  onGiveBack?: () => void;
 }) {
   return (
     <AnimatePresence>
@@ -56,6 +66,8 @@ export function ConfirmSheet({
           kidId={kidId}
           onStepsChange={onStepsChange}
           onGiveUp={onGiveUp}
+          onClaim={onClaim}
+          onGiveBack={onGiveBack}
         />
       ) : null}
     </AnimatePresence>
@@ -72,6 +84,8 @@ function SheetBody({
   kidId,
   onStepsChange,
   onGiveUp,
+  onClaim,
+  onGiveBack,
 }: {
   target: ConfirmTarget;
   currency: string;
@@ -82,11 +96,17 @@ function SheetBody({
   kidId?: string;
   onStepsChange?: (choreId: string, done: string[]) => void;
   onGiveUp?: () => void;
+  onClaim?: (quantity: number) => void;
+  onGiveBack?: () => void;
 }) {
   const tr = translator(locale);
   const [confirmGiveUp, setConfirmGiveUp] = useState(false);
-  const [qty, setQty] = useState(1);
-  const showStepper = target.mode === "submit" && target.maxQuantity > 1;
+  // A claimed chore: they took N units, so they did N or fewer (prefilled with N).
+  const myClaim = target.mode === "submit" && target.claim?.mine ? target.claim : null;
+  const maxQty = myClaim ? Math.min(myClaim.quantity, target.maxQuantity) : target.maxQuantity;
+  const [qty, setQty] = useState(() => (myClaim ? maxQty : 1));
+  const showStepper = target.mode === "submit" && maxQty > 1;
+  const canClaim = target.mode === "submit" && Boolean(target.claimable && onClaim);
   const steps = target.checklist?.subtasks ?? [];
   // A sent-back checklist was already finished: its steps stay ticked (read-only).
   const [done, setDone] = useState<string[]>(() =>
@@ -243,7 +263,7 @@ function SheetBody({
           {showStepper ? (
             <div className="rounded-3xl bg-card p-5 ring-1 ring-line">
               <p className="text-center text-2xl font-extrabold text-ink">
-                {target.unitLabel ? tr("kid.howMany", { unit: target.unitLabel }) : tr("kid.howManyPlain")}
+                {myClaim ? tr("kid.didHowMany") : target.unitLabel ? tr("kid.howMany", { unit: target.unitLabel }) : tr("kid.howManyPlain")}
               </p>
               <div className="mt-4 flex items-center justify-center gap-6">
                 <StepButton label="−" disabled={qty <= 1} onClick={() => setQty((q) => Math.max(1, q - 1))} />
@@ -252,8 +272,8 @@ function SheetBody({
                 </span>
                 <StepButton
                   label="+"
-                  disabled={qty >= target.maxQuantity}
-                  onClick={() => setQty((q) => Math.min(target.maxQuantity, q + 1))}
+                  disabled={qty >= maxQty}
+                  onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
                 />
               </div>
               <p className="mt-3 text-center text-3xl font-black text-moss">
@@ -270,6 +290,19 @@ function SheetBody({
           >
             {target.mode === "resubmit" ? `${tr("kid.fixedIt")} 🔧` : tr("kid.didIt")}
           </button>
+          {canClaim ? (
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onClaim!(qty)}
+                className="min-h-20 rounded-3xl bg-amber px-8 text-3xl font-black text-white shadow-[0_6px_0_#a8620f] transition-transform active:translate-y-1 active:shadow-[0_2px_0_#a8620f] disabled:opacity-60"
+              >
+                {tr("kid.claim")}
+              </button>
+              <p className="text-center text-lg font-semibold text-ink-soft">{tr("kid.claimHint")}</p>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={onCancel}
@@ -277,6 +310,16 @@ function SheetBody({
           >
             {tr("kid.notYet")}
           </button>
+          {myClaim && onGiveBack ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onGiveBack}
+              className="min-h-16 rounded-2xl text-xl font-bold text-plum underline-offset-4 active:bg-paper-deep disabled:opacity-60"
+            >
+              {tr("kid.giveBack")}
+            </button>
+          ) : null}
           {target.mode === "resubmit" && onGiveUp ? (
             confirmGiveUp ? (
               <div className="flex flex-col gap-3 rounded-3xl bg-paper-deep p-4 text-center">

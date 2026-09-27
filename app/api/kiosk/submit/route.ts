@@ -22,6 +22,6 @@ export function POST(req: Request) {
       const { submissionId } = result;
       after(() => notifyReviewReady(ctx.householdId, submissionId));
     }
-    return NextResponse.json(result, { status: result.ok ? 200 : result.reason === "taken" ? 409 : 400 });
+    return NextResponse.json(result, { status: result.ok ? 200 : result.reason === "taken" || result.reason === "claimed" ? 409 : 400 });
   });
 }

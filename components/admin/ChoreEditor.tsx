@@ -8,6 +8,7 @@ import { amountInput, parseMoneyToCents } from "@/lib/money/format";
 import { emojiColor } from "@/lib/emojiColors";
 import { CATEGORIES, CATEGORY_LABELS, NAMED_INTERVALS, REPEAT_PRESETS } from "@/lib/templates";
 import { useParentLocale, useParentT } from "@/lib/i18n/parent/client";
+import { CLAIM_WINDOWS, DEFAULT_CLAIM_WINDOW, type ClaimWindow } from "@/lib/schedule/claims";
 import { MAX_SECTION_LABEL, MAX_SUBTASKS, MAX_SUBTASK_TITLE, type Subtask } from "@/lib/schedule/checklist";
 
 export interface EditableChore {
@@ -30,6 +31,8 @@ export interface EditableChore {
   assignee_ids: string[];
   /** Checklist steps; empty for a plain chore. */
   subtasks: Subtask[];
+  /** How long a kid's "I'm on it!" lasts; defaults to 24 hours. */
+  claim_window?: ClaimWindow;
   /** Set when a new chore starts from a template: its ready-made translations are reused if the text is unchanged. */
   template_key?: string | null;
 }
@@ -78,6 +81,7 @@ export const BLANK_CHORE: EditableChore = {
   available_until: null,
   assignee_ids: [],
   subtasks: [],
+  claim_window: DEFAULT_CLAIM_WINDOW,
 };
 
 const EMOJIS = ["⭐", "🧹", "🧽", "🧺", "🗑️", "🚗", "🍽️", "🛁", "🪴", "🍖", "🪑", "👟", "🧸", "🧥", "💡", "🐶", "📚", "🛏️", "🪟", "❄️", "🍂"];
@@ -139,6 +143,7 @@ export function ChoreEditor({
       available_until: c.available_until || null,
       assignee_ids: c.assignee_ids,
       subtasks: toSubtasks(rows),
+      claim_window: c.claim_window ?? DEFAULT_CLAIM_WINDOW,
       ...(c.id ? {} : { template_key: c.template_key ?? null }),
     };
     start(async () => {
@@ -300,6 +305,19 @@ export function ChoreEditor({
           <option value="per_kid">{t("b.editor.scopePerKid")}</option>
         </Select>
       </Field>
+
+      {/* Only a whole-house chore without steps can be claimed ("I'm on it!"). */}
+      {!isChecklist && c.scope === "household" ? (
+        <Field label={t("c.claims.window")} hint={t("c.claims.windowHint")}>
+          <Select value={c.claim_window ?? DEFAULT_CLAIM_WINDOW} onChange={(e) => set("claim_window", e.target.value as ClaimWindow)}>
+            {CLAIM_WINDOWS.map((w) => (
+              <option key={w} value={w}>
+                {t(`c.claims.window.${w}`)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
 
       <Field label={t("b.editor.assigned")}>
         <div className="flex flex-wrap gap-2">

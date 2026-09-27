@@ -7,6 +7,7 @@ import {
   deleteChore,
   duplicateChore,
   makeChoreAvailable,
+  releaseChoreClaim,
   reorderChores,
   retranslateChores,
   setChoreActive,
@@ -20,6 +21,7 @@ import { Alert, Badge, Button, EmptyState, PageHeader } from "@/components/ui";
 import { Sheet } from "@/components/ui/Sheet";
 import { formatPrice } from "@/lib/money/format";
 import type { ParentChoreStatus } from "@/lib/board/parentStatus";
+import { claimDeadline } from "@/lib/schedule/claims";
 import type { ChoreTemplate } from "@/lib/templates";
 import { intlLocale, type Locale } from "@/lib/i18n";
 import { useParentT } from "@/lib/i18n/parent/client";
@@ -43,6 +45,7 @@ export function ChoresBoard({
   locale,
   readOnly,
   showTranslate = false,
+  timeZone,
 }: {
   chores: AdminChore[];
   kids: { id: string; name: string; color: string }[];
@@ -52,6 +55,8 @@ export function ChoresBoard({
   readOnly: boolean;
   /** Only when a kid reads a language other than the home's. */
   showTranslate?: boolean;
+  /** Household timezone, for "until 9:00 PM" on claimed chores. */
+  timeZone: string;
 }) {
   const router = useRouter();
   const t = useParentT();
@@ -182,7 +187,23 @@ export function ChoresBoard({
             >
               <ChoreCardAdmin chore={c} currency={currency} locale={locale} readOnly={readOnly} onPrice={(cents) => run(() => updateChorePrice(c.id, cents))} />
             </div>
-            <div><StatusLine status={c.status} locale={locale} /></div>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusLine status={c.status} locale={locale} timeZone={timeZone} />
+              {c.status.kind === "claimed" && !readOnly ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={pending}
+                  title={t("c.claims.releaseHint")}
+                  onClick={() => {
+                    const claimId = c.status.kind === "claimed" ? c.status.claimId : "";
+                    run(() => releaseChoreClaim(claimId));
+                  }}
+                >
+                  {t("c.claims.release")}
+                </Button>
+              ) : null}
+            </div>
             <p className="text-xs font-semibold text-ink-soft">
               {repeatLabel(c.repeat_kind, c.repeat_every_days, locale)} · {c.scope === "household" ? t("b.chores.wholeHouse") : t("b.chores.eachKid")}
               {c.assignee_ids.length ? ` · ${c.assignee_ids.map((id) => kids.find((k) => k.id === id)?.name).filter(Boolean).join(", ")}` : ""}
@@ -375,7 +396,7 @@ function ChoreCardAdmin({
   );
 }
 
-function StatusLine({ status, locale }: { status: ParentChoreStatus; locale: Locale }) {
+function StatusLine({ status, locale, timeZone }: { status: ParentChoreStatus; locale: Locale; timeZone: string }) {
   const t = useParentT();
   const date = (iso: string) => new Date(iso).toLocaleDateString(intlLocale(locale), { month: "short", day: "numeric" });
   switch (status.kind) {
@@ -383,6 +404,12 @@ function StatusLine({ status, locale }: { status: ParentChoreStatus; locale: Loc
       return <Badge>{t("b.chores.status.paused")}</Badge>;
     case "available":
       return <Badge tone="good">{t("b.chores.status.available")}</Badge>;
+    case "claimed": {
+      const d = claimDeadline(status.expiresAt, new Date(), intlLocale(locale), timeZone);
+      const until =
+        d.kind === "end_of_day" ? t("c.claims.untilEndOfDay") : t("c.claims.until", { time: d.kind === "today" ? d.time : `${d.weekday} ${d.time}` });
+      return <Badge tone="warn">{t("c.claims.onIt", { name: status.kidName, until })}</Badge>;
+    }
     case "waiting":
       return (
         <Badge tone="warn">

@@ -79,6 +79,55 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"chore_claims": {
+                  Row: {
+                    "chore_id": string,"claimed_at": string,"device_id": string | null,"expires_at": string,"household_id": string,"id": string,"kid_id": string,"quantity": number,"release_reason": string | null,"released_at": string | null,"submission_id": string | null
+                  }
+                  Insert: {
+                    "chore_id": string,"claimed_at"?: string,"device_id"?: string | null,"expires_at": string,"household_id": string,"id"?: string,"kid_id": string,"quantity"?: number,"release_reason"?: string | null,"released_at"?: string | null,"submission_id"?: string | null
+                  }
+                  Update: {
+                    "chore_id"?: string,"claimed_at"?: string,"device_id"?: string | null,"expires_at"?: string,"household_id"?: string,"id"?: string,"kid_id"?: string,"quantity"?: number,"release_reason"?: string | null,"released_at"?: string | null,"submission_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chore_claims_chore_id_fkey"
+      columns: ["chore_id"]
+isOneToOne: false
+      referencedRelation: "chores"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_claims_device_id_fkey"
+      columns: ["device_id"]
+isOneToOne: false
+      referencedRelation: "devices"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_claims_household_id_fkey"
+      columns: ["household_id"]
+isOneToOne: false
+      referencedRelation: "households"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_claims_kid_id_fkey"
+      columns: ["kid_id"]
+isOneToOne: false
+      referencedRelation: "kid_balances"
+      referencedColumns: ["kid_id"]
+    },{
+      foreignKeyName: "chore_claims_kid_id_fkey"
+      columns: ["kid_id"]
+isOneToOne: false
+      referencedRelation: "kids"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chore_claims_submission_id_fkey"
+      columns: ["submission_id"]
+isOneToOne: false
+      referencedRelation: "submissions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"chore_subtask_checks": {
                   Row: {
                     "checked_at": string,"chore_id": string,"device_id": string | null,"household_id": string,"kid_id": string,"period_key": string,"subtask_id": string
@@ -137,13 +186,13 @@ isOneToOne: false
                   ]
                 },"chores": {
                   Row: {
-                    "active": boolean,"available_from": string | null,"available_until": string | null,"category": string,"color": string | null,"created_at": string,"description": string | null,"emoji": string | null,"household_id": string,"id": string,"max_quantity": number,"note_for_kids": string | null,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"requires_approval": boolean,"reset_at": string | null,"scope": string,"sort_order": number,"subtasks": NonNullable<Json>,"template_key": string | null,"title": string,"translations": NonNullable<Json>,"unit_label": string | null,"updated_at": string
+                    "active": boolean,"available_from": string | null,"available_until": string | null,"category": string,"claim_window": string,"color": string | null,"created_at": string,"description": string | null,"emoji": string | null,"household_id": string,"id": string,"max_quantity": number,"note_for_kids": string | null,"price_cents": number,"repeat_every_days": number | null,"repeat_kind": string,"requires_approval": boolean,"reset_at": string | null,"scope": string,"sort_order": number,"subtasks": NonNullable<Json>,"template_key": string | null,"title": string,"translations": NonNullable<Json>,"unit_label": string | null,"updated_at": string
                   }
                   Insert: {
-                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id": string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"requires_approval"?: boolean,"reset_at"?: string | null,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title": string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"claim_window"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id": string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents": number,"repeat_every_days"?: number | null,"repeat_kind": string,"requires_approval"?: boolean,"reset_at"?: string | null,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title": string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id"?: string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"requires_approval"?: boolean,"reset_at"?: string | null,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title"?: string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"available_from"?: string | null,"available_until"?: string | null,"category"?: string,"claim_window"?: string,"color"?: string | null,"created_at"?: string,"description"?: string | null,"emoji"?: string | null,"household_id"?: string,"id"?: string,"max_quantity"?: number,"note_for_kids"?: string | null,"price_cents"?: number,"repeat_every_days"?: number | null,"repeat_kind"?: string,"requires_approval"?: boolean,"reset_at"?: string | null,"scope"?: string,"sort_order"?: number,"subtasks"?: NonNullable<Json>,"template_key"?: string | null,"title"?: string,"translations"?: NonNullable<Json>,"unit_label"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -586,6 +635,9 @@ isOneToOne: false
 "checklist_period_key":
 { Args: { "p_at": string,"p_chore_id": string,"p_kid_id": string }; Returns: string
                            },
+"chore_open_for_claim":
+{ Args: { "p_at": string,"p_chore_id": string,"p_kid_id": string }; Returns: boolean
+                           },
 "create_household":
 { Args: { "p_currency": string,"p_locale": string,"p_name": string,"p_timezone": string }; Returns: string
                            },
@@ -607,6 +659,26 @@ isOneToOne: false
 "kiosk_checklist_progress":
 { Args: { "p_household_id": string,"p_kid_id": string }; Returns: Json
                            },
+"kiosk_claim_chore":
+{ Args: { "p_chore_id": string,"p_device_id": string,"p_household_id": string,"p_kid_id": string,"p_quantity": number }; Returns: {
+              "chore_id": string,
+"claimed_at": string,
+"device_id": string | null,
+"expires_at": string,
+"household_id": string,
+"id": string,
+"kid_id": string,
+"quantity": number,
+"release_reason": string | null,
+"released_at": string | null,
+"submission_id": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "chore_claims"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "kiosk_create_submission":
 { Args: { "p_chore_id": string,"p_device_id": string,"p_expected_last_id": string,"p_household_id": string,"p_idempotency_key": string,"p_kid_id": string,"p_quantity": number }; Returns: {
               "amount_cents": number,
@@ -631,6 +703,26 @@ isOneToOne: false
                           SetofOptions: {
         from: "*"
         to: "submissions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"kiosk_release_claim":
+{ Args: { "p_claim_id": string,"p_household_id": string,"p_kid_id": string }; Returns: {
+              "chore_id": string,
+"claimed_at": string,
+"device_id": string | null,
+"expires_at": string,
+"household_id": string,
+"id": string,
+"kid_id": string,
+"quantity": number,
+"release_reason": string | null,
+"released_at": string | null,
+"submission_id": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "chore_claims"
         isOneToOne: true
         isSetofReturn: false
       } },
@@ -688,6 +780,26 @@ isOneToOne: false
                           SetofOptions: {
         from: "*"
         to: "submissions"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"parent_release_claim":
+{ Args: { "p_claim_id": string }; Returns: {
+              "chore_id": string,
+"claimed_at": string,
+"device_id": string | null,
+"expires_at": string,
+"household_id": string,
+"id": string,
+"kid_id": string,
+"quantity": number,
+"release_reason": string | null,
+"released_at": string | null,
+"submission_id": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "chore_claims"
         isOneToOne: true
         isSetofReturn: false
       } },

@@ -4,6 +4,7 @@ import { parentChoreStatus } from "@/lib/board/parentStatus";
 import type { BoardChoreRow } from "@/lib/board/buildBoard";
 import { choreColor } from "@/lib/board/buildBoard";
 import { parseSubtasks } from "@/lib/schedule/checklist";
+import { asClaimWindow } from "@/lib/schedule/claims";
 import { ChoresBoard, type AdminChore } from "./ChoresBoard";
 
 export async function generateMetadata() {
@@ -14,7 +15,8 @@ export async function generateMetadata() {
 export default async function ChoresPage() {
   const ctx = await requireParent();
   const hid = ctx.household.id;
-  const [{ data: chores }, { data: assignees }, { data: submissions }, { data: kids }, { data: templates }] = await Promise.all([
+  const now = new Date();
+  const [{ data: chores }, { data: assignees }, { data: submissions }, { data: kids }, { data: templates }, { data: claims }] = await Promise.all([
     ctx.supabase.from("chores").select("*").eq("household_id", hid).order("sort_order").order("created_at"),
     ctx.supabase.from("chore_assignees").select("chore_id, kid_id").eq("household_id", hid),
     ctx.supabase
@@ -25,6 +27,13 @@ export default async function ChoresPage() {
       .limit(5000),
     ctx.supabase.from("kids").select("id, name, color, locale").eq("household_id", hid).is("archived_at", null).order("sort_order"),
     ctx.supabase.from("chore_templates").select("*").eq("locale", ctx.household.locale).order("sort_order"),
+    // "I'm on it!" claims still running.
+    ctx.supabase
+      .from("chore_claims")
+      .select("id, chore_id, kid_id, expires_at, released_at")
+      .eq("household_id", hid)
+      .is("released_at", null)
+      .gt("expires_at", now.toISOString()),
   ]);
 
   const byChore = new Map<string, string[]>();
@@ -32,7 +41,6 @@ export default async function ChoresPage() {
   const subs = (submissions ?? []).map((s) => ({ ...s, status: s.status as "pending" | "approved" | "sent_back" | "rejected" | "reversed" | "withdrawn" }));
   const historyCount = new Map<string, number>();
   for (const s of subs) historyCount.set(s.chore_id, (historyCount.get(s.chore_id) ?? 0) + 1);
-  const now = new Date();
   const household = { timezone: ctx.household.timezone, week_starts_on: ctx.household.week_starts_on };
 
   const items: AdminChore[] = (chores ?? []).map((c) => {
@@ -64,8 +72,9 @@ export default async function ChoresPage() {
       template_key: c.template_key,
       assignee_ids: row.assignee_ids,
       subtasks: parseSubtasks(c.subtasks),
+      claim_window: asClaimWindow(c.claim_window),
       hasHistory: (historyCount.get(c.id) ?? 0) > 0,
-      status: parentChoreStatus({ chore: row, submissions: subs, kids: kids ?? [], household, now }),
+      status: parentChoreStatus({ chore: row, submissions: subs, kids: kids ?? [], household, now, claims: claims ?? [] }),
     };
   });
 
@@ -77,6 +86,7 @@ export default async function ChoresPage() {
       templates={templates ?? []}
       currency={ctx.household.currency}
       locale={ctx.locale}
+      timeZone={ctx.household.timezone}
       readOnly={ctx.access !== "full"}
     />
   );

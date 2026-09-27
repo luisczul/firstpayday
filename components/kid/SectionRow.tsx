@@ -12,7 +12,7 @@ export function SectionRow({
 }: {
   title: string;
   count?: number;
-  tone?: "default" | "fix" | "new" | "muted" | "routine";
+  tone?: "default" | "fix" | "new" | "muted" | "routine" | "progress";
   id?: string;
   children: ReactNode;
 }) {
@@ -20,7 +20,7 @@ export function SectionRow({
     <section id={id} className="scroll-mt-48 px-6 py-3 md:px-8">
       <h2
         className={`mb-3 flex items-center gap-3 font-display text-[1.7rem] font-bold ${
-          tone === "fix" || tone === "routine" ? "text-plum" : tone === "new" ? "text-maple" : tone === "muted" ? "text-ink-soft" : "text-ink"
+          tone === "fix" || tone === "routine" ? "text-plum" : tone === "new" ? "text-maple" : tone === "progress" ? "text-amber" : tone === "muted" ? "text-ink-soft" : "text-ink"
         }`}
       >
         {title}
