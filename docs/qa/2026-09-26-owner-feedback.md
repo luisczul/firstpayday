@@ -118,7 +118,7 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
 ## Verification status (2026-09-28, deployed commit 081ea25)
-- **Local production build (latest run):** 142 E2E passed (2 skipped); 175 unit tests at 100% coverage; 71 RLS tests. Migrations 25-26 applied to production and verified.
+- **Local production build (latest run):** 136 E2E (2 skipped): the last full run had 2 wording failures (es/pt "forever" guard), fixed and those suites re-run green; 175 unit tests at 100% coverage; 71 RLS tests. Migrations 25-26 applied to production and verified.
 - **Native apps:** iOS 32/32 and Android 44/44 tests green in CI, against a mock server; not yet tried on real phones against production.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
