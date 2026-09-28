@@ -4,6 +4,7 @@ import { CurrencySelect } from "@/components/admin/CurrencySelect";
 import { CURRENCY_COPY } from "@/lib/money/currencies";
 import { useMemo, useState, useTransition } from "react";
 import { deleteHousehold, updateHouseholdSettings } from "@/app/actions/household";
+import { deleteMyAccount } from "@/app/actions/account";
 import { setMyDisplayName, setMyPin, setMyReviewEmails, setMyWeeklyReport } from "@/app/actions/members";
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { Stepper } from "@/components/ui/Stepper";
@@ -35,6 +36,8 @@ export function GeneralSettings(props: {
   reviewEmails: boolean;
   weeklyReport: boolean;
   isOwner: boolean;
+  /** Another parent shares this home (it stays with them when this account is deleted). */
+  sharedHome?: boolean;
   readOnly: boolean;
   canMatch: boolean;
   canTheme: boolean;
@@ -143,6 +146,8 @@ export function GeneralSettings(props: {
       <MeCard displayName={props.displayName} email={props.email} hasPin={props.hasPin} reviewEmails={props.reviewEmails} weeklyReport={props.weeklyReport} />
 
       {props.isOwner ? <DangerZone name={props.household.name} /> : null}
+
+      <DeleteAccount email={props.email} householdName={props.household.name} sharedHome={props.sharedHome ?? false} />
     </div>
   );
 }
@@ -280,6 +285,38 @@ function DangerZone({ name }: { name: string }) {
           <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </Field>
         <Button type="submit" variant="danger" disabled={pending || confirm !== name}>{t("b.danger.delete")}</Button>
+      </form>
+      {msg ? <div className="mt-3"><Alert tone="bad">{msg}</Alert></div> : null}
+    </Card>
+  );
+}
+
+/** "Delete my account" (App Store / Google Play require it): the sign-in goes away for good. */
+function DeleteAccount({ email, householdName, sharedHome }: { email: string; householdName: string; sharedHome: boolean }) {
+  const t = useParentT();
+  const [confirm, setConfirm] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <Card className="ring-danger/40">
+      <h2 id="delete-account" className="scroll-mt-24 font-display text-xl font-bold text-danger">{t("b.account.title")}</h2>
+      <p className="mt-1 text-sm text-ink-soft">{t(sharedHome ? "b.account.bodyShared" : "b.account.bodyAlone", { name: householdName })}</p>
+      <form
+        className="mt-4 flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          start(async () => {
+            const r = await deleteMyAccount(confirm);
+            if (r && !r.ok) setMsg(r.message);
+          });
+        }}
+      >
+        <Field label={t("b.account.typeEmail", { email })}>
+          <Input type="email" autoComplete="off" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        </Field>
+        <Button type="submit" variant="danger" disabled={pending || confirm.trim().toLowerCase() !== email.toLowerCase()}>
+          {t("b.account.delete")}
+        </Button>
       </form>
       {msg ? <div className="mt-3"><Alert tone="bad">{msg}</Alert></div> : null}
     </Card>

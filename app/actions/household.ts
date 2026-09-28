@@ -84,16 +84,9 @@ export async function deleteHousehold(confirmName: string) {
     if (!ctx?.isOwner) throw new ActionError("forbidden", t("b.err.ownerOnlyDelete"));
     if (confirmName.trim() !== ctx.household.name) throw new ActionError("invalid", t("b.err.nameMismatch"));
     const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { purgeHousehold } = await import("@/lib/account/delete");
     const admin = createAdminClient();
-    // Stop billing before the data goes away.
-    if (ctx.subscription?.stripe_subscription_id && ["active", "trialing", "past_due"].includes(ctx.subscription.status)) {
-      const { stripe } = await import("@/lib/billing/stripe");
-      await stripe().subscriptions.cancel(ctx.subscription.stripe_subscription_id);
-    }
-    const { data: files } = await admin.storage.from("avatars").list(ctx.household.id);
-    if (files?.length) await admin.storage.from("avatars").remove(files.map((f) => `${ctx.household.id}/${f.name}`));
-    const { error } = await ctx.supabase.from("households").delete().eq("id", ctx.household.id);
-    if (error) throw error;
+    await purgeHousehold(admin, ctx.household.id);
     await admin.from("audit_log").insert({ actor: ctx.user.id, action: "household.deleted", details: { name: ctx.household.name } });
   });
   if (result.ok) redirect("/onboarding/home");

@@ -85,6 +85,13 @@ Body `{ "comment": string (1..500) }` → 200 `{ "ok": true }`.
   "items": [{ "id": "uuid", "name": "Liam", "color": "#…", "avatarUrl": "… | null", "balanceCents": 1500, "pendingCents": 100 }] }
 ```
 
+## Account (Bearer)
+### POST /api/app/v1/account/delete
+Body `{ "confirmEmail": string }` (the parent retypes their email) → 204, or 400 `invalid` if it doesn't match.
+Deletes the sign-in for good (App Store 5.1.1(v) / Google Play account deletion). A home the parent is alone in
+is deleted with everything in it; a home shared with a co-parent stays with them. The app then clears its tokens
+and web data and returns to Welcome. Show it natively under More → "Delete my account" with a clear warning.
+
 ## Push notifications (Bearer)
 ### POST /api/app/v1/push-tokens
 Body `{ "token": string, "platform": "ios" | "android", "locale"?: "en|fr|es|pt" }` → 204 (idempotent).

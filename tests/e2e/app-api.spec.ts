@@ -263,3 +263,54 @@ test("web-session: refuses cross-site posts and bad tokens; kiosk mode turns the
   expect((await request.get("/api/app/v1/me", { headers: { Authorization: `Bearer ${s.accessToken}` } })).status()).toBe(200);
   await ctx.close();
 });
+
+test("delete my account: from the app (email must match) and from web Settings; a shared home stays with the co-parent", async ({ request, browser }) => {
+  // App: a parent alone in their home.
+  const soloEmail = `solo-${randomUUID().slice(0, 8)}@example.test`;
+  const solo = (await (await request.post("/api/app/v1/auth/signup", { data: { email: soloEmail, password, acceptedTerms: true } })).json()).session;
+  const as = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${solo.accessToken}` } },
+  });
+  const { data: soloHome } = await as.rpc("create_household", { p_name: "Solo home", p_timezone: "America/Toronto", p_currency: "CAD", p_locale: "en" });
+  let r = await request.post("/api/app/v1/account/delete", { headers: { Authorization: `Bearer ${solo.accessToken}`, "accept-language": "fr" }, data: { confirmEmail: "wrong@example.test" } });
+  expect(r.status()).toBe(400);
+  expect((await r.json()).error.message).toBe("Ce n'est pas le courriel de ce compte.");
+  r = await request.post("/api/app/v1/account/delete", { headers: { Authorization: `Bearer ${solo.accessToken}` }, data: { confirmEmail: soloEmail.toUpperCase() } });
+  expect(r.status()).toBe(204);
+  expect((await admin.from("households").select("id").eq("id", soloHome as string)).data).toEqual([]);
+  expect((await request.post("/api/app/v1/auth/login", { data: { email: soloEmail, password } })).status()).toBe(401);
+
+  // Web: the owner of a home shared with a co-parent deletes their account in Settings.
+  const ownerEmail = `own-${randomUUID().slice(0, 8)}@example.test`;
+  const coEmail = `co-${randomUUID().slice(0, 8)}@example.test`;
+  const owner = (await (await request.post("/api/app/v1/auth/signup", { data: { email: ownerEmail, password, acceptedTerms: true } })).json()).session;
+  const co = (await (await request.post("/api/app/v1/auth/signup", { data: { email: coEmail, password, acceptedTerms: true } })).json()).session;
+  const asOwner = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${owner.accessToken}` } },
+  });
+  const { data: sharedHome } = await asOwner.rpc("create_household", { p_name: "Shared home", p_timezone: "America/Toronto", p_currency: "CAD", p_locale: "en" });
+  await admin.from("household_members").insert({ household_id: sharedHome as string, user_id: co.user.id, role: "parent" });
+
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(ownerEmail);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page).toHaveURL(/\/admin/, { timeout: 45_000 });
+  await page.goto("/admin/settings");
+  await expect(page.getByRole("heading", { name: "Delete my account" })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("“Shared home” stays with the other parent.")).toBeVisible();
+  const del = page.getByRole("button", { name: "Delete my account" });
+  await expect(del).toBeDisabled();
+  await page.getByLabel(`Type your email (${ownerEmail}) to confirm`).fill(ownerEmail);
+  await del.click();
+  await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
+  await ctx.close();
+
+  expect((await admin.from("households").select("name").eq("id", sharedHome as string)).data).toEqual([{ name: "Shared home" }]);
+  expect((await admin.from("household_members").select("user_id, role").eq("household_id", sharedHome as string)).data).toEqual([{ user_id: co.user.id, role: "owner" }]);
+  expect((await request.post("/api/app/v1/auth/login", { data: { email: ownerEmail, password } })).status()).toBe(401);
+});

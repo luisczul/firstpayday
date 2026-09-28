@@ -19,6 +19,7 @@ export default async function SettingsPage() {
     .eq("household_id", ctx.household.id)
     .eq("user_id", ctx.user.id)
     .single();
+  const { count: parents } = await ctx.supabase.from("household_members").select("user_id", { count: "exact", head: true }).eq("household_id", ctx.household.id);
   const h = ctx.household;
   return (
     <>
@@ -44,6 +45,7 @@ export default async function SettingsPage() {
         reviewEmails={me?.review_emails_enabled ?? true}
         weeklyReport={me?.weekly_report_enabled ?? true}
         isOwner={ctx.isOwner}
+        sharedHome={(parents ?? 1) > 1}
         readOnly={ctx.access !== "full"}
         canMatch
         canTheme
