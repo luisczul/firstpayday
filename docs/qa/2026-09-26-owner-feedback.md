@@ -76,6 +76,10 @@ Verify each one on **production (https://firstpayday.app)** after deploy.
 | 69 | **Lifetime totals in the kid's bank** | Tapping the balance shows "⭐ Earned since the start" (bank + paid out + taxes) and "💵 Paid to me", plus taxes paid when family tax is on | Tablet |
 | 70 | **📲 Download app** | Public header and parent admin header: one tap installs the web app where the browser supports it (Android, Chrome/Edge desktop); on iPhone/iPad it shows Apple's "Share → Add to Home Screen" steps; hidden once installed; the icon opens the kids' board on a kids' tablet and the parent admin (or login) elsewhere | Public site, parent admin |
 | 71 | **⭐ Add to balance (custom reward)** | On a kid's page: pick an icon (or any emoji), a name ("Helped me with the groceries"), an amount and what it was; − side for corrections. Parent money history and History show icon + name; the kid's money list shows icon, name and description, translated to the kid's language in the background | Parent admin → Kids → kid; kid tablet → My money |
+| 72 | **🛠️ Control panel shortcut (owner only)** | Only luisczul@gmail.com (and a platform admin): sidebar "🛠️ Control panel" on a computer, 🛠️ in the top bar on a phone; no one else's page contains the link | Parent admin |
+| 73 | **📱 Native iOS + Android apps** | Built and CI-green (see docs/native/owner-next-steps.md): native sign-in, Approvals, Kids, kids'-tablet mode, push, 4 languages; the rest as in-app pages | luisczul/firstpayday_ios, luisczul/firstpayday_android |
+| 74 | **App API** | /api/app/v1 (docs/native/app-api.md): sign-in, approvals, kids, push tokens, in-app web session, kids'-tablet setup; embedded admin hides web menus inside the apps | Server |
+| 75 | **🗑️ Delete my account** | Web Settings and both apps: retype your email; a home you're alone in is deleted with everything; a shared home stays with the co-parent (who becomes owner) | Settings, apps → More |
 
 ## Final gate: full journeys in each language (required before "ready")
 Run the whole product from zero **four times**: en, fr, es, pt-BR. Each run uses a monitored throwaway inbox and covers:
@@ -113,8 +117,9 @@ The owner's business-wide dashboard, separate from the parent admin. Extends the
 ### Phase 4: Native iOS + Android apps
 Only when the owner says go (repos: luisczul/firstpayday_ios, luisczul/firstpayday_android).
 
-## Verification status (2026-09-27, deployed commit 7001aa2)
-- **Local production build (latest run):** 127 E2E passed (129 incl. 2 skipped); 173 unit tests at 100% coverage; 70 RLS tests. Migration 25 applied to production and verified.
+## Verification status (2026-09-28, deployed commit 081ea25)
+- **Local production build (latest run):** 142 E2E passed (2 skipped); 175 unit tests at 100% coverage; 71 RLS tests. Migrations 25-26 applied to production and verified.
+- **Native apps:** iOS 32/32 and Android 44/44 tests green in CI, against a mock server; not yet tried on real phones against production.
 - **Earlier run:** full E2E suite 102 passed (2 Stripe tests skipped, billing off); unit tests 139; security (RLS) tests 56; typecheck and lint clean.
 - **Four full journeys** (en / fr / es / pt-BR, each from zero, emails captured): all pass.
 - **Production database:** migrations 8–20 applied after a rehearsal on a copy of production; the migrated schema is identical to a fresh one; the owner's data is intact.
