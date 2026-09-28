@@ -555,6 +555,18 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"push_tokens": {
+                  Row: {
+                    "created_at": string,"id": string,"last_seen_at": string,"locale": string | null,"platform": string,"token": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"last_seen_at"?: string,"locale"?: string | null,"platform": string,"token": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"last_seen_at"?: string,"locale"?: string | null,"platform"?: string,"token"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                  ]
                 },"support_messages": {
                   Row: {
                     "created_at": string,"email": string | null,"household_id": string | null,"id": string,"kind": string,"message": string,"page": string | null,"status": string,"user_agent": string | null,"user_id": string | null

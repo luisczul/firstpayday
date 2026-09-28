@@ -52,8 +52,11 @@ export function InstallApp({ lang = "en", compact = false }: { lang?: string; co
   const [help, setHelp] = useState<null | "ios" | "other">(null);
 
   useEffect(() => {
+    // Already installed, or already inside the native app: nothing to download.
     const standalone =
-      window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true ||
+      /\bFirstPaydayApp\//.test(navigator.userAgent);
     setInstalled(standalone);
     const onPrompt = (e: Event) => {
       e.preventDefault();

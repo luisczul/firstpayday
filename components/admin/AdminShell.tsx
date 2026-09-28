@@ -35,6 +35,8 @@ export function AdminShell(props: {
   theme: string;
   /** The owner's control panel shortcut; null for every other account. */
   platformHref?: string | null;
+  /** Inside the native parent app: no sidebar, top bar or bottom tabs (the app has its own). */
+  embedded?: boolean;
   children: React.ReactNode;
 }) {
   const tr = translator(props.locale);
@@ -86,6 +88,7 @@ export function AdminShell(props: {
   return (
     <div className="min-h-dvh bg-paper md:flex">
       {/* Sidebar (tablet / desktop) */}
+      {props.embedded ? null : (
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-card/60 px-3 py-5 md:flex">
         <Link href="/admin/approvals" className="mb-6 flex items-center gap-2 px-3 font-display text-xl font-bold text-maple">
           <span aria-hidden className="flex h-9 w-9 items-center justify-center rounded-xl bg-maple text-lg text-gold">$</span>
@@ -137,9 +140,11 @@ export function AdminShell(props: {
           </form>
         </div>
       </aside>
+      )}
 
-      <div className="flex min-w-0 flex-1 flex-col pb-24 md:pb-0">
+      <div className={`flex min-w-0 flex-1 flex-col ${props.embedded ? "" : "pb-24 md:pb-0"}`}>
         {/* Top bar */}
+        {props.embedded ? null : (
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/90 px-4 py-2.5 backdrop-blur">
           <span className="min-w-0 truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
           <div className="ml-auto flex items-center gap-2">
@@ -178,6 +183,7 @@ export function AdminShell(props: {
             </form>
           </div>
         </header>
+        )}
 
         {props.readOnly ? (
           <div className="flex flex-wrap items-center justify-between gap-2 bg-plum px-4 py-3 text-sm font-semibold text-white">
@@ -203,6 +209,7 @@ export function AdminShell(props: {
       </div>
 
       {/* Bottom tabs (phone) */}
+      {props.embedded ? null : (
       <nav
         className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
         aria-label={pt("b.shell.nav")}
@@ -226,6 +233,7 @@ export function AdminShell(props: {
           </Link>
         ))}
       </nav>
+      )}
     </div>
   );
 }

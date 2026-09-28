@@ -3,6 +3,7 @@ import { z } from "zod";
 import { kioskRoute } from "@/lib/kiosk/route";
 import { createSubmission } from "@/lib/kiosk/operations";
 import { notifyReviewReady } from "@/lib/email/reviewNotify";
+import { notifyNewSubmissionPush } from "@/lib/push/notify";
 
 const Body = z.object({
   kidId: z.uuid(),
@@ -21,6 +22,7 @@ export function POST(req: Request) {
     if (result.ok) {
       const { submissionId } = result;
       after(() => notifyReviewReady(ctx.householdId, submissionId));
+      after(() => notifyNewSubmissionPush(ctx.householdId, submissionId));
     }
     return NextResponse.json(result, { status: result.ok ? 200 : result.reason === "taken" || result.reason === "claimed" ? 409 : 400 });
   });

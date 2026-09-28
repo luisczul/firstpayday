@@ -184,6 +184,17 @@ describe("tenant isolation", () => {
   });
 });
 
+describe("push tokens are server-only", () => {
+  it("parents can't read or write push_tokens directly (the app API does it for them)", async () => {
+    await admin.from("push_tokens").insert({ user_id: A.userId, token: `tok-${A.userId}`, platform: "ios" });
+    const read = await A.client.from("push_tokens").select("id");
+    expect(read.data ?? []).toEqual([]);
+    const write = await A.client.from("push_tokens").insert({ user_id: A.userId, token: "tok-direct-1234", platform: "ios" });
+    expect(write.error).not.toBeNull();
+    await admin.from("push_tokens").delete().eq("user_id", A.userId);
+  });
+});
+
 describe("ledger is append-only", () => {
   it("approval writes an earning; nobody can update or delete it", async () => {
     const { error } = await A.client.rpc("approve_submission", { p_submission_id: A.submissionId });

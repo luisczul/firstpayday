@@ -2,25 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ActionError, requireWritableParent, runAction, type ParentContext } from "@/lib/auth/session";
+import { ActionError, requireWritableParent, runAction } from "@/lib/auth/session";
 import { parentT } from "@/lib/i18n/parent";
-import { formatMoney } from "@/lib/money/format";
-
-const MAX_TIP_CENTS = 10_000;
-
-function tipTooBig(ctx: ParentContext): ActionError {
-  const max = formatMoney(MAX_TIP_CENTS, ctx.household.currency, ctx.locale);
-  return new ActionError("invalid", parentT(ctx.locale)("a.err.tipMax", { max }));
-}
-
-function friendly(ctx: ParentContext, message: string): ActionError {
-  const t = parentT(ctx.locale);
-  if (message.includes("read-only")) return new ActionError("read_only", t("a.err.readOnlyApprove"));
-  if (message.includes("bonus")) return tipTooBig(ctx);
-  if (message.includes("quantity")) return new ActionError("invalid", t("a.err.quantity"));
-  if (message.includes("not found")) return new ActionError("not_found", t("a.err.submissionGone"));
-  return new ActionError("invalid", t("a.err.alreadyReviewed"));
-}
+import { MAX_TIP_CENTS, friendlyReviewError as friendly, tipTooBig } from "@/lib/approvals/errors";
 
 function revalidate() {
   revalidatePath("/admin/approvals");

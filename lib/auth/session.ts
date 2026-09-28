@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getHouseholdAccess, type HouseholdAccess } from "@/lib/billing/access";
 import type { PlanId } from "@/lib/billing/plans";
-import type { Tables } from "@/lib/supabase/database.types";
+import type { Database, Tables } from "@/lib/supabase/database.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { asLocale, type Locale } from "@/lib/i18n";
 
 export type Household = Tables<"households">;
@@ -12,7 +13,7 @@ export type Subscription = Tables<"subscriptions">;
 export type Membership = Pick<Tables<"household_members">, "household_id" | "user_id" | "role" | "display_name" | "created_at">;
 
 export interface ParentContext {
-  supabase: Awaited<ReturnType<typeof createClient>>;
+  supabase: SupabaseClient<Database>;
   user: { id: string; email: string };
   household: Household;
   membership: Membership;
@@ -36,7 +37,17 @@ export const getUser = cache(async () => {
 export const getParentContext = cache(async (): Promise<ParentContext | null> => {
   const { supabase, user } = await getUser();
   if (!user) return null;
+  return loadParentContext(supabase, user);
+});
 
+/**
+ * A parent's household context for any signed-in client: the cookie session (web) or a
+ * Bearer token (native apps). RLS applies either way.
+ */
+export async function loadParentContext(
+  supabase: ParentContext["supabase"],
+  user: { id: string; email?: string | null },
+): Promise<ParentContext | null> {
   const { data: membership } = await supabase
     .from("household_members")
     .select("household_id, user_id, role, display_name, created_at")
@@ -69,7 +80,7 @@ export const getParentContext = cache(async (): Promise<ParentContext | null> =>
     isOwner: membership.role === "owner",
     locale: asLocale(household.locale),
   };
-});
+}
 
 /** For admin pages: signed in, with a household. */
 export async function requireParent(): Promise<ParentContext> {
