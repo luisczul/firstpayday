@@ -31,7 +31,8 @@ export async function GET(req: Request) {
       unitLabel: s.chores?.unit_label ?? null,
       unitPriceCents: s.unit_price_cents,
       amountCents: s.amount_cents,
-      submittedAt: s.submitted_at,
+      // Plain ISO 8601 with milliseconds and Z: every phone date parser reads it.
+      submittedAt: new Date(s.submitted_at).toISOString(),
       resubmitted: Boolean(s.resubmitted_at),
       kidNote: null,
       photoUrl: null,

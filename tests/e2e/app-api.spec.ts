@@ -143,6 +143,7 @@ test("approvals: list, approve with a tip, send back with a comment", async ({ r
     kidNote: null,
     photoUrl: null,
   });
+  expect(list.items[0].submittedAt).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   expect((await (await request.get("/api/app/v1/me", { headers: auth() })).json()).pendingCount).toBe(3);
 
   // The chore's current name follows the chore (not the saved snapshot).
