@@ -62,7 +62,7 @@
     <tr><td>Android SDK (inside Android Studio, which you already have)</td><td>Builds and runs the Android app</td><td>~6 GB, 15–30 min</td></tr>
     <tr><td>An Android emulator image</td><td>Run the app on a simulated phone</td><td>~2 GB</td></tr>
   </table>
-  <p>Both app projects are already on this Mac: <code>~/code/firstpayday_ios</code> and <code>~/code/firstpayday_android</code>.</p>
+  <p>Both app projects are already on this Mac: <code>~/Github/Personal/firstpayday-apps/firstpayday_ios</code> and <code>~/Github/Personal/firstpayday-apps/firstpayday_android</code>.</p>
 
   <div class="toc"><a href="#ios">Part 1 · iPhone app (Xcode)</a><a href="#android">Part 2 · Android app</a><a href="#after">Part 3 · After both work</a></div>
 
@@ -95,7 +95,7 @@ sudo xcodebuild -runFirstLaunch</code></pre>
 
   <div class="step"><input type="checkbox"><div>
     <h3>5. Create and open the project</h3>
-    <pre><code>cd ~/code/firstpayday_ios
+    <pre><code>cd ~/Github/Personal/firstpayday-apps/firstpayday_ios
 git pull
 xcodegen
 open FirstPayday.xcodeproj</code></pre>
@@ -121,7 +121,7 @@ open FirstPayday.xcodeproj</code></pre>
 
   <div class="step"><input type="checkbox"><div>
     <h3>9. (Optional) Run the tests yourself</h3>
-    <pre><code>cd ~/code/firstpayday_ios
+    <pre><code>cd ~/Github/Personal/firstpayday-apps/firstpayday_ios
 xcodebuild test -scheme FirstPayday -destination 'platform=iOS Simulator,name=iPhone 16'</code></pre>
     <p><span class="ok">Ends with "** TEST SUCCEEDED **"</span> (if "iPhone 16" doesn't exist, use a name from <code>xcrun simctl list devices available</code>).</p>
   </div></div>
@@ -165,9 +165,9 @@ sdkmanager --list_installed | head</code></pre>
 
   <div class="step"><input type="checkbox"><div>
     <h3>5. Open the app project</h3>
-    <pre><code>cd ~/code/firstpayday_android
+    <pre><code>cd ~/Github/Personal/firstpayday-apps/firstpayday_android
 git pull</code></pre>
-    <p>In Android Studio: <b>Open</b> → choose the folder <code>~/code/firstpayday_android</code>. Wait for the "Gradle sync" bar at the bottom to finish (the first time downloads a lot).</p>
+    <p>In Android Studio: <b>Open</b> → choose the folder <code>~/Github/Personal/firstpayday-apps/firstpayday_android</code>. Wait for the "Gradle sync" bar at the bottom to finish (the first time downloads a lot).</p>
   </div></div>
 
   <div class="step"><input type="checkbox"><div>
@@ -182,7 +182,7 @@ git pull</code></pre>
 
   <div class="step"><input type="checkbox"><div>
     <h3>8. (Optional) Build and test from Terminal</h3>
-    <pre><code>cd ~/code/firstpayday_android
+    <pre><code>cd ~/Github/Personal/firstpayday-apps/firstpayday_android
 ./gradlew testDebugUnitTest assembleDebug</code></pre>
     <p><span class="ok">Ends with "BUILD SUCCESSFUL"</span>. With the emulator open, the screen tests: <code>./gradlew connectedDebugAndroidTest</code></p>
   </div></div>
