@@ -131,5 +131,9 @@
   "kid.adjustmentRow": "Ajuste da Mamãe/Papai",
   "kid.matchRow": "Poupança extra da Mamãe/Papai",
   "nav.settingsShort": "Ajustes",
-  "nav.approvalsShort": "Aprovações"
+  "nav.approvalsShort": "Aprovações",
+  "admin.keepOn": "Manter o modo pais",
+  "admin.timerBackOn": "Reativar o temporizador",
+  "admin.stayingOn": "O modo pais fica ativo até você tocar em “Voltar ao modo crianças”.",
+  "admin.timerOn": "Volta ao modo crianças após {minutes} min sem tocar na tela."
 }

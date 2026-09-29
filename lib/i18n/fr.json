@@ -131,5 +131,9 @@
   "kid.adjustmentRow": "Ajusté par Maman/Papa",
   "kid.matchRow": "Bonus d'épargne de Maman/Papa",
   "nav.settingsShort": "Paramètres",
-  "nav.approvalsShort": "Approuver"
+  "nav.approvalsShort": "Approuver",
+  "admin.keepOn": "Garder le mode parent",
+  "admin.timerBackOn": "Réactiver la minuterie",
+  "admin.stayingOn": "Le mode parent reste actif jusqu’à ce que vous touchiez « Retour au mode enfants ».",
+  "admin.timerOn": "Retour au mode enfants après {minutes} min sans toucher l’écran."
 }

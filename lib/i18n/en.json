@@ -131,5 +131,9 @@
   "kid.adjustmentRow": "Adjusted by Mom/Dad",
   "kid.matchRow": "Savings bonus from Mom/Dad",
   "nav.settingsShort": "Settings",
-  "nav.approvalsShort": "Approvals"
+  "nav.approvalsShort": "Approvals",
+  "admin.keepOn": "Keep parent mode on",
+  "admin.timerBackOn": "Turn the timer back on",
+  "admin.stayingOn": "Parent mode stays on until you tap “Back to Kids Mode”.",
+  "admin.timerOn": "Back to Kids Mode after {minutes} min without a tap."
 }

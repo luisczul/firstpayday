@@ -131,5 +131,9 @@
   "kid.adjustmentRow": "Cambio de Mamá/Papá",
   "kid.matchRow": "Ahorro extra de Mamá/Papá",
   "nav.settingsShort": "Ajustes",
-  "nav.approvalsShort": "Aprobar"
+  "nav.approvalsShort": "Aprobar",
+  "admin.keepOn": "Mantener el modo padres",
+  "admin.timerBackOn": "Volver a activar el temporizador",
+  "admin.stayingOn": "El modo padres sigue activo hasta que toques “Volver al modo niños”.",
+  "admin.timerOn": "Vuelve al modo niños tras {minutes} min sin tocar la pantalla."
 }

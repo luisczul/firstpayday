@@ -6,6 +6,8 @@ import {
   adminModeCookieOptions,
   kioskCookieOptions,
   readAdminMode,
+  adminModeActive,
+  adminModeCookieOptionsFor,
   signAdminMode,
 } from "@/lib/auth/adminMode";
 import {
@@ -92,7 +94,7 @@ export async function middleware(request: NextRequest) {
   }
   if (isAdminArea && user && onKiosk) {
     const claim = await readAdminMode(request.cookies.get(ADMIN_MODE_COOKIE)?.value);
-    if (!claim || claim.userId !== user.id || claim.until <= Date.now()) {
+    if (!claim || !adminModeActive(claim, user.id)) {
       const url = request.nextUrl.clone();
       url.pathname = "/api/admin-mode/exit";
       url.search = "?reason=timeout";
@@ -101,7 +103,7 @@ export async function middleware(request: NextRequest) {
     response.cookies.set(
       ADMIN_MODE_COOKIE,
       await signAdminMode(user.id, claim.timeoutMinutes),
-      adminModeCookieOptions,
+      adminModeCookieOptionsFor(claim.timeoutMinutes),
     );
   }
 

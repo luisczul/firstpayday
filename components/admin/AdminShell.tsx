@@ -224,7 +224,7 @@ export function AdminShell(props: {
           </div>
         ) : null}
 
-        {props.onKiosk ? <AdminTimeout minutes={props.adminTimeoutMinutes} locale={props.locale} /> : null}
+        {props.onKiosk ? <KioskParentBar minutes={props.adminTimeoutMinutes} locale={props.locale} /> : null}
 
         <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8">
           {navigating ? (
@@ -263,6 +263,41 @@ export function AdminShell(props: {
       </nav>
       )}
     </div>
+  );
+}
+
+/**
+ * Parent mode on a kids' tablet: says when it switches back to Kids Mode, and lets the parent keep it
+ * on (no inactivity timer) until they tap "Back to Kids Mode" — e.g. to test or set things up.
+ */
+function KioskParentBar({ minutes: initial, locale }: { minutes: number; locale: Locale }) {
+  const tr = translator(locale);
+  const [minutes, setMinutes] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const staying = minutes === 0;
+  const toggle = async () => {
+    setBusy(true);
+    const res = await fetch("/api/admin-mode/stay", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stay: !staying }),
+    }).catch(() => null);
+    setBusy(false);
+    if (!res || !res.ok) return window.location.assign("/api/admin-mode/exit");
+    setMinutes(((await res.json()) as { timeoutMinutes: number }).timeoutMinutes);
+  };
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-card px-4 py-2 text-sm" data-testid="kiosk-parent-bar">
+        <span className="text-ink-soft">
+          {staying ? tr("admin.stayingOn") : tr("admin.timerOn", { minutes })}
+        </span>
+        <button type="button" disabled={busy} onClick={() => void toggle()} className={`${buttonClass("secondary", "sm")} whitespace-nowrap`}>
+          {staying ? tr("admin.timerBackOn") : tr("admin.keepOn")}
+        </button>
+      </div>
+      {staying ? null : <AdminTimeout key={minutes} minutes={minutes} locale={locale} />}
+    </>
   );
 }
 

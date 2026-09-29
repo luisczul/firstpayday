@@ -1,7 +1,8 @@
 import { appSecret, hmacHex, safeEqual } from "@/lib/crypto";
 
 // Signed cookie that keeps Admin Mode alive on a kiosk tablet (SPEC §7).
-// Value: `${userId}.${untilMs}.${timeoutMinutes}.${hmac}`.
+// Value: `${userId}.${untilMs}.${timeoutMinutes}.${hmac}`. timeoutMinutes 0 = "keep parent mode on":
+// no inactivity timeout until the parent taps "Back to Kids Mode" (ADMIN_MODE_STAY).
 
 export const ADMIN_MODE_COOKIE = "admin_mode_until";
 export const KIOSK_COOKIE = "kiosk_token";
@@ -13,6 +14,20 @@ export interface AdminModeClaim {
 }
 
 const secret = () => appSecret("ADMIN_MODE_SECRET");
+
+/** timeoutMinutes value meaning "stay in parent mode until I switch back". */
+export const ADMIN_MODE_STAY = 0;
+
+/** Parent mode is still on for this user: signed for them and not timed out (or kept on). */
+export function adminModeActive(claim: AdminModeClaim | null, userId: string, now = Date.now()): boolean {
+  if (!claim || claim.userId !== userId) return false;
+  return claim.timeoutMinutes === ADMIN_MODE_STAY || claim.until > now;
+}
+
+/** Cookie options: a kept-on parent mode lasts up to 30 days (renewed on each visit), else a day. */
+export function adminModeCookieOptionsFor(timeoutMinutes: number) {
+  return { ...adminModeCookieOptions, maxAge: timeoutMinutes === ADMIN_MODE_STAY ? 60 * 60 * 24 * 30 : adminModeCookieOptions.maxAge };
+}
 
 export async function signAdminMode(userId: string, timeoutMinutes: number, now = Date.now()): Promise<string> {
   const until = now + timeoutMinutes * 60_000;
