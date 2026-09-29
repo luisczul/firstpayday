@@ -6,6 +6,7 @@ export const en = {
   "c.appr.useCurrent": "Use today's price ({price})",
   "c.appr.keepPrice": "Also use this price for “{title}” from now on",
   "c.shell.share": "💌 Share First Payday",
+  "c.loading.coins": "Counting your coins…",
   "c.tabs.share": "💌 Share",
 
   "c.share.title": "💌 Share First Payday",
@@ -76,6 +77,7 @@ export const fr: Record<AreaCKey, string> = {
   "c.appr.useCurrent": "Utiliser le prix actuel ({price})",
   "c.appr.keepPrice": "Garder aussi ce prix pour « {title} » à l'avenir",
   "c.shell.share": "💌 Partager First Payday",
+  "c.loading.coins": "On compte les sous…",
   "c.tabs.share": "💌 Partager",
 
   "c.share.title": "💌 Partager First Payday",
@@ -144,6 +146,7 @@ export const es: Record<AreaCKey, string> = {
   "c.appr.useCurrent": "Usar el precio de hoy ({price})",
   "c.appr.keepPrice": "Usar también este precio para “{title}” de ahora en adelante",
   "c.shell.share": "💌 Compartir First Payday",
+  "c.loading.coins": "Contando monedas…",
   "c.tabs.share": "💌 Compartir",
 
   "c.share.title": "💌 Compartir First Payday",
@@ -212,6 +215,7 @@ export const pt: Record<AreaCKey, string> = {
   "c.appr.useCurrent": "Usar o preço de hoje ({price})",
   "c.appr.keepPrice": "Usar também este preço para “{title}” daqui para frente",
   "c.shell.share": "💌 Compartilhar o First Payday",
+  "c.loading.coins": "Contando moedas…",
   "c.tabs.share": "💌 Compartilhar",
 
   "c.share.title": "💌 Compartilhar o First Payday",

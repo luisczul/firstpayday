@@ -111,6 +111,49 @@ textarea:focus-visible {
   display: none;
 }
 
+/* CoinLoader: the app-icon coin, tossed (flips and bounces) while a page loads. */
+.coin-loader {
+  animation: coin-appear 150ms ease-out 150ms both;
+}
+.coin-toss {
+  transform-style: preserve-3d;
+  animation: coin-toss 1.2s ease-in-out infinite;
+}
+.coin-face {
+  backface-visibility: hidden;
+}
+.coin-face-back {
+  transform: rotateY(180deg);
+}
+.coin-shadow {
+  opacity: 0.15;
+  animation: coin-shadow 1.2s ease-in-out infinite;
+}
+.coin-sparkle {
+  position: absolute;
+  color: var(--color-amber);
+  font-size: 14px;
+  line-height: 1;
+  animation: coin-sparkle 1.2s ease-in-out infinite;
+}
+@keyframes coin-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes coin-toss {
+  0% { transform: translateY(0) rotateY(0deg); }
+  50% { transform: translateY(-14px) rotateY(180deg); }
+  100% { transform: translateY(0) rotateY(360deg); }
+}
+@keyframes coin-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.15; }
+  50% { transform: scaleX(0.6); opacity: 0.06; }
+}
+@keyframes coin-sparkle {
+  0%, 100% { transform: scale(0.4); opacity: 0; }
+  50% { transform: scale(1); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -12,6 +12,7 @@ import { logout } from "@/app/(auth)/actions";
 import { translator, type Locale, type MessageKey } from "@/lib/i18n";
 import { brand } from "@/lib/brand";
 import { buttonClass } from "@/components/ui";
+import { CoinLoader } from "@/components/CoinLoader";
 
 const NAV: { href: string; key: MessageKey; icon: string }[] = [
   { href: "/admin/approvals", key: "nav.approvals", icon: "✅" },
@@ -42,6 +43,28 @@ export function AdminShell(props: {
   const tr = translator(props.locale);
   const pt = parentT(props.locale);
   const pathname = usePathname();
+  // Clicking to another admin page: show the tossed coin until the new page arrives.
+  const [navigating, setNavigating] = useState(false);
+  useEffect(() => setNavigating(false), [pathname]);
+  useEffect(() => {
+    if (!navigating) return;
+    // Never leave the coin up if a navigation fails or is abandoned.
+    const id = window.setTimeout(() => setNavigating(false), 15_000);
+    return () => window.clearTimeout(id);
+  }, [navigating]);
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a");
+      if (!a || a.target || a.hasAttribute("download")) return;
+      const url = new URL(a.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
+      setNavigating(true);
+    };
+    // Capture phase: Next's <Link> calls preventDefault in React's handler, which runs later.
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
   const router = useRouter();
   const [pending, setPending] = useState(props.pendingCount);
   const [switching, startSwitch] = useTransition();
@@ -203,7 +226,12 @@ export function AdminShell(props: {
 
         {props.onKiosk ? <AdminTimeout minutes={props.adminTimeoutMinutes} locale={props.locale} /> : null}
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8">
+        <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-8">
+          {navigating ? (
+            <div className="coin-loader absolute inset-0 z-20 flex items-start justify-center bg-paper pt-10">
+              <CoinLoader caption={pt("c.loading.coins")} delayed={false} />
+            </div>
+          ) : null}
           <ParentLocaleProvider locale={props.locale}>{props.children}</ParentLocaleProvider>
         </main>
       </div>
