@@ -267,20 +267,20 @@ export function AdminShell(props: {
 }
 
 /**
- * Parent mode on a kids' tablet: says when it switches back to Kids Mode, and lets the parent keep it
- * on (no inactivity timer) until they tap "Back to Kids Mode" — e.g. to test or set things up.
+ * Parent mode on a kids' tablet: always starts with the inactivity timer and this bar. "Keep parent mode
+ * on" stops the timer and hides the bar; the parent then leaves with "Back to Kids Mode".
  */
 function KioskParentBar({ minutes: initial, locale }: { minutes: number; locale: Locale }) {
   const tr = translator(locale);
   const [minutes, setMinutes] = useState(initial);
   const [busy, setBusy] = useState(false);
-  const staying = minutes === 0;
-  const toggle = async () => {
+  if (minutes === 0) return null;
+  const keepOn = async () => {
     setBusy(true);
     const res = await fetch("/api/admin-mode/stay", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ stay: !staying }),
+      body: JSON.stringify({ stay: true }),
     }).catch(() => null);
     setBusy(false);
     if (!res || !res.ok) return window.location.assign("/api/admin-mode/exit");
@@ -289,14 +289,12 @@ function KioskParentBar({ minutes: initial, locale }: { minutes: number; locale:
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-card px-4 py-2 text-sm" data-testid="kiosk-parent-bar">
-        <span className="text-ink-soft">
-          {staying ? tr("admin.stayingOn") : tr("admin.timerOn", { minutes })}
-        </span>
-        <button type="button" disabled={busy} onClick={() => void toggle()} className={`${buttonClass("secondary", "sm")} whitespace-nowrap`}>
-          {staying ? tr("admin.timerBackOn") : tr("admin.keepOn")}
+        <span className="text-ink-soft">{tr("admin.timerOn", { minutes })}</span>
+        <button type="button" disabled={busy} onClick={() => void keepOn()} className={`${buttonClass("secondary", "sm")} whitespace-nowrap`}>
+          {tr("admin.keepOn")}
         </button>
       </div>
-      {staying ? null : <AdminTimeout key={minutes} minutes={minutes} locale={locale} />}
+      <AdminTimeout minutes={minutes} locale={locale} />
     </>
   );
 }

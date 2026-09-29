@@ -6,8 +6,8 @@ import { loadEnv } from "../../scripts/load-env";
 loadEnv();
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 
-// Parent mode on the kids' tablet times out by default; "Keep parent mode on" stops the timer
-// until "Back to Kids Mode", and the next time parent mode starts, the timer is back.
+// Parent mode on the kids' tablet always starts with the timer and its bar; "Keep parent mode on" stops
+// the timer and hides the bar until "Back to Kids Mode"; the next time parent mode starts, both are back.
 test.setTimeout(300_000);
 const PIN = "4826";
 
@@ -56,22 +56,16 @@ test("keep parent mode on: no timeout until Back to Kids Mode; the timer is the 
   const bar = tablet.getByTestId("kiosk-parent-bar");
   await expect(bar).toContainText("Back to Kids Mode after 1 min without a tap.");
 
-  // Keep parent mode on, then outlast the 1-minute timeout without touching anything.
+  // Keep parent mode on: the bar goes away; outlast the 1-minute timeout without touching anything.
   await bar.getByRole("button", { name: "Keep parent mode on" }).click();
-  await expect(bar).toContainText("Parent mode stays on until you tap “Back to Kids Mode”.");
+  await expect(tablet.getByTestId("kiosk-parent-bar")).toHaveCount(0);
   await tablet.waitForTimeout(70_000);
   await expect(tablet).toHaveURL(/\/admin\/approvals/);
   await tablet.goto("/admin/kids");
   await expect(tablet).toHaveURL(/\/admin\/kids/);
-  await expect(tablet.getByTestId("kiosk-parent-bar")).toContainText("Parent mode stays on");
+  await expect(tablet.getByTestId("kiosk-parent-bar")).toHaveCount(0);
 
-  // Turn the timer back on: the bar says so.
-  await tablet.getByRole("button", { name: "Turn the timer back on" }).click();
-  await expect(tablet.getByTestId("kiosk-parent-bar")).toContainText("Back to Kids Mode after 1 min without a tap.");
-
-  // Keep it on again, then leave: next time parent mode starts with the timer (the default).
-  await tablet.getByRole("button", { name: "Keep parent mode on" }).click();
-  await expect(tablet.getByTestId("kiosk-parent-bar")).toContainText("Parent mode stays on");
+  // Leave with Back to Kids Mode: next time parent mode starts with the timer and the bar again.
   await tablet.getByRole("button", { name: /Back to Kids Mode/ }).click();
   await expect(tablet.getByRole("heading", { name: "Who's here?" })).toBeVisible({ timeout: 30_000 });
   await enterParentMode(tablet);

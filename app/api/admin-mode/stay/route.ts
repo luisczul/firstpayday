@@ -13,7 +13,7 @@ import { getParentContext } from "@/lib/auth/session";
 
 /**
  * On a kids' tablet in parent mode: { stay: true } keeps parent mode on (no inactivity timeout)
- * until "Back to Kids Mode"; { stay: false } turns the household's timer back on.
+ * until "Back to Kids Mode". ({ stay: false } restores the household's timer; the web doesn't offer it.)
  */
 export async function POST(req: Request) {
   const ctx = await getParentContext();
