@@ -25,7 +25,9 @@ export async function POST(req: Request) {
   };
   const nextRaw = field("next");
   const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") && !nextRaw.startsWith("/\\") ? nextRaw : "/admin";
-  const go = (path: string) => NextResponse.redirect(new URL(path, req.url), 303);
+  // Relative Location: the web view stays on whatever host it used (an absolute URL built from
+  // req.url can name a different host behind proxies, and the app would open it in a browser).
+  const go = (path: string) => new NextResponse(null, { status: 303, headers: { Location: path, "cache-control": "no-store" } });
 
   const token = z.string().min(1).max(8192).safeParse(field("access_token"));
   if (!token.success) return go(`/login?next=${encodeURIComponent(next)}`);

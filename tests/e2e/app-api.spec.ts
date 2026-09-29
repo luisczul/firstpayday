@@ -230,7 +230,7 @@ test("web-session: refuses cross-site posts and bad tokens; kiosk mode turns the
   expect(cross.status()).toBe(403);
   const bad = await request.post("/api/app/v1/web-session", { form: { access_token: "nope", next: "//evil.example" }, maxRedirects: 0 });
   expect(bad.status()).toBe(303);
-  expect(bad.headers().location).toMatch(/\/login\?next=%2Fadmin$/);
+  expect(bad.headers().location).toBe("/login?next=%2Fadmin");
 
   // Fresh login (the previous session was logged out).
   const s = await (await request.post("/api/app/v1/auth/login", { data: { email, password } })).json();
