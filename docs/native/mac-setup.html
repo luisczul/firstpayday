@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mac App Setup</title>
+<style>
+  :root {
+    --paper: #fbf3e4; --card: #fffaf1; --ink: #3b2418; --soft: #7a5a48; --line: #ead8b8;
+    --maple: #b8431f; --moss: #6b7a2e; --gold: #f2c14e; --code-bg: #3b2418; --code-ink: #fbf3e4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #1d1612; --card: #2a201a; --ink: #f4e6cc; --soft: #c9ae95; --line: #4a3a2e;
+      --maple: #e0714a; --moss: #a9b85c; --gold: #f2c14e; --code-bg: #120d0a; --code-ink: #f4e6cc;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #1d1612; --card: #2a201a; --ink: #f4e6cc; --soft: #c9ae95; --line: #4a3a2e;
+    --maple: #e0714a; --moss: #a9b85c; --gold: #f2c14e; --code-bg: #120d0a; --code-ink: #f4e6cc;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1, h2 { font-family: Georgia, "Times New Roman", serif; line-height: 1.2; }
+  h1 { font-size: 2.1rem; margin: 0 0 6px; }
+  h2 { font-size: 1.6rem; margin: 44px 0 10px; padding-top: 12px; border-top: 2px solid var(--line); }
+  h3 { font-size: 1.1rem; margin: 0 0 6px; }
+  p.lead { color: var(--soft); margin-top: 0; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; }
+  .toc a { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; color: var(--ink); text-decoration: none; font-weight: 600; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin: 12px 0; display: grid; grid-template-columns: auto 1fr; gap: 12px; }
+  .step > input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--moss); }
+  .step.done { opacity: .6; }
+  .step p { margin: 4px 0; }
+  .note { background: color-mix(in srgb, var(--gold) 22%, var(--card)); border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+  .ok { color: var(--moss); font-weight: 700; }
+  pre { position: relative; background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 12px 14px; margin: 8px 0; overflow-x: auto; font: 14px/1.5 ui-monospace, Menlo, monospace; }
+  pre button { position: absolute; top: 6px; right: 6px; background: var(--maple); color: #fff; border: 0; border-radius: 8px; padding: 4px 10px; font-weight: 700; cursor: pointer; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: .92em; }
+  :not(pre) > code { background: var(--line); padding: 1px 5px; border-radius: 5px; }
+  .progress { position: sticky; top: 0; background: var(--paper); padding: 10px 0; z-index: 2; border-bottom: 1px solid var(--line); font-weight: 700; }
+  .bar { height: 8px; background: var(--line); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--moss); transition: width .3s; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  td, th { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--card); }
+</style>
+</head>
+<body>
+<main>
+  <div class="progress">Progress: <span id="count">0</span> / <span id="total">0</span> steps <div class="bar"><div id="fill"></div></div></div>
+
+  <h1>Set up this Mac for the First Payday apps</h1>
+  <p class="lead">Your Mac is an Apple Silicon Mac (arm64) with about 390 GB free, so there's plenty of room. Tick each step as you go: the page remembers your ticks. Commands go in the <b>Terminal</b> app; the orange <b>Copy</b> button copies them.</p>
+
+  <table>
+    <tr><th>You install</th><th>Why</th><th>Size / time</th></tr>
+    <tr><td>Xcode (Mac App Store)</td><td>Builds and runs the iPhone / iPad app</td><td>~15 GB, 30–60 min</td></tr>
+    <tr><td>iOS platform + simulator (inside Xcode)</td><td>Run the app on a simulated iPhone</td><td>~8 GB</td></tr>
+    <tr><td>XcodeGen (Homebrew)</td><td>Creates the Xcode project file from <code>project.yml</code></td><td>small</td></tr>
+    <tr><td>Android SDK (inside Android Studio, which you already have)</td><td>Builds and runs the Android app</td><td>~6 GB, 15–30 min</td></tr>
+    <tr><td>An Android emulator image</td><td>Run the app on a simulated phone</td><td>~2 GB</td></tr>
+  </table>
+  <p>Both app projects are already on this Mac: <code>~/code/firstpayday_ios</code> and <code>~/code/firstpayday_android</code>.</p>
+
+  <div class="toc"><a href="#ios">Part 1 · iPhone app (Xcode)</a><a href="#android">Part 2 · Android app</a><a href="#after">Part 3 · After both work</a></div>
+
+  <h2 id="ios">Part 1 · iPhone app (Xcode)</h2>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>1. Install Xcode</h3>
+    <p>Open the <b>App Store</b>, search <b>Xcode</b>, click <b>Get</b> / <b>Install</b>. It's big; let it finish.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>2. Open Xcode once</h3>
+    <p>Open <b>Xcode</b> from Applications. Accept the license. When it asks which platforms to download, tick <b>iOS</b> (the simulator comes with it) and click <b>Download &amp; Install</b>.</p>
+    <p>If it didn't ask, go to <b>Xcode → Settings → Components</b> and click <b>Get</b> next to iOS.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>3. Point the command-line tools at Xcode</h3>
+    <p>This Mac currently uses the small "Command Line Tools" instead of Xcode. Switch it (asks for your Mac password):</p>
+    <pre><code>sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch</code></pre>
+    <p>Check: <span class="ok">you should see "Xcode 16…" or newer</span></p>
+    <pre><code>xcodebuild -version</code></pre>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>4. Install XcodeGen</h3>
+    <pre><code>brew install xcodegen</code></pre>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>5. Create and open the project</h3>
+    <pre><code>cd ~/code/firstpayday_ios
+git pull
+xcodegen
+open FirstPayday.xcodeproj</code></pre>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>6. Run it on the simulator</h3>
+    <p>In Xcode's top bar, choose an iPhone simulator (e.g. <b>iPhone 16</b>) next to "FirstPayday", then press <b>▶ Run</b> (or <b>⌘R</b>). The app opens on a simulated iPhone and talks to the real firstpayday.app.</p>
+    <div class="note">Tip: to see the demo data without an account, choose <b>Product → Scheme → Edit Scheme → Run → Arguments</b>, add <code>-uiTestMock</code>, and run again. Remove it to use your real account.</div>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>7. Sign in to Xcode with your Apple ID</h3>
+    <p><b>Xcode → Settings → Accounts → +</b> → Apple ID. Then click the <b>FirstPayday</b> project (blue icon, left) → target <b>FirstPayday</b> → <b>Signing &amp; Capabilities</b> → pick your <b>Team</b>.</p>
+    <div class="note">With a free Apple ID ("Personal Team") you can run on your own iPhone, but push notifications need the paid Apple Developer Program ($99/year). If Xcode says the bundle id is taken, add something to it for now (e.g. <code>app.firstpayday.ios.diego</code>).</div>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>8. Run it on your iPhone</h3>
+    <p>Plug the iPhone into the Mac with a cable, unlock it and tap <b>Trust</b>. On the iPhone: <b>Settings → Privacy &amp; Security → Developer Mode → On</b> (it restarts). In Xcode, pick your iPhone in the top bar and press <b>▶ Run</b>.</p>
+    <p>The first time, the iPhone may say "Untrusted Developer": <b>Settings → General → VPN &amp; Device Management</b> → your Apple ID → <b>Trust</b>.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>9. (Optional) Run the tests yourself</h3>
+    <pre><code>cd ~/code/firstpayday_ios
+xcodebuild test -scheme FirstPayday -destination 'platform=iOS Simulator,name=iPhone 16'</code></pre>
+    <p><span class="ok">Ends with "** TEST SUCCEEDED **"</span> (if "iPhone 16" doesn't exist, use a name from <code>xcrun simctl list devices available</code>).</p>
+  </div></div>
+
+  <h2 id="android">Part 2 · Android app</h2>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>1. Open Android Studio and install the SDK</h3>
+    <p>Android Studio is already installed. Open it; the <b>Setup Wizard</b> appears. Choose <b>Standard</b>, then <b>Next</b>. On the license screen, accept each license (click each item on the left, then <b>Accept</b>), then <b>Finish</b>. It downloads the SDK to <code>~/Library/Android/sdk</code>.</p>
+    <p>If the wizard doesn't appear: <b>More Actions → SDK Manager</b> on the welcome screen.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>2. Add the exact pieces the app needs</h3>
+    <p><b>Settings → Languages &amp; Frameworks → Android SDK</b> (or <b>More Actions → SDK Manager</b>):</p>
+    <p><b>SDK Platforms</b> tab: tick <b>Android 15.0 ("VanillaIceCream", API 35)</b>.</p>
+    <p><b>SDK Tools</b> tab: tick <b>Android SDK Build-Tools</b>, <b>Android SDK Command-line Tools (latest)</b>, <b>Android Emulator</b>, <b>Android SDK Platform-Tools</b>. Click <b>Apply</b> → <b>OK</b>.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>3. Let Terminal find the SDK and Java</h3>
+    <p>Paste this once; it adds the paths to your shell settings:</p>
+    <pre><code>cat >> ~/.zshrc <<'EOF'
+
+# Android SDK + Java (First Payday)
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+EOF
+source ~/.zshrc</code></pre>
+    <p>Check: <span class="ok">each prints a version, no "not found"</span></p>
+    <pre><code>java -version
+adb version
+sdkmanager --list_installed | head</code></pre>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>4. Create an emulator</h3>
+    <p>In Android Studio: <b>More Actions → Virtual Device Manager</b> (or <b>Tools → Device Manager</b>) → <b>+ Create Virtual Device</b> → <b>Pixel 8</b> → <b>Next</b> → system image <b>API 35</b> (the arm64 one; click the download arrow) → <b>Next</b> → <b>Finish</b>.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>5. Open the app project</h3>
+    <pre><code>cd ~/code/firstpayday_android
+git pull</code></pre>
+    <p>In Android Studio: <b>Open</b> → choose the folder <code>~/code/firstpayday_android</code>. Wait for the "Gradle sync" bar at the bottom to finish (the first time downloads a lot).</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>6. Run it</h3>
+    <p>Top bar: pick the <b>Pixel 8</b> emulator, then press the green <b>▶ Run 'app'</b>. The app opens and talks to the real firstpayday.app.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>7. Run it on your Android phone</h3>
+    <p>On the phone: <b>Settings → About phone</b> → tap <b>Build number</b> 7 times (Developer options on). Then <b>Settings → System → Developer options → USB debugging → On</b>. Plug it in, tap <b>Allow</b> on the phone, pick it in Android Studio's top bar, press <b>▶</b>.</p>
+  </div></div>
+
+  <div class="step"><input type="checkbox"><div>
+    <h3>8. (Optional) Build and test from Terminal</h3>
+    <pre><code>cd ~/code/firstpayday_android
+./gradlew testDebugUnitTest assembleDebug</code></pre>
+    <p><span class="ok">Ends with "BUILD SUCCESSFUL"</span>. With the emulator open, the screen tests: <code>./gradlew connectedDebugAndroidTest</code></p>
+  </div></div>
+
+  <h2 id="after">Part 3 · After both work</h2>
+  <div class="step"><input type="checkbox"><div>
+    <h3>Tell Claude "the Mac is ready"</h3>
+    <p>Then Claude can build, run and test both apps directly on this Mac (simulator and emulator), try them against the real firstpayday.app with your account, and fix anything found. Still needed later for the stores and push notifications: Apple Developer Program + push key, and a Firebase project + Play Console account (see <code>docs/native/owner-next-steps.md</code>).</p>
+  </div></div>
+</main>
+<script>
+  const boxes = [...document.querySelectorAll('.step > input')];
+  const key = 'fp-mac-setup';
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) {}
+  const update = () => {
+    const done = boxes.filter(b => b.checked).length;
+    document.getElementById('count').textContent = done;
+    document.getElementById('total').textContent = boxes.length;
+    document.getElementById('fill').style.width = (100 * done / boxes.length) + '%';
+    boxes.forEach(b => b.parentElement.classList.toggle('done', b.checked));
+    try { localStorage.setItem(key, JSON.stringify(boxes.map(b => b.checked))); } catch (e) {}
+  };
+  boxes.forEach((b, i) => { b.checked = Boolean(saved[i]); b.addEventListener('change', update); });
+  update();
+  document.querySelectorAll('pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(pre.querySelector('code').innerText); btn.textContent = 'Copied'; }
+      catch (e) { btn.textContent = 'Select & ⌘C'; }
+      setTimeout(() => (btn.textContent = 'Copy'), 1500);
+    });
+    pre.appendChild(btn);
+  });
+</script>
+</body>
+</html>
