@@ -5,10 +5,10 @@ import { randomUUID } from "node:crypto";
 // Run against a dev server: E2E_PORT=3000 pnpm exec playwright test tests/e2e/public-i18n.spec.ts
 
 const LANGS = [
-  { lang: "en", prefix: "", home: /pays your kids/i, guide: /chore chart app/i, terms: "Terms of Service", footer: "Chore chart app" },
-  { lang: "fr", prefix: "/fr", home: /paie vos enfants/i, guide: /tableau de tâches/i, terms: "Conditions d'utilisation", footer: "Tableau de tâches" },
-  { lang: "es", prefix: "/es", home: /les paga a tus hijos/i, guide: /tabla de tareas/i, terms: "Términos del servicio", footer: "App de tabla de tareas" },
-  { lang: "pt", prefix: "/pt", home: /paga seus filhos/i, guide: /quadro de tarefas/i, terms: "Termos de Serviço", footer: "App de quadro de tarefas" },
+  { lang: "en", prefix: "", home: /pays your kids/i, guide: /chore chart app/i, terms: "Terms of Service", footer: "Chore chart app", del: ["Delete your account", "Delete my account"] },
+  { lang: "fr", prefix: "/fr", home: /paie vos enfants/i, guide: /tableau de tâches/i, terms: "Conditions d'utilisation", footer: "Tableau de tâches", del: ["Supprimer votre compte", "Supprimer mon compte"] },
+  { lang: "es", prefix: "/es", home: /les paga a tus hijos/i, guide: /tabla de tareas/i, terms: "Términos del servicio", footer: "App de tabla de tareas", del: ["Eliminar tu cuenta", "Eliminar mi cuenta"] },
+  { lang: "pt", prefix: "/pt", home: /paga seus filhos/i, guide: /quadro de tarefas/i, terms: "Termos de Serviço", footer: "App de quadro de tarefas", del: ["Excluir sua conta", "Excluir minha conta"] },
 ] as const;
 
 const NAMES = { en: "English", fr: "Français", es: "Español", pt: "Português" } as const;
@@ -56,7 +56,7 @@ async function checkPage(page: Page, lang: string, path: string, englishPath: st
 }
 
 for (const L of LANGS) {
-  test(`public site in ${L.lang}: home, guide, terms, privacy`, async ({ page }) => {
+  test(`public site in ${L.lang}: home, guide, terms, privacy, delete account`, async ({ page }) => {
     const home = L.prefix || "/";
     await page.goto(home);
     await expect(page.getByRole("heading", { level: 1 })).toContainText(L.home);
@@ -80,6 +80,12 @@ for (const L of LANGS) {
 
     await page.goto(`${L.prefix}/privacy`);
     await checkPage(page, L.lang, `${L.prefix}/privacy`, "/privacy");
+
+    // Public account-deletion page (the app stores link to it): steps in the app and on the website, no login needed.
+    await page.goto(`${L.prefix}/delete-account`);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(L.del[0]);
+    await expect(page.getByRole("main").getByText(L.del[1]).first()).toBeVisible();
+    await checkPage(page, L.lang, `${L.prefix}/delete-account`, "/delete-account");
   });
 }
 
@@ -106,7 +112,7 @@ test("unknown prefixed pages 404 and app routes are untouched", async ({ page })
 
 test("sitemap lists every language version", async ({ request }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
-  for (const path of ["/", "/terms", "/privacy", "/chore-chart-app", "/allowance-app-for-kids", "/paid-chores-list"]) {
+  for (const path of ["/", "/terms", "/privacy", "/delete-account", "/chore-chart-app", "/allowance-app-for-kids", "/paid-chores-list"]) {
     for (const pre of ["/fr", "/es", "/pt"]) expect(xml).toContain(`${pre}${path === "/" ? "" : path}</loc>`);
   }
   expect(xml).toContain('hreflang="x-default"');

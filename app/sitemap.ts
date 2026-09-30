@@ -15,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/signup", changeFrequency: "yearly", priority: 0.6, auth: true },
     { path: "/terms", changeFrequency: "yearly", priority: 0.2 },
     { path: "/privacy", changeFrequency: "yearly", priority: 0.2 },
+    { path: "/delete-account", changeFrequency: "yearly", priority: 0.1 },
   ];
   // Every language version is listed, each carrying the full hreflang set.
   return pages.flatMap(({ path, changeFrequency, priority, auth }) => {

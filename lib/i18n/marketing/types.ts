@@ -92,6 +92,9 @@ export interface MarketingDict {
     privacyTitle: string;
     terms: (b: BrandVars, billing: boolean) => LegalBlock[];
     privacy: (b: BrandVars, billing: boolean) => LegalBlock[];
+    deleteTitle: string;
+    /** Public page (linked from the app stores) explaining how to delete an account. */
+    deleteAccount: (b: BrandVars, billing: boolean) => LegalBlock[];
   };
   auth: {
     loginTitle: string;

@@ -21,7 +21,7 @@ export const GUIDE_SLUGS = ["chore-chart-app", "allowance-app-for-kids", "paid-c
 export type GuideSlug = (typeof GUIDE_SLUGS)[number];
 
 /** Public pages that exist in every language (English path). */
-export const PUBLIC_PATHS: readonly string[] = ["/", "/terms", "/privacy", "/pricing", ...GUIDE_SLUGS.map((s) => `/${s}`)];
+export const PUBLIC_PATHS: readonly string[] = ["/", "/terms", "/privacy", "/delete-account", "/pricing", ...GUIDE_SLUGS.map((s) => `/${s}`)];
 /** Auth pages localized through ?lang=. */
 export const AUTH_PATHS: readonly string[] = ["/signup", "/login", "/reset", "/reset/update"];
 
