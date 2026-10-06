@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { statelessClient } from "@/lib/app/api";
 import { clearKioskCookie, registerKioskDevice } from "@/lib/kiosk/auth";
 import { parentT } from "@/lib/i18n/parent";
+import { trackActivity } from "@/lib/slack/activity";
 
 /**
  * The native apps' web views start here (docs/native/app-api.md): a form POST with the app's access
@@ -49,6 +50,7 @@ export async function POST(req: Request) {
   if (!withinLimit("devices", count ?? 0)) return go("/admin/settings");
   await clearKioskCookie();
   await registerKioskDevice({ householdId: ctx.household.id, userId: ctx.user.id, name: parentT(ctx.locale)("b.devices.defaultName") });
+  trackActivity({ kind: "tablet_paired", householdId: ctx.household.id });
   // The tablet belongs to the kids now: sign the parent out of this web view (the app forgets its tokens too).
   await supabase.auth.signOut({ scope: "local" });
   (await cookies()).delete(ADMIN_MODE_COOKIE);

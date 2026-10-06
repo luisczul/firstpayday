@@ -10,6 +10,7 @@ import { appUrl } from "@/lib/env";
 import { asLocale, localeFromBrowser, type Locale } from "@/lib/i18n";
 import { authCopy } from "@/lib/i18n/authCopy";
 import { SIGNUP_LANG_COOKIE } from "@/lib/i18n/marketing/routes";
+import { trackActivity } from "@/lib/slack/activity";
 
 /** The visitor's language: the one they chose on the public site (?lang= / /fr…), else the browser's. */
 async function visitorLocale(form?: FormData): Promise<Locale> {
@@ -60,6 +61,7 @@ export async function login(_: AuthState, form: FormData): Promise<AuthState> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error || !data.user) return { error: m("noMatch") };
+  trackActivity({ kind: "login", email: data.user.email });
   await maybeStartAdminMode(data.user.id);
   redirect(safeNext(form.get("next")));
 }
@@ -95,6 +97,8 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
     },
   });
   if (error) return { error: /already registered|already been registered/i.test(error.message) ? m("alreadyRegistered") : error.message };
+  // Supabase answers an existing email with an empty identities list: not a new signup.
+  if (data.user && data.user.identities?.length !== 0) trackActivity({ kind: "signup", email: parsed.data.email });
   const next = form.get("next");
   const dest = typeof next === "string" && next.startsWith("/invite/") ? next : "/onboarding/home";
   if (!data.session) return { message: m("confirmEmail") };

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { authCopy } from "@/lib/i18n/authCopy";
+import { trackActivity } from "@/lib/slack/activity";
 import { appLocale, appMessage, body, fail, ok, sessionJson, statelessClient } from "@/lib/app/api";
 
 export async function POST(req: Request) {
@@ -12,5 +13,6 @@ export async function POST(req: Request) {
     if (error?.status === 429) return fail("rate_limited", appMessage(req, "server"), 429);
     return fail("invalid_credentials", m("noMatch"), 401);
   }
+  trackActivity({ kind: "login", email: data.user?.email });
   return ok(sessionJson(data.session));
 }

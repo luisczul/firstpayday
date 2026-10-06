@@ -10,6 +10,7 @@ import { getParentContext, getUser, requireWritableParent, runAction, ActionErro
 import { asLocale } from "@/lib/i18n";
 import { parentT } from "@/lib/i18n/parent";
 import { zodErrorMessage } from "@/lib/i18n/parent/zodError";
+import { trackActivity } from "@/lib/slack/activity";
 
 const HouseholdInput = z.object({
   name: z.string().trim().min(1, "b.err.homeName").max(80),
@@ -40,6 +41,7 @@ export async function saveHomeStep(input: z.input<typeof HouseholdInput>) {
       p_locale: parsed.data.locale,
     });
     if (error) throw new ActionError("invalid", error.message.includes("timezone") ? parentT(locale)("b.err.validTimezone") : error.message);
+    trackActivity({ kind: "home_created", householdId: data, email: user.email });
     return data;
   });
   if (result.ok) redirect("/onboarding/kids");
@@ -88,6 +90,7 @@ export async function deleteHousehold(confirmName: string) {
     const admin = createAdminClient();
     await purgeHousehold(admin, ctx.household.id);
     await admin.from("audit_log").insert({ actor: ctx.user.id, action: "household.deleted", details: { name: ctx.household.name } });
+    trackActivity({ kind: "home_deleted", email: ctx.user.email, detail: ctx.household.name });
   });
   if (result.ok) redirect("/onboarding/home");
   return result;

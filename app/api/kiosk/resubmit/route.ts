@@ -4,6 +4,7 @@ import { kioskRoute } from "@/lib/kiosk/route";
 import { resubmit } from "@/lib/kiosk/operations";
 import { notifyReviewReady } from "@/lib/email/reviewNotify";
 import { notifyNewSubmissionPush } from "@/lib/push/notify";
+import { trackActivity } from "@/lib/slack/activity";
 
 const Body = z.object({ kidId: z.uuid(), submissionId: z.uuid() });
 
@@ -17,6 +18,7 @@ export function POST(req: Request) {
       const { submissionId } = result;
       after(() => notifyReviewReady(ctx.householdId, submissionId));
       after(() => notifyNewSubmissionPush(ctx.householdId, submissionId));
+      trackActivity({ kind: "chore_redone", householdId: ctx.householdId, submissionId }, { onTablet: true });
     }
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   });

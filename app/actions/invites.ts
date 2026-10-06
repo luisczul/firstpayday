@@ -8,6 +8,7 @@ import { getHouseholdAccess } from "@/lib/billing/access";
 import { LIMITS, withinLimit } from "@/lib/billing/plans";
 import { asLocale } from "@/lib/i18n";
 import { parentT } from "@/lib/i18n/parent";
+import { trackActivity } from "@/lib/slack/activity";
 
 export async function acceptInvite(token: string) {
   const result = await runAction(async () => {
@@ -43,6 +44,7 @@ export async function acceptInvite(token: string) {
       .upsert({ household_id: invite.household_id, user_id: user.id, role: invite.role }, { onConflict: "household_id,user_id" });
     if (error) throw error;
     await admin.from("household_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+    trackActivity({ kind: "parent_joined", householdId: invite.household_id, email: user.email });
   });
   if (result.ok) redirect("/admin");
   return result;

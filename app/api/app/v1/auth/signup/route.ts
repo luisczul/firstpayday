@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { trackActivity } from "@/lib/slack/activity";
 import { appUrl } from "@/lib/env";
 import { asLocale } from "@/lib/i18n";
 import { authCopy } from "@/lib/i18n/authCopy";
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
   }
   // Supabase hides existing accounts behind an empty identities list when confirmation is on.
   if (data.user && data.user.identities?.length === 0) return fail("conflict", m("alreadyRegistered"), 409);
+  trackActivity({ kind: "signup", email: parsed.data.email });
   if (!data.session) return ok({ needsConfirmation: true });
   return ok({ needsConfirmation: false, session: sessionJson(data.session) });
 }

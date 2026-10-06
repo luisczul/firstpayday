@@ -86,7 +86,7 @@ Local webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook` (
 
 ### 3. Vercel
 1. Import the GitHub repo. Framework: Next.js. Node 22.
-2. Env vars (Production and Preview separately), names in `.env.example`: Supabase URL/anon/service role, Stripe keys + webhook secret + price ids, (optional) `KIOSK_COOKIE_SECRET`, `ADMIN_MODE_SECRET`, `APP_URL=https://firstpayday.app`, `CRON_SECRET` (for the daily trial-email cron in `vercel.json`), optional `RESEND_API_KEY`, `EMAIL_FROM`, `LEGAL_ENTITY_NAME`.
+2. Env vars (Production and Preview separately), names in `.env.example`: Supabase URL/anon/service role, Stripe keys + webhook secret + price ids, (optional) `KIOSK_COOKIE_SECRET`, `ADMIN_MODE_SECRET`, `APP_URL=https://firstpayday.app`, `CRON_SECRET` (for the daily trial-email cron in `vercel.json`), optional `RESEND_API_KEY`, `EMAIL_FROM`, `LEGAL_ENTITY_NAME`, `slack_activity_hook` (Slack incoming webhook for the owner's activity feed and the 9 a.m. daily summary cron).
 3. Domains → add `firstpayday.app` and `www.firstpayday.app` (www redirects to the apex). At GoDaddy DNS: **A `@` → the IP Vercel shows** and **CNAME `www` → the value Vercel shows**.
 
 Live Stripe keys go only into Vercel **Production** env vars, never into a file.

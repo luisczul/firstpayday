@@ -10,6 +10,7 @@ import { MAX_KIDS } from "@/lib/billing/plans";
 import { needsPaymentForAnotherKid } from "@/lib/billing/access";
 import { syncKidQuantity } from "@/lib/billing/stripe";
 import { parentT, type ParentKey } from "@/lib/i18n/parent";
+import { trackActivity } from "@/lib/slack/activity";
 
 /** Zod messages are parent-dictionary keys; anything else (zod defaults) becomes "Check the form." */
 function issueMessage(ctx: ParentContext, message: string | undefined): string {
@@ -70,6 +71,7 @@ export async function addKids(names: string[]) {
       .select("id, name");
     if (error) throw error;
     await syncBilling(ctx.household.id);
+    trackActivity({ kind: "kids_added", householdId: ctx.household.id, count: clean.length, detail: clean.join(", ") });
     revalidatePath("/admin/kids");
     return { kids: data, householdId: ctx.household.id };
   });
@@ -96,6 +98,7 @@ export async function createKid(input: z.input<typeof KidInput>) {
       .single();
     if (error) throw error;
     await syncBilling(ctx.household.id);
+    trackActivity({ kind: "kids_added", householdId: ctx.household.id, count: 1, detail: parsed.data.name });
     revalidatePath("/admin/kids");
     return { id: data.id, householdId: ctx.household.id };
   });

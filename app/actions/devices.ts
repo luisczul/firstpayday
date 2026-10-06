@@ -9,6 +9,7 @@ import { LIMITS, withinLimit } from "@/lib/billing/plans";
 import { registerKioskDevice, clearKioskCookie } from "@/lib/kiosk/auth";
 import { ADMIN_MODE_COOKIE } from "@/lib/auth/adminMode";
 import { parentT } from "@/lib/i18n/parent";
+import { trackActivity } from "@/lib/slack/activity";
 
 /**
  * "Use this device as the kids' tablet" (SPEC §7): register the device,
@@ -39,6 +40,7 @@ export async function enableKioskOnThisDevice(name?: string) {
         .catch(parentT(ctx.locale)("b.devices.defaultName"))
         .parse(name ?? parentT(ctx.locale)("b.devices.defaultName")),
     });
+    trackActivity({ kind: "tablet_paired", householdId: ctx.household.id });
     await ctx.supabase.auth.signOut({ scope: "local" });
     (await cookies()).delete(ADMIN_MODE_COOKIE);
   });

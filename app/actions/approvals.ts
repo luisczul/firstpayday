@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ActionError, requireWritableParent, runAction } from "@/lib/auth/session";
 import { parentT } from "@/lib/i18n/parent";
 import { MAX_TIP_CENTS, friendlyReviewError as friendly, tipTooBig } from "@/lib/approvals/errors";
+import { trackActivity } from "@/lib/slack/activity";
 
 function revalidate() {
   revalidatePath("/admin/approvals");
@@ -33,6 +34,7 @@ export async function approveSubmission(
       p_update_chore_price: price?.updateChore ?? false,
     });
     if (error) throw friendly(ctx, error.message);
+    trackActivity({ kind: "approved", householdId: ctx.household.id, submissionId });
     if (price?.updateChore) revalidatePath("/admin/chores");
     revalidate();
   });
@@ -53,6 +55,7 @@ export async function approveAllForKid(kidId: string) {
       const { error: e } = await ctx.supabase.rpc("approve_submission", { p_submission_id: s.id });
       if (e) throw friendly(ctx, e.message);
     }
+    if (pending.length) trackActivity({ kind: "approved", householdId: ctx.household.id, kidId, count: pending.length });
     revalidate();
     return { approved: pending.length };
   });
@@ -68,6 +71,7 @@ export async function sendBackSubmission(submissionId: string, comment: string) 
       p_comment: text.data,
     });
     if (error) throw friendly(ctx, error.message);
+    trackActivity({ kind: "sent_back", householdId: ctx.household.id, submissionId });
     revalidate();
   });
 }
@@ -82,6 +86,7 @@ export async function rejectSubmission(submissionId: string, reason: string) {
       p_reason: text.data,
     });
     if (error) throw friendly(ctx, error.message);
+    trackActivity({ kind: "rejected", householdId: ctx.household.id, submissionId });
     revalidate();
   });
 }

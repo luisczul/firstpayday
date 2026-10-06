@@ -8,6 +8,7 @@ import { checkPayout } from "@/lib/money/ledger";
 import { familyPotCents } from "@/lib/familyPot";
 import { translateReward } from "@/lib/choreLanguages";
 import { parentT, type ParentKey } from "@/lib/i18n/parent";
+import { trackActivity } from "@/lib/slack/activity";
 
 type Ctx = Awaited<ReturnType<typeof requireWritableParent>>;
 
@@ -62,6 +63,7 @@ export async function recordPayout(input: z.input<typeof Payout>) {
       throw error;
     }
     const r = data as { gross_cents: number; tax_cents: number; net_cents: number };
+    trackActivity({ kind: "payout", householdId: ctx.household.id, kidId: p.kidId, amountCents: r.gross_cents, detail: p.method });
     revalidatePath("/admin/payouts");
     revalidatePath("/admin/kids", "layout");
     return { grossCents: r.gross_cents, taxCents: r.tax_cents, netCents: r.net_cents };
@@ -88,6 +90,7 @@ export async function recordFamilyTreat(input: z.input<typeof FamilyTreat>) {
       created_by: ctx.user.id,
     });
     if (error) throw error;
+    trackActivity({ kind: "family_treat", householdId: ctx.household.id, amountCents: parsed.data.amountCents, detail: parsed.data.note });
     revalidatePath("/admin/payouts");
   });
 }
@@ -125,6 +128,7 @@ export async function recordAdjustment(input: z.input<typeof Adjustment>) {
       .single();
     if (error) throw error;
     const hid = ctx.household.id;
+    trackActivity({ kind: "adjustment", householdId: hid, kidId: parsed.data.kidId, amountCents: parsed.data.amountCents, detail: parsed.data.title });
     after(() => translateReward(hid, data.id).catch((e) => console.error("translateReward", e)));
     revalidatePath("/admin/kids", "layout");
     revalidatePath("/admin/payouts");

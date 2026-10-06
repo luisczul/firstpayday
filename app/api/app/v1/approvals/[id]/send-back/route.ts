@@ -3,6 +3,7 @@ import { z } from "zod";
 import { parentT } from "@/lib/i18n/parent";
 import { appMessage, appParent, body, fail, ok } from "@/lib/app/api";
 import { reviewFailure } from "@/lib/app/review";
+import { trackActivity } from "@/lib/slack/activity";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await appParent(req);
@@ -14,5 +15,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (ctx.access !== "full") return reviewFailure(ctx, "read-only");
   const { error } = await ctx.supabase.rpc("send_back_submission", { p_submission_id: id.data, p_comment: text.data });
   if (error) return reviewFailure(ctx, error.message);
+  trackActivity({ kind: "sent_back", householdId: ctx.household.id, submissionId: id.data });
   return ok({ ok: true });
 }
