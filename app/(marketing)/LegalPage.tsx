@@ -4,7 +4,7 @@ import { fill, marketing, type LegalBlock, type SiteLang } from "@/lib/i18n/mark
 import { Rich, SiteFooter, SiteHeader } from "./SiteChrome";
 
 /** Date shown as "Last updated …" on both legal pages. */
-const UPDATED = Date.UTC(2026, 8, 26);
+const UPDATED = Date.UTC(2026, 9, 9);
 
 export function LegalPage({ lang, path, title, blocks }: { lang: SiteLang; path: string; title: string; blocks: LegalBlock[] }) {
   const t = marketing(lang).legal;

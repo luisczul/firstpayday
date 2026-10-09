@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { after } from "next/server";
 import { z } from "zod";
 import { ActionError, requireWritableParent, runAction } from "@/lib/auth/session";
-import { seasonWindow } from "@/lib/templates";
+import { CATEGORIES, seasonWindow } from "@/lib/templates";
 import { choreTextFor, translateChoreText, type ChoreText, type ChoreTranslations } from "@/lib/translate";
 import type { Json } from "@/lib/supabase/database.types";
 import { LOCALES, asLocale, isLocale, type Locale } from "@/lib/i18n";
@@ -44,7 +44,7 @@ const ChoreInput = z
     unit_label: z.string().trim().max(30).nullable(),
     max_quantity: z.coerce.number().int().min(1).max(20),
     scope: z.enum(["household", "per_kid"]),
-    category: z.enum(["car_garage", "outdoor", "kitchen", "cleaning", "laundry", "organizing", "other"]),
+    category: z.enum(CATEGORIES),
     requires_approval: z.boolean(),
     note_for_kids: z.string().trim().max(200).nullable(),
     available_from: dateOrNull,

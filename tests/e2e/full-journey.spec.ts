@@ -103,7 +103,7 @@ test("1. sign up and set up a 3-kid home in under a minute", async ({ browser })
   await kid.getByLabel("Kid 3 name").fill("Lucas");
   await kid.getByRole("button", { name: /pick chores/ }).click();
 
-  await expect(kid.getByText("20 chores selected")).toBeVisible();
+  await expect(kid.getByText("25 chores selected")).toBeVisible();
   await kid.getByRole("button", { name: /the tablet/ }).click();
   await kid.getByRole("button", { name: /Use this device as the kids/ }).click();
   await expect(kid.getByRole("heading", { name: "Who's here?" })).toBeVisible();

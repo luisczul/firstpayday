@@ -47,7 +47,7 @@ test("1. a new parent sets up a household and a kids' tablet", async ({ browser 
   await page.getByRole("button", { name: /pick chores/ }).click();
 
   await expect(page.getByRole("heading", { name: /Pick your chores/ })).toBeVisible();
-  await expect(page.getByText("20 chores selected")).toBeVisible();
+  await expect(page.getByText("25 chores selected")).toBeVisible();
   await page.getByRole("button", { name: /the tablet/ }).click();
 
   await page.getByRole("button", { name: /Use this device as the kids/ }).click();

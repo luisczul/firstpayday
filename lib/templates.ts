@@ -3,7 +3,7 @@ import type { Locale } from "@/lib/i18n";
 
 export type ChoreTemplate = Tables<"chore_templates">;
 
-export const CATEGORIES = ["car_garage", "outdoor", "kitchen", "cleaning", "laundry", "organizing", "other"] as const;
+export const CATEGORIES = ["car_garage", "outdoor", "kitchen", "cleaning", "laundry", "organizing", "home_maintenance", "other"] as const;
 export type ChoreCategory = (typeof CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<string, Record<Locale, string> & { emoji: string }> = {
@@ -13,6 +13,7 @@ export const CATEGORY_LABELS: Record<string, Record<Locale, string> & { emoji: s
   cleaning: { en: "Cleaning", fr: "Ménage", es: "Limpieza", pt: "Limpeza", emoji: "🧽" },
   laundry: { en: "Laundry", fr: "Lavage", es: "Ropa", pt: "Roupas", emoji: "🧺" },
   organizing: { en: "Organizing", fr: "Rangement", es: "Organización", pt: "Organização", emoji: "📦" },
+  home_maintenance: { en: "Home maintenance", fr: "Entretien de la maison", es: "Mantenimiento del hogar", pt: "Manutenção da casa", emoji: "🛠️" },
   other: { en: "Other", fr: "Autres", es: "Otras", pt: "Outras", emoji: "⭐" },
 };
 

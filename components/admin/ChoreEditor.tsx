@@ -84,7 +84,7 @@ export const BLANK_CHORE: EditableChore = {
   claim_window: DEFAULT_CLAIM_WINDOW,
 };
 
-const EMOJIS = ["⭐", "🧹", "🧽", "🧺", "🗑️", "🚗", "🍽️", "🛁", "🪴", "🍖", "🪑", "👟", "🧸", "🧥", "💡", "🐶", "📚", "🛏️", "🪟", "❄️", "🍂"];
+const EMOJIS = ["⭐", "🧹", "🧽", "🧺", "🗑️", "🚗", "🍽️", "🛁", "🪴", "🍖", "🪑", "👟", "🧸", "🧥", "💡", "🐶", "📚", "🛏️", "🪟", "❄️", "🍂", "🔋", "🔧", "🔨", "🪛", "🛠️", "🔐", "🧯", "🪜"];
 
 export function ChoreEditor({
   initial,

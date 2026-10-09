@@ -26,6 +26,14 @@ export const EMOJI_COLORS: Record<string, string> = {
   "🍂": "#C4571A", // rust
   "👩‍🍳": "#D9534F", // tomato
   "🏕": "#6B7A2E", // moss
+  "🔋": "#2E9E5B", // battery green
+  "🔧": "#5B6770", // steel
+  "🔨": "#9B5B2E", // hammer brown
+  "🪛": "#D97B29", // screwdriver orange
+  "🛠": "#4A5A6A", // gunmetal
+  "🔐": "#B8862B", // brass
+  "🧯": "#C8302A", // extinguisher red
+  "🪜": "#A27A4E", // ladder wood
 };
 
 const DEFAULT = "#E08A1E";
