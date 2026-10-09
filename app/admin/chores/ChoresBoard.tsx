@@ -25,6 +25,7 @@ import { claimDeadline } from "@/lib/schedule/claims";
 import type { ChoreTemplate } from "@/lib/templates";
 import { intlLocale, type Locale } from "@/lib/i18n";
 import { useParentT } from "@/lib/i18n/parent/client";
+import { sortCards } from "@/lib/board/sortCards";
 
 export interface AdminChore extends Omit<EditableChore, "id"> {
   id: string;
@@ -33,6 +34,9 @@ export interface AdminChore extends Omit<EditableChore, "id"> {
   template_key: string | null;
   hasHistory: boolean;
   status: ParentChoreStatus;
+  createdAt: string;
+  /** Latest "I did it!" by any kid (pending, approved or sent back). */
+  lastDoneAt: string | null;
 }
 
 type Filter = "active" | "paused" | "seasonal" | "routines" | "all";
@@ -61,6 +65,7 @@ export function ChoresBoard({
   const router = useRouter();
   const t = useParentT();
   const [filter, setFilter] = useState<Filter>("active");
+  const [sort, setSort] = useState<"parent" | "added" | "done">("parent");
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<EditableChore | null>(null);
   const [picking, setPicking] = useState(false);
@@ -89,7 +94,7 @@ export function ChoresBoard({
     return order.map((id) => byId.get(id)).filter((c): c is AdminChore => Boolean(c));
   }, [chores, order]);
 
-  const visible = ordered.filter((c) => {
+  const filtered = ordered.filter((c) => {
     if (query && !c.title.toLowerCase().includes(query.toLowerCase())) return false;
     if (filter === "active") return c.active;
     if (filter === "paused") return !c.active;
@@ -97,6 +102,9 @@ export function ChoresBoard({
     if (filter === "routines") return c.subtasks.length > 0;
     return true;
   });
+  // Reordering (drag, ↑ ↓) only makes sense in the parent's own order.
+  const canReorder = !readOnly && sort === "parent";
+  const visible = sortCards(filtered.map((c) => ({ ...c, priceCents: c.price_cents })), sort);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
     start(async () => {
@@ -154,6 +162,16 @@ export function ChoresBoard({
             {t(`b.chores.filter.${f}`)}
           </button>
         ))}
+        <select
+          aria-label={t("b.chores.sort.label")}
+          value={sort}
+          onChange={(e) => setSort(e.target.value as typeof sort)}
+          className="min-h-10 rounded-full border border-line bg-card px-4 text-sm font-bold"
+        >
+          <option value="parent">↕️ {t("b.chores.sort.parent")}</option>
+          <option value="added">✨ {t("b.chores.sort.added")}</option>
+          <option value="done">🕒 {t("b.chores.sort.done")}</option>
+        </select>
         <input
           type="search"
           placeholder={t("b.chores.search")}
@@ -174,7 +192,7 @@ export function ChoresBoard({
         {visible.map((c, idx) => (
           <div
             key={c.id}
-            draggable={!readOnly}
+            draggable={canReorder}
             onDragStart={() => setDragId(c.id)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => dropOn(c.id)}
@@ -223,10 +241,10 @@ export function ChoresBoard({
                 {showTranslate ? <Button size="sm" variant="ghost" disabled={pending} onClick={() => translate(c.id)}>{t("b.chores.translate")}</Button> : null}
                 <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => duplicateChore(c.id))}>{t("b.chores.duplicate")}</Button>
                 <DeleteButton chore={c} onDelete={() => run(() => deleteChore(c.id))} onPause={() => run(() => setChoreActive(c.id, false))} />
-                <span className="ml-auto flex">
+                {canReorder ? <span className="ml-auto flex">
                   <Button size="sm" variant="ghost" aria-label={t("b.chores.moveEarlier")} disabled={idx === 0} onClick={() => move(c.id, -1)}>↑</Button>
                   <Button size="sm" variant="ghost" aria-label={t("b.chores.moveLater")} disabled={idx === visible.length - 1} onClick={() => move(c.id, 1)}>↓</Button>
-                </span>
+                </span> : null}
               </div>
             ) : null}
           </div>

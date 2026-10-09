@@ -122,6 +122,8 @@
   "kid.sortPrice": "Trier par $",
   "kid.sortAsc": "$ → $$$",
   "kid.sortDesc": "$$$ → $",
+  "kid.sortAdded": "Ajoutées récemment",
+  "kid.sortDone": "Faites récemment",
   "kid.search": "Chercher",
   "kid.searchPlaceholder": "Trouver une tâche…",
   "kid.searchNone": "Rien trouvé pour « {q} »",

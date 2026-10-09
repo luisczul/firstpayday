@@ -63,6 +63,10 @@ export interface BoardCard {
   maxQuantity: number;
   noteForKids: string | null;
   category: string;
+  /** When the parent added the chore ("Recently added" sort). */
+  createdAt: string;
+  /** This kid's latest "I did it!" for this chore, if any ("Recently done" sort). */
+  lastDoneAt: string | null;
   state: ChoreStateName;
   isNew: boolean;
   availableAt: string | null;
@@ -130,7 +134,7 @@ export function choreColor(chore: Pick<BoardChoreRow, "id" | "color" | "emoji">)
 function toCard(
   chore: BoardChoreRow,
   state: ReturnType<typeof getChoreState<BoardSubmissionRow>>,
-  opts: { isNew: boolean; now: Date; timeZone: string; checked?: readonly string[] },
+  opts: { isNew: boolean; now: Date; timeZone: string; checked?: readonly string[]; lastDoneAt?: string | null },
 ): BoardCard {
   const sub = state.submission;
   const steps = parseSubtasks(chore.subtasks);
@@ -145,6 +149,8 @@ function toCard(
     maxQuantity: chore.max_quantity,
     noteForKids: chore.note_for_kids,
     category: chore.category,
+    createdAt: chore.created_at,
+    lastDoneAt: opts.lastDoneAt ?? null,
     state: state.state,
     isNew: opts.isNew,
     availableAt: state.availableAt?.toISOString() ?? null,
@@ -164,6 +170,8 @@ function toCard(
     claim: null,
   };
 }
+
+const DONE_STATUSES = new Set<string>(["pending", "approved", "sent_back"]);
 
 /** Sort chores into the five kid-board rows (SPEC §6 K2). */
 export function buildBoard(input: {
@@ -186,6 +194,14 @@ export function buildBoard(input: {
     else byChore.set(s.chore_id, [s]);
   }
 
+  // This kid's latest submission per chore that counted (not withdrawn, rejected or reversed).
+  const lastDone = new Map<string, string>();
+  for (const s of submissions) {
+    if (s.kid_id !== kidId || !DONE_STATUSES.has(s.status)) continue;
+    const prev = lastDone.get(s.chore_id);
+    if (!prev || s.submitted_at > prev) lastDone.set(s.chore_id, s.submitted_at);
+  }
+
   const claimByChore = new Map<string, BoardClaimRow>();
   for (const c of input.claims ?? []) if (isClaimActive(c, now)) claimByChore.set(c.chore_id, c);
 
@@ -202,7 +218,13 @@ export function buildBoard(input: {
       household,
     );
     const fresh = isNew(state, now, input.kidLastSeenBoardAt);
-    const card = toCard(chore, state, { isNew: fresh, now, timeZone: household.timezone, checked: input.checks?.[chore.id] });
+    const card = toCard(chore, state, {
+      isNew: fresh,
+      now,
+      timeZone: household.timezone,
+      checked: input.checks?.[chore.id],
+      lastDoneAt: lastDone.get(chore.id) ?? null,
+    });
     switch (state.state) {
       case "needs_fixing":
         sections.fix.push(card);

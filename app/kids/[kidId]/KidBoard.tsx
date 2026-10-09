@@ -19,6 +19,7 @@ import { claimDeadline, claimTimeLeft } from "@/lib/schedule/claims";
 import type { BoardCard } from "@/lib/board/buildBoard";
 import type { KioskBoard, KidHistoryItem } from "@/lib/kiosk/operations";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/templates";
+import { sortCards, type CardSort } from "@/lib/board/sortCards";
 
 type Pending = { card: BoardCard; mode: "submit" | "resubmit"; key: string };
 
@@ -31,7 +32,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   const [toast, setToast] = useState<{ text: string; tone: "happy" | "sad" } | null>(null);
   const [showMoney, setShowMoney] = useState(false);
   const [category, setCategory] = useState<string>("all");
-  const [sort, setSort] = useState<"parent" | "asc" | "desc">("parent");
+  const [sort, setSort] = useState<CardSort>("parent");
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [soundOn, setSoundOn] = useSoundPref();
@@ -334,9 +335,8 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   const inCategory = (c: BoardCard) => (category === "all" || c.category === category) && matches(c);
   const available = [...sections.new, ...sections.ready];
   const categoriesShown = CATEGORIES.filter((k) => available.some((c) => c.category === k));
-  // Price sort: parent's order, then cheapest first, then biggest first.
-  const sorted = (cards: BoardCard[]) =>
-    sort === "parent" ? cards : [...cards].sort((a, b) => (sort === "asc" ? a.priceCents - b.priceCents : b.priceCents - a.priceCents));
+  // Price button cycles parent's order → cheapest → biggest; "Recently added" / "Recently done" toggle.
+  const sorted = (cards: BoardCard[]) => sortCards(cards, sort);
   // Routines (chores with steps) get their own section at the top; regular chores follow.
   const isRoutine = (c: BoardCard) => Boolean(c.checklist);
   const newIds = new Set(sections.new.map((c) => c.choreId));
@@ -425,14 +425,27 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         >
           <button
             type="button"
-            onClick={() => setSort((x) => (x === "parent" ? "asc" : x === "asc" ? "desc" : "parent"))}
+            onClick={() => setSort((x) => (x === "asc" ? "desc" : x === "desc" ? "parent" : "asc"))}
             aria-label={tr("kid.sortLabel")}
             className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
-              sort === "parent" ? "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line" : "bg-gold text-ink shadow-[0_4px_0_#b8860b]"
+              sort === "asc" || sort === "desc" ? "bg-gold text-ink shadow-[0_4px_0_#b8860b]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
             }`}
           >
             {sort === "asc" ? `💰 ${tr("kid.sortAsc")}` : sort === "desc" ? `💰 ${tr("kid.sortDesc")}` : `💰 ${tr("kid.sortPrice")}`}
           </button>
+          {(["added", "done"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-pressed={sort === s}
+              onClick={() => setSort((x) => (x === s ? "parent" : s))}
+              className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
+                sort === s ? "bg-gold text-ink shadow-[0_4px_0_#b8860b]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
+              }`}
+            >
+              {s === "added" ? `✨ ${tr("kid.sortAdded")}` : `🕒 ${tr("kid.sortDone")}`}
+            </button>
+          ))}
           <span aria-hidden className="my-2 w-px shrink-0 bg-line" />
           {(categoriesShown.length > 1 ? ["all", ...categoriesShown] : []).map((k) => {
             const on = category === k;

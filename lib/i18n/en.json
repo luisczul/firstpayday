@@ -122,6 +122,8 @@
   "kid.sortPrice": "Sort by $",
   "kid.sortAsc": "$ → $$$",
   "kid.sortDesc": "$$$ → $",
+  "kid.sortAdded": "Recently added",
+  "kid.sortDone": "Recently done",
   "kid.search": "Search",
   "kid.searchPlaceholder": "Find a chore…",
   "kid.searchNone": "Nothing found for “{q}”",
