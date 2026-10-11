@@ -184,6 +184,33 @@ test("approvals: list, approve with a tip, send back with a comment", async ({ r
   expect(kids.items).toEqual([expect.objectContaining({ id: kidId, name: "Nora", balanceCents: 150, pendingCents: 100 })]);
 });
 
+test("approve with a corrected price: this submission only, or kept for the chore too", async ({ request }) => {
+  const { data: before } = await admin.from("chores").select("price_cents").eq("id", choreId).single();
+  // Wrong price on the chore ($2): the parent pays $1 this time, the chore keeps its price.
+  const once = await pending(request, "Clean the BBQ furniture", 200);
+  let r = await request.post(`/api/app/v1/approvals/${once}/approve`, { headers: auth(), data: { unitPriceCents: 100, bonusCents: 50 } });
+  expect(r.status()).toBe(200);
+  const { data: s1 } = await admin.from("submissions").select("status, unit_price_cents, amount_cents").eq("id", once).single();
+  expect(s1).toEqual({ status: "approved", unit_price_cents: 100, amount_cents: 100 });
+  const { data: e1 } = await admin.from("ledger_entries").select("kind, amount_cents").eq("submission_id", once).order("kind");
+  expect(e1).toEqual([{ kind: "bonus", amount_cents: 50 }, { kind: "earning", amount_cents: 100 }]);
+  expect((await admin.from("chores").select("price_cents").eq("id", choreId).single()).data!.price_cents).toBe(before!.price_cents);
+
+  // Same correction, kept for next time.
+  const keep = await pending(request, "Clean the BBQ furniture", 200);
+  r = await request.post(`/api/app/v1/approvals/${keep}/approve`, { headers: auth(), data: { unitPriceCents: 150, updateChorePrice: true } });
+  expect(r.status()).toBe(200);
+  expect((await admin.from("submissions").select("amount_cents").eq("id", keep).single()).data!.amount_cents).toBe(150);
+  expect((await admin.from("chores").select("price_cents").eq("id", choreId).single()).data!.price_cents).toBe(150);
+
+  // Out of range → 400, nothing approved.
+  const bad = await pending(request, "Clean the BBQ furniture", 200);
+  r = await request.post(`/api/app/v1/approvals/${bad}/approve`, { headers: auth(), data: { unitPriceCents: -5 } });
+  expect(r.status()).toBe(400);
+  expect((await admin.from("submissions").select("status").eq("id", bad).single()).data!.status).toBe("pending");
+  await admin.from("chores").update({ price_cents: before!.price_cents }).eq("id", choreId);
+});
+
 test("another family's token can't see or touch these chores", async ({ request }) => {
   const otherEmail = `app2-${randomUUID().slice(0, 8)}@example.test`;
   const r0 = await request.post("/api/app/v1/auth/signup", { data: { email: otherEmail, password, acceptedTerms: true } });

@@ -74,7 +74,7 @@ Chores waiting for the parent's check, oldest first.
 `avatarUrl` can also be `preset:<name>` (a cartoon avatar): show the kid's initial on their color instead.
 
 ### POST /api/app/v1/approvals/{id}/approve
-Body `{ "bonusCents"?: int (0..100000) }` → 200 `{ "ok": true }` (approving an already-approved chore again is a harmless no-op: no double payment). 409 `conflict` if it was rejected (a chore that was sent back can still be approved, as on the web).
+Body `{ "bonusCents"?: int (0..100000), "unitPriceCents"?: int (0..100000), "updateChorePrice"?: bool }` → 200 `{ "ok": true }`. `unitPriceCents` corrects a wrong price for this submission (paid = quantity × that price, plus the tip); with `updateChorePrice: true` the chore keeps the new price for next time (approving an already-approved chore again is a harmless no-op: no double payment). 409 `conflict` if it was rejected (a chore that was sent back can still be approved, as on the web).
 
 ### POST /api/app/v1/approvals/{id}/send-back
 Body `{ "comment": string (1..500) }` → 200 `{ "ok": true }`.

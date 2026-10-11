@@ -37,6 +37,8 @@ test("home maintenance: category, battery icon, templates, and the kids' board f
   await page.getByRole("button", { name: "+ New chore" }).click();
   await page.getByRole("button", { name: /Start from blank/ }).click();
   const editor = page.getByRole("dialog", { name: "New chore" });
+  // A blank chore starts at $1 (owner's request; it used to be $5).
+  await expect(editor.getByLabel("Price", { exact: true })).toHaveValue("1");
   await editor.getByLabel("Title").fill("Change the front door lock batteries");
   await editor.getByRole("button", { name: "🛠️ Home maintenance", exact: true }).click();
   await editor.getByRole("button", { name: "🔋", exact: true }).click();

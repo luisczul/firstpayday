@@ -224,6 +224,8 @@ function ApprovalItem({
   const [qty, setQty] = useState(item.quantity);
   const [unitPrice, setUnitPrice] = useState(item.unitPriceCents);
   const [editingPrice, setEditingPrice] = useState(false);
+  // Bumped only when the price is set from outside the box ("Use today's price"), so typing keeps focus.
+  const [priceBoxKey, setPriceBoxKey] = useState(0);
   const [keepPrice, setKeepPrice] = useState(false);
   const chorePrice = item.chorePriceCents ?? item.unitPriceCents;
   const [mode, setMode] = useState<"idle" | "sendBack" | "reject">("idle");
@@ -282,13 +284,18 @@ function ApprovalItem({
               {qty} × {priceChanged ? <s className="mr-1 opacity-60">{money(item.unitPriceCents)}</s> : null}
               {money(unitPrice)}
               {item.unitLabel ? ` / ${item.unitLabel}` : ""}
-              {!readOnly ? (
-                <button type="button" className="ml-1.5 underline decoration-dotted" onClick={() => setEditingPrice((v) => !v)} aria-label={t("c.appr.editPrice")}>
-                  ✏️
-                </button>
-              ) : null}
             </span>
             <span className="block font-display text-2xl font-bold text-moss">{money(amount)}</span>
+            {!readOnly ? (
+              <button
+                type="button"
+                className="block w-full text-right text-xs font-bold text-maple underline decoration-dotted"
+                onClick={() => setEditingPrice((v) => !v)}
+                aria-label={t("c.appr.editPrice")}
+              >
+                ✏️ {t("c.appr.editPrice")}
+              </button>
+            ) : null}
             {match > 0 ? <span className="block text-xs font-bold text-amber">{t("a.appr.match", { amount: money(match) })}</span> : null}
             {promo ? (
               <span className="block text-xs font-bold text-maple" data-testid="promo-bonus">
@@ -302,14 +309,14 @@ function ApprovalItem({
       {editingPrice || (!readOnly && chorePrice !== item.unitPriceCents && !priceChanged) ? (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-paper px-4 py-3" data-testid="price-editor">
           {chorePrice !== item.unitPriceCents && unitPrice !== chorePrice ? (
-            <Button size="sm" variant="secondary" onClick={() => { setUnitPrice(chorePrice); setEditingPrice(true); }}>
+            <Button size="sm" variant="secondary" onClick={() => { setUnitPrice(chorePrice); setPriceBoxKey((k) => k + 1); setEditingPrice(true); }}>
               {t("c.appr.useCurrent", { price: money(chorePrice) })}
             </Button>
           ) : null}
           {editingPrice ? (
             <>
               <span className="text-sm font-bold text-ink">{t("c.appr.priceLabel")}</span>
-              <PriceInput key={unitPrice} cents={unitPrice} currency={currency} locale={locale} onChange={setUnitPrice} />
+              <PriceInput key={priceBoxKey} cents={unitPrice} currency={currency} locale={locale} onChange={setUnitPrice} />
               {priceChanged ? (
                 <label className="flex items-center gap-2 text-sm font-semibold text-ink">
                   <input type="checkbox" className="h-4 w-4 accent-maple" checked={keepPrice} onChange={(e) => setKeepPrice(e.target.checked)} />

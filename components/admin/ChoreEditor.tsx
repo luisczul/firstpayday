@@ -68,7 +68,7 @@ export const BLANK_CHORE: EditableChore = {
   description: "",
   emoji: "⭐",
   color: "#E08A1E",
-  price_cents: 500,
+  price_cents: 100,
   unit_label: null,
   max_quantity: 1,
   repeat_kind: "weekly",
