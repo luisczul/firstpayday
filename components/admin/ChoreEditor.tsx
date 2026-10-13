@@ -10,6 +10,7 @@ import { CATEGORIES, CATEGORY_LABELS, NAMED_INTERVALS, REPEAT_PRESETS } from "@/
 import { useParentLocale, useParentT } from "@/lib/i18n/parent/client";
 import { CLAIM_WINDOWS, DEFAULT_CLAIM_WINDOW, type ClaimWindow } from "@/lib/schedule/claims";
 import { MAX_SECTION_LABEL, MAX_SUBTASKS, MAX_SUBTASK_TITLE, type Subtask } from "@/lib/schedule/checklist";
+import { useKeyboardOpen } from "@/lib/useKeyboardOpen";
 
 export interface EditableChore {
   id: string | null;
@@ -96,6 +97,7 @@ export function ChoreEditor({
   onSaved: () => void;
 }) {
   const t = useParentT();
+  useKeyboardOpen();
   const locale = useParentLocale();
   const [c, setC] = useState(initial);
   const [price, setPrice] = useState(amountInput(initial.price_cents, locale, true));
@@ -371,7 +373,12 @@ export function ChoreEditor({
       </label>
 
       {error ? <Alert tone="bad">{error}</Alert> : null}
-      <div className="sticky bottom-0 -mx-5 border-t border-line bg-paper px-5 py-3">
+      {/* Pinned flush to the bottom edge (the sheet's padding used to leave a gap under it), and not
+          pinned while the keyboard is up, so it no longer rides on top of the keyboard. */}
+      <div
+        data-testid="chore-editor-footer"
+        className="unpin-on-keyboard sticky -bottom-5 -mx-5 -mb-5 border-t border-line bg-paper px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+      >
         <Button type="submit" size="lg" className="w-full" disabled={pending || qty === null || (c.repeat_kind === "every_n_days" && days === null)}>
           {pending ? t("b.editor.saving") : c.id ? t("b.editor.save") : t("b.editor.add")}
         </Button>

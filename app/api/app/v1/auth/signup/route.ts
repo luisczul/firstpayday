@@ -4,12 +4,13 @@ import { appUrl } from "@/lib/env";
 import { asLocale } from "@/lib/i18n";
 import { authCopy } from "@/lib/i18n/authCopy";
 import { appLocale, appMessage, body, fail, ok, sessionJson, statelessClient } from "@/lib/app/api";
+import { EmailInput } from "@/lib/auth/email";
 
 export async function POST(req: Request) {
   const m = authCopy(appLocale(req));
   const b = await body(req);
   if (b?.acceptedTerms !== true) return fail("invalid", m("acceptTerms"), 400);
-  const parsed = z.object({ email: z.email(), password: z.string().min(8).max(200) }).safeParse(b);
+  const parsed = z.object({ email: EmailInput, password: z.string().min(8).max(200) }).safeParse(b);
   if (!parsed.success) {
     const short = parsed.error.issues.some((i) => i.path[0] === "password");
     return fail("invalid", short ? m("password8") : m("checkForm"), 400);

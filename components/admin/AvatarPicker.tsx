@@ -86,21 +86,32 @@ export function AvatarPicker({
 
   return (
     <div className="flex flex-col items-center gap-1">
+      {/* The ✏️ badge sits outside the round photo: inside it, the circle's crop cut the badge off. */}
       <button
         type="button"
         onClick={() => setChoosing(true)}
-        className="relative flex items-center justify-center overflow-hidden rounded-full ring-4 ring-card"
-        style={{ width: size, height: size, background: preset ? preset.bg : color }}
+        className="relative shrink-0"
+        style={{ width: size, height: size }}
         aria-label={t("a.avatar.choose")}
       >
-        {preset ? (
-          <span style={{ fontSize: size * 0.62, lineHeight: 1 }}>{preset.emoji}</span>
-        ) : preview ? (
-          <img src={preview} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <span className="font-display text-3xl font-bold text-white">{name.trim().charAt(0).toUpperCase() || "🙂"}</span>
-        )}
-        <span className="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center rounded-full bg-card text-sm shadow">✏️</span>
+        <span
+          className="flex h-full w-full items-center justify-center overflow-hidden rounded-full ring-4 ring-card"
+          style={{ background: preset ? preset.bg : color }}
+        >
+          {preset ? (
+            <span style={{ fontSize: size * 0.62, lineHeight: 1 }}>{preset.emoji}</span>
+          ) : preview ? (
+            <img src={preview} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="font-display text-3xl font-bold text-white">{name.trim().charAt(0).toUpperCase() || "🙂"}</span>
+          )}
+        </span>
+        <span
+          data-testid="avatar-edit-badge"
+          className="absolute -right-1 -bottom-1 flex h-8 w-8 items-center justify-center rounded-full bg-card text-sm leading-none shadow ring-2 ring-paper"
+        >
+          ✏️
+        </span>
       </button>
       <input ref={input} type="file" accept="image/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
 

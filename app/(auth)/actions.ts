@@ -11,6 +11,7 @@ import { asLocale, localeFromBrowser, type Locale } from "@/lib/i18n";
 import { authCopy } from "@/lib/i18n/authCopy";
 import { SIGNUP_LANG_COOKIE } from "@/lib/i18n/marketing/routes";
 import { trackActivity } from "@/lib/slack/activity";
+import { EmailInput } from "@/lib/auth/email";
 
 /** The visitor's language: the one they chose on the public site (?lang= / /fr…), else the browser's. */
 async function visitorLocale(form?: FormData): Promise<Locale> {
@@ -23,7 +24,7 @@ async function visitorLocale(form?: FormData): Promise<Locale> {
 
 export type AuthState = { error?: string; message?: string } | undefined;
 
-const Creds = z.object({ email: z.email(), password: z.string().min(8, "password8").max(200) });
+const Creds = z.object({ email: EmailInput, password: z.string().min(8, "password8").max(200) });
 
 async function origin(): Promise<string> {
   const h = await headers();
@@ -53,7 +54,7 @@ function safeNext(next: FormDataEntryValue | null): string {
 
 export async function login(_: AuthState, form: FormData): Promise<AuthState> {
   const m = authCopy(await visitorLocale(form));
-  const parsed = z.object({ email: z.email(), password: z.string().min(1) }).safeParse({
+  const parsed = z.object({ email: EmailInput, password: z.string().min(1) }).safeParse({
     email: form.get("email"),
     password: form.get("password"),
   });
@@ -68,7 +69,7 @@ export async function login(_: AuthState, form: FormData): Promise<AuthState> {
 
 export async function sendMagicLink(_: AuthState, form: FormData): Promise<AuthState> {
   const m = authCopy(await visitorLocale(form));
-  const email = z.email().safeParse(form.get("email"));
+  const email = EmailInput.safeParse(form.get("email"));
   if (!email.success) return { error: m("emailFirst") };
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
@@ -107,7 +108,7 @@ export async function signup(_: AuthState, form: FormData): Promise<AuthState> {
 
 export async function requestReset(_: AuthState, form: FormData): Promise<AuthState> {
   const m = authCopy(await visitorLocale(form));
-  const email = z.email().safeParse(form.get("email"));
+  const email = EmailInput.safeParse(form.get("email"));
   if (!email.success) return { error: m("validEmail") };
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email.data, {

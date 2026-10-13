@@ -97,7 +97,13 @@ export function TemplateChooser({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <Button type="button" size="sm" variant="ghost" onClick={onBack}>{tr("b.new.back")}</Button>
+        <Button type="button" size="sm" variant="ghost" onClick={onBack} className="inline-flex items-center gap-1.5">
+          {/* An icon, not a "←" character: the text arrow sat above the word in Android's font. */}
+          <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 10H4M9 5l-5 5 5 5" />
+          </svg>
+          <span>{tr("b.new.back")}</span>
+        </Button>
       </div>
       <input
         type="search"

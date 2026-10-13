@@ -5,7 +5,7 @@ const COPY = {
   en: {
     password8: "Use at least 8 characters.",
     emailPassword: "Enter your email and password.",
-    noMatch: "That email and password don't match.",
+    noMatch: "We couldn't log you in. Check your email and password. New here? Create an account first.",
     emailFirst: "Enter your email first.",
     linkFailed: "We couldn't send a link to that email.",
     linkSent: "Check your email for a login link.",
@@ -20,7 +20,7 @@ const COPY = {
   fr: {
     password8: "Utilisez au moins 8 caractères.",
     emailPassword: "Entrez votre courriel et votre mot de passe.",
-    noMatch: "Ce courriel et ce mot de passe ne correspondent pas.",
+    noMatch: "Connexion impossible. Vérifiez votre courriel et votre mot de passe. Nouveau ici? Créez d'abord un compte.",
     emailFirst: "Entrez d'abord votre courriel.",
     linkFailed: "Impossible d'envoyer un lien à ce courriel.",
     linkSent: "Consultez vos courriels : un lien de connexion vous attend.",
@@ -35,7 +35,7 @@ const COPY = {
   es: {
     password8: "Usa al menos 8 caracteres.",
     emailPassword: "Escribe tu correo y tu contraseña.",
-    noMatch: "Ese correo y esa contraseña no coinciden.",
+    noMatch: "No pudimos iniciar tu sesión. Revisa tu correo y tu contraseña. ¿Eres nuevo? Primero crea una cuenta.",
     emailFirst: "Primero escribe tu correo.",
     linkFailed: "No pudimos enviar un enlace a ese correo.",
     linkSent: "Revisa tu correo: te enviamos un enlace para entrar.",
@@ -50,7 +50,7 @@ const COPY = {
   pt: {
     password8: "Use pelo menos 8 caracteres.",
     emailPassword: "Digite seu e-mail e sua senha.",
-    noMatch: "Esse e-mail e essa senha não conferem.",
+    noMatch: "Não conseguimos entrar. Confira seu e-mail e sua senha. É novo por aqui? Crie uma conta primeiro.",
     emailFirst: "Digite seu e-mail primeiro.",
     linkFailed: "Não conseguimos enviar um link para esse e-mail.",
     linkSent: "Confira seu e-mail: enviamos um link para entrar.",

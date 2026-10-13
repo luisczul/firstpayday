@@ -2,10 +2,11 @@ import { z } from "zod";
 import { authCopy } from "@/lib/i18n/authCopy";
 import { trackActivity } from "@/lib/slack/activity";
 import { appLocale, appMessage, body, fail, ok, sessionJson, statelessClient } from "@/lib/app/api";
+import { EmailInput } from "@/lib/auth/email";
 
 export async function POST(req: Request) {
   const m = authCopy(appLocale(req));
-  const parsed = z.object({ email: z.email(), password: z.string().min(1).max(200) }).safeParse(await body(req));
+  const parsed = z.object({ email: EmailInput, password: z.string().min(1).max(200) }).safeParse(await body(req));
   if (!parsed.success) return fail("invalid", m("checkForm"), 400);
   const { data, error } = await statelessClient().auth.signInWithPassword(parsed.data);
   if (error || !data.session) {

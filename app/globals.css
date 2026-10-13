@@ -163,3 +163,8 @@ textarea:focus-visible {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Bottom bars that would ride on top of the on-screen keyboard (see lib/useKeyboardOpen.ts). */
+html[data-keyboard] .unpin-on-keyboard {
+  position: static;
+}

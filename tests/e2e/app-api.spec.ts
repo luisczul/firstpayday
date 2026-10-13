@@ -53,7 +53,7 @@ test("sign up, log in, refresh, and the errors speak the app's language", async 
 
   r = await request.post("/api/app/v1/auth/login", { data: { email, password: "wrong-password" }, headers: { "accept-language": "es-MX" } });
   expect(r.status()).toBe(401);
-  expect(await r.json()).toEqual({ error: { code: "invalid_credentials", message: "Ese correo y esa contraseña no coinciden." } });
+  expect(await r.json()).toEqual({ error: { code: "invalid_credentials", message: "No pudimos iniciar tu sesión. Revisa tu correo y tu contraseña. ¿Eres nuevo? Primero crea una cuenta." } });
 
   r = await request.post("/api/app/v1/auth/login", { data: { email, password } });
   expect(r.status()).toBe(200);

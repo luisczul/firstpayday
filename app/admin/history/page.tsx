@@ -101,8 +101,13 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         <select name="type" defaultValue={filters.type} className={select} aria-label={t("a.hist.type")}>
           {TYPES.map((ty) => <option key={ty} value={ty}>{t(`a.hist.type.${ty}`)}</option>)}
         </select>
-        <input type="date" name="from" defaultValue={filters.from} className={select} aria-label={t("a.hist.from")} />
-        <input type="date" name="to" defaultValue={filters.to} className={select} aria-label={t("a.hist.to")} />
+        {/* Visible labels: an empty date box shows nothing at all in Android web views. */}
+        {(["from", "to"] as const).map((k) => (
+          <label key={k} className="flex flex-col gap-0.5 text-xs font-bold text-ink-soft">
+            📅 {t(k === "from" ? "a.hist.from" : "a.hist.to")}
+            <input type="date" name={k} defaultValue={filters[k]} className={`${select} min-w-36`} />
+          </label>
+        ))}
         <button className={buttonClass("primary", "sm")}>{t("a.hist.filter")}</button>
         {qs ? <Link href="/admin/history" className={buttonClass("ghost", "sm")}>{t("a.hist.clear")}</Link> : null}
       </form>

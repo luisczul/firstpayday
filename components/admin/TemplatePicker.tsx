@@ -6,6 +6,7 @@ import { amountInput, formatPrice, parseMoneyToCents } from "@/lib/money/format"
 import { Button } from "@/components/ui";
 import { asLocale, type Locale } from "@/lib/i18n";
 import { parentT } from "@/lib/i18n/parent";
+import { useKeyboardOpen } from "@/lib/useKeyboardOpen";
 
 export interface TemplateSelection {
   key: string;
@@ -78,6 +79,7 @@ export function TemplatePicker({
   const selected = Object.values(state).filter((s) => s.on);
   // Also used by onboarding, so the locale comes from props rather than the admin provider.
   const tr = parentT(locale);
+  useKeyboardOpen();
 
   return (
     <div className="flex flex-col gap-8">
@@ -171,7 +173,11 @@ export function TemplatePicker({
         );
       })}
 
-      <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur">
+      {/* Not pinned while the keyboard is up (typing a price), so it doesn't ride on top of the keyboard. */}
+      <div
+        data-testid="template-picker-footer"
+        className="unpin-on-keyboard sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur"
+      >
         <span className="font-bold text-ink-soft">{tr("b.tpl.selected", { n: selected.length })}</span>
         <Button
           size="lg"
