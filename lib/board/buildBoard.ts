@@ -146,7 +146,8 @@ function toCard(
     color: choreColor(chore),
     priceCents: chore.price_cents,
     unitLabel: chore.unit_label,
-    maxQuantity: chore.max_quantity,
+    // Some units already taken this period: the kid can only send in what's left.
+    maxQuantity: state.unitsLeft ?? chore.max_quantity,
     noteForKids: chore.note_for_kids,
     category: chore.category,
     createdAt: chore.created_at,

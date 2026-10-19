@@ -72,14 +72,16 @@ test("2. a kid taps their face, a card and “I did it!” without typing", asyn
   await expect(page.getByText("Sent to Mom/Dad for checking!")).toBeVisible();
   await expect(page.getByText("$4.00 waiting for check")).toBeVisible();
   await expect(page.getByRole("heading", { name: /Waiting for check/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Baseboards" })).toHaveCount(0);
 
-  // Whole-house chore: gone for the sibling too.
+  // Whole-house chore, up to 3 floors a period: 2 are taken, so the sibling can still do the last
+  // one, and only one (owner: max quantity is per period, shared by the kids).
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: /Sofia/ }).click();
   await expect(page.getByRole("heading", { name: "Sofia" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Baseboards" })).toHaveCount(0);
-  await expect(page.getByText(/Back in 14 days/).first()).toBeVisible();
+  await page.getByRole("button", { name: "Baseboards", exact: true }).click();
+  await expect(page.getByRole("button", { name: /I did it/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "More" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Oops, not yet" }).click();
 });
 
 test("3. a parent on a phone sends it back, the kid fixes it, the parent approves", async ({ browser }) => {

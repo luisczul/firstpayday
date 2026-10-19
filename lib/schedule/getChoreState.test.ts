@@ -462,3 +462,59 @@ describe("getChoreState — a kid gives up a sent-back chore", () => {
     expect(getChoreState(chore(), [w], B, d("2026-09-26T12:00"), hh).state).toBe("available");
   });
 });
+
+describe("max quantity per period (owner: “Tire 1, 2 per week”)", () => {
+  const tires = chore({ repeat_kind: "weekly", repeat_every_days: null, max_quantity: 2 });
+  const s = (kid: string, when: string, quantity: number, status: ScheduleSubmission["status"] = "pending", id = `${kid}-${when}`): ScheduleSubmission => ({
+    id,
+    chore_id: "c1",
+    kid_id: kid,
+    status,
+    submitted_at: d(when),
+    quantity,
+  });
+  const now = d("2026-10-14T18:00"); // Wednesday
+
+  it("one kid did 1 of 2: the other kid can still do the last one (and only one)", () => {
+    const subs = [s(A, "2026-10-14T10:00", 1)];
+    const forB = getChoreState(tires, subs, B, now, hh);
+    expect(forB.state).toBe("available");
+    expect(forB.unitsLeft).toBe(1);
+    // The kid who did one can do the other too.
+    expect(getChoreState(tires, subs, A, now, hh)).toMatchObject({ state: "available", unitsLeft: 1 });
+  });
+
+  it("both units taken this week (pending or approved): waits for next week", () => {
+    const subs = [s(A, "2026-10-13T10:00", 1, "approved"), s(B, "2026-10-14T10:00", 1)];
+    expect(getChoreState(tires, subs, A, now, hh).state).toBe("cooldown");
+    expect(getChoreState(tires, subs, B, now, hh).state).toBe("pending");
+    expect(getChoreState(tires, [s(A, "2026-10-14T10:00", 2)], B, now, hh).state).toBe("cooldown");
+  });
+
+  it("last week's units don't count this week", () => {
+    const subs = [s(A, "2026-10-08T10:00", 2, "approved")];
+    const r = getChoreState(tires, subs, B, now, hh);
+    expect(r.state).toBe("available");
+    expect(r.unitsLeft).toBeUndefined();
+  });
+
+  it("per-kid chores count each kid's own units", () => {
+    const own = chore({ repeat_kind: "weekly", repeat_every_days: null, max_quantity: 2, scope: "per_kid" });
+    const subs = [s(A, "2026-10-14T10:00", 2)];
+    expect(getChoreState(own, subs, A, now, hh).state).toBe("pending");
+    const forB = getChoreState(own, subs, B, now, hh);
+    expect(forB.state).toBe("available");
+    expect(forB.unitsLeft).toBeUndefined();
+  });
+
+  it("a one-time chore with 3 units stays open until 3 are done or waiting", () => {
+    const once = chore({ repeat_kind: "once", repeat_every_days: null, max_quantity: 3 });
+    expect(getChoreState(once, [s(A, "2026-10-14T10:00", 2)], B, now, hh)).toMatchObject({ state: "available", unitsLeft: 1 });
+    expect(getChoreState(once, [s(A, "2026-10-14T10:00", 2), s(B, "2026-10-14T11:00", 1, "approved")], B, now, hh).state).toBe("done_forever");
+  });
+
+  it("max quantity 1 keeps the old behaviour", () => {
+    const one = chore({ repeat_kind: "weekly", repeat_every_days: null, max_quantity: 1 });
+    expect(getChoreState(one, [s(A, "2026-10-14T10:00", 1)], B, now, hh).state).toBe("cooldown");
+  });
+});

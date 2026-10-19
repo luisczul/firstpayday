@@ -126,8 +126,9 @@ test("2. kids earn: 2 of 3 floors, whole-house vs each-kid chores, no typing", a
   await doChore("Sous-chef night");
 
   await openBoard("Sofia");
-  // Whole-house chore Mateo took is gone for Sofia; the per-kid one is still hers to do.
-  await expect(kid.getByRole("button", { name: "Baseboards", exact: true })).toHaveCount(0);
+  // Whole-house chore, 3 floors a period: Mateo did 2, so the last floor is still open for Sofia
+  // (owner: max quantity is per period, shared); the per-kid one is still hers to do.
+  await expect(kid.getByRole("button", { name: "Baseboards", exact: true })).toHaveCount(1);
   await expect(kid.getByRole("button", { name: "Sous-chef night", exact: true })).toHaveCount(1);
   await doChore("Sous-chef night");
   await doChore("Garbage boss");

@@ -33,6 +33,11 @@ export interface ScheduleChore {
   assignee_ids: readonly string[];
   /** "Make available now": submissions before this stop counting (open ones still do). */
   reset_at?: string | Date | null;
+  /**
+   * Units allowed per period (per repeat; for whole-house chores, shared by all kids). Above 1, the
+   * chore stays open until that many units are done or waiting: 2 tires a week = two kids can do one each.
+   */
+  max_quantity?: number;
 }
 
 export interface ScheduleSubmission {
@@ -43,6 +48,8 @@ export interface ScheduleSubmission {
   submitted_at: string | Date;
   reviewed_at?: string | Date | null;
   review_comment?: string | null;
+  /** Units sent in (default 1). */
+  quantity?: number;
 }
 
 export interface ScheduleHousehold {
@@ -65,6 +72,8 @@ export interface ChoreState<S extends ScheduleSubmission = ScheduleSubmission> {
    * sibling tapped first (optimistic concurrency).
    */
   latestRelevant?: S;
+  /** Units still open this period, when some of the chore's max quantity is already taken. */
+  unitsLeft?: number;
 }
 
 const toDate = (v: string | Date) => (v instanceof Date ? v : new Date(v));
@@ -163,7 +172,17 @@ export function getChoreState<S extends ScheduleSubmission>(
   const createdAt = maxDate(toDate(chore.created_at), resetAt)!;
 
   // ----- once -------------------------------------------------------------
+  const max = Math.max(1, chore.max_quantity ?? 1);
+  const units = (subs: readonly S[]) => subs.reduce((n, s) => n + Math.max(1, s.quantity ?? 1), 0);
+
   if (chore.repeat_kind === "once") {
+    // Several units allowed: open until they're all done or waiting (rejected ones free up again).
+    if (max > 1) {
+      const used = units(relevant.filter((s) => s.status === "approved" || s.status === "pending"));
+      if (used > 0 && used < max) {
+        return applySeason({ state: "available", becameAvailableAt: createdAt, latestRelevant, unitsLeft: max - used }, season, now);
+      }
+    }
     const approved = newest(relevant.filter((s) => s.status === "approved"));
     if (approved) {
       return { state: "done_forever", submission: approved, latestRelevant };
@@ -191,6 +210,14 @@ export function getChoreState<S extends ScheduleSubmission>(
   }
 
   const availableAt = nextAvailableAt(chore, toDate(latestRelevant.submitted_at), household)!;
+  // Several units allowed per period: still open while some are left (2 tires a week, 1 done = 1 left).
+  if (max > 1 && now < availableAt) {
+    const thisPeriod = relevant.filter((s) => now < nextAvailableAt(chore, toDate(s.submitted_at), household)!);
+    const left = max - units(thisPeriod);
+    if (left > 0) {
+      return applySeason({ state: "available", becameAvailableAt: createdAt, latestRelevant, unitsLeft: left }, season, now);
+    }
+  }
   if (now < availableAt) {
     if (latestRelevant.kid_id === kidId && latestRelevant.status === "pending") {
       return { state: "pending", submission: latestRelevant, availableAt, latestRelevant };
