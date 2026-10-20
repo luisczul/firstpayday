@@ -28,7 +28,11 @@ export function KidPicker({ initial }: { initial: { household: KioskHousehold; k
   return (
     <main lang={household.locale} className="flex min-h-dvh flex-col">
       <header className="flex items-center justify-between px-8 pt-6">
-        <p className="font-display text-2xl font-bold text-ink-soft">{household.name}</p>
+        {/* The home's name, with a house so it never reads as a menu (e.g. a name like "....."). */}
+        <p className="min-w-0 truncate font-display text-2xl font-bold text-ink-soft" data-testid="home-name">
+          <span aria-hidden>🏠 </span>
+          {household.name}
+        </p>
         <button
           type="button"
           onClick={() => setUnlock(true)}

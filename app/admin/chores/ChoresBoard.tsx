@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addChoresFromTemplates,
@@ -114,6 +114,18 @@ export function ChoresBoard({
       router.refresh();
     });
 
+  /** Resolves false when the save failed (the card then goes back to the old price). */
+  const savePrice = (id: string, cents: number) =>
+    new Promise<boolean>((resolve) =>
+      start(async () => {
+        setError(null);
+        const r = await updateChorePrice(id, cents);
+        if (!r.ok) setError(r.message ?? t("b.common.somethingWrong"));
+        resolve(r.ok);
+        router.refresh();
+      }),
+    );
+
   const move = (id: string, delta: number) => {
     const ids = ordered.map((c) => c.id);
     const i = ids.indexOf(id);
@@ -162,16 +174,22 @@ export function ChoresBoard({
             {t(`b.chores.filter.${f}`)}
           </button>
         ))}
-        <select
-          aria-label={t("b.chores.sort.label")}
-          value={sort}
-          onChange={(e) => setSort(e.target.value as typeof sort)}
-          className="min-h-10 rounded-full border border-line bg-card px-4 text-sm font-bold"
-        >
-          <option value="parent">↕️ {t("b.chores.sort.parent")}</option>
-          <option value="added">✨ {t("b.chores.sort.added")}</option>
-          <option value="done">🕒 {t("b.chores.sort.done")}</option>
-        </select>
+        {/* Our own chevron, inset from the rounded edge (the browser's one sat on the border). */}
+        <span className="relative inline-flex">
+          <select
+            aria-label={t("b.chores.sort.label")}
+            value={sort}
+            onChange={(e) => setSort(e.target.value as typeof sort)}
+            className="min-h-10 appearance-none rounded-full border border-line bg-card py-0 pr-10 pl-4 text-sm font-bold"
+          >
+            <option value="parent">↕️ {t("b.chores.sort.parent")}</option>
+            <option value="added">✨ {t("b.chores.sort.added")}</option>
+            <option value="done">🕒 {t("b.chores.sort.done")}</option>
+          </select>
+          <svg aria-hidden data-testid="sort-chevron" viewBox="0 0 20 20" className="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-ink-soft" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 7.5l5 5 5-5" />
+          </svg>
+        </span>
         <input
           type="search"
           placeholder={t("b.chores.search")}
@@ -185,7 +203,9 @@ export function ChoresBoard({
       {notice ? <div className="mb-4"><Alert tone="good">{notice}</Alert></div> : null}
 
       {visible.length === 0 && filter === "active" && !query ? (
-        <EmptyState emoji="🧹" title={t("b.chores.emptyTitle")}>{t("b.chores.emptyBody")}</EmptyState>
+        <div className="mb-6" data-testid="chores-empty">
+          <EmptyState emoji="🧹" title={t("b.chores.emptyTitle")}>{t("b.chores.emptyBody")}</EmptyState>
+        </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -203,7 +223,7 @@ export function ChoresBoard({
                 c.subtasks.length ? "rounded-[var(--radius-card)] border-t-[6px] border-plum ring-2 ring-plum/30" : ""
               }`}
             >
-              <ChoreCardAdmin chore={c} currency={currency} locale={locale} readOnly={readOnly} onPrice={(cents) => run(() => updateChorePrice(c.id, cents))} />
+              <ChoreCardAdmin chore={c} currency={currency} locale={locale} readOnly={readOnly} onPrice={(cents) => savePrice(c.id, cents)} />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <StatusLine status={c.status} locale={locale} timeZone={timeZone} />
@@ -254,6 +274,7 @@ export function ChoresBoard({
           <button
             type="button"
             onClick={() => setChoosing("menu")}
+            data-testid="add-chore-tile"
             className="flex h-[300px] flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 border-dashed border-line text-ink-soft hover:border-amber hover:text-amber"
           >
             <span className="text-5xl">+</span>
@@ -330,6 +351,7 @@ export function ChoresBoard({
             currency={currency}
             locale={locale}
             busy={pending}
+            inSheet
             submitLabel={t("b.chores.addSelected")}
             onSubmit={(picks) =>
               start(async () => {
@@ -357,11 +379,17 @@ function ChoreCardAdmin({
   currency: string;
   locale: Locale;
   readOnly: boolean;
-  onPrice: (cents: number) => void;
+  onPrice: (cents: number) => Promise<boolean>;
 }) {
   const t = useParentT();
   const [editingPrice, setEditingPrice] = useState(false);
   const [draft, setDraft] = useState(chore.price_cents);
+  // The new price shows right away, with a spinner, until the saved chore comes back with it.
+  const [saving, setSaving] = useState<number | null>(null);
+  useEffect(() => {
+    if (saving !== null && chore.price_cents === saving) setSaving(null);
+  }, [chore.price_cents, saving]);
+  const shownCents = saving ?? chore.price_cents;
   return (
     <ChoreCard
       chore={{
@@ -391,7 +419,12 @@ function ChoreCardAdmin({
             onSubmit={(e) => {
               e.preventDefault();
               setEditingPrice(false);
-              if (draft !== chore.price_cents) onPrice(draft);
+              if (draft !== chore.price_cents) {
+                setSaving(draft);
+                void onPrice(draft).then((ok) => {
+                  if (!ok) setSaving(null);
+                });
+              }
             }}
           >
             <PriceInput cents={chore.price_cents} currency={currency} locale={locale} onChange={setDraft} autoFocus />
@@ -401,12 +434,19 @@ function ChoreCardAdmin({
           <button
             type="button"
             onClick={() => setEditingPrice(true)}
-            title={t("b.chores.tapPrice")}
-            className="inline-flex items-center rounded-full bg-gold px-3.5 py-1.5 text-lg font-black text-ink shadow-[0_2px_0_rgb(59_36_24/0.15)] hover:ring-2 hover:ring-amber"
+            disabled={saving !== null}
+            aria-busy={saving !== null}
+            title={saving !== null ? t("b.chores.savingPrice") : t("b.chores.tapPrice")}
+            data-testid="chore-price-pill"
+            className="inline-flex items-center rounded-full bg-gold px-3.5 py-1.5 text-lg font-black text-ink shadow-[0_2px_0_rgb(59_36_24/0.15)] hover:ring-2 hover:ring-amber disabled:opacity-80"
           >
-            {formatPrice(chore.price_cents, currency, locale)}
+            {formatPrice(shownCents, currency, locale)}
             {chore.unit_label ? <span className="ml-1 text-sm font-bold text-ink-soft">/ {chore.unit_label}</span> : null}
-            <span className="ml-1 text-xs" aria-hidden>✏️</span>
+            {saving !== null ? (
+              <span role="status" aria-label={t("b.chores.savingPrice")} className="ml-1.5 inline-block h-4 w-4 animate-spin rounded-full border-2 border-ink/25 border-t-ink" />
+            ) : (
+              <span className="ml-1 text-xs" aria-hidden>✏️</span>
+            )}
           </button>
         )
       }

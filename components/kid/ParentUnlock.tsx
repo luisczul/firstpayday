@@ -36,7 +36,18 @@ export function ParentUnlock({ locale, onClose }: { locale: Locale; onClose: () 
     window.location.assign("/admin");
   };
 
-  const fail = (reason: string) => setError(reason === "locked" ? tr("unlock.locked") : tr("unlock.wrong"));
+  const fail = (reason: string) =>
+    setError(
+      reason === "locked"
+        ? tr("unlock.locked")
+        : reason === "bad_email"
+          ? tr("unlock.badEmail")
+          : reason === "not_parent"
+            ? tr("unlock.notParent")
+            : reason === "wrong_password"
+              ? tr("unlock.wrongPassword")
+              : tr("unlock.wrong"),
+    );
 
   const submitPassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,8 +110,9 @@ export function ParentUnlock({ locale, onClose }: { locale: Locale; onClose: () 
               </div>
             ) : null}
             <div className="mb-5 flex justify-center gap-3" aria-label="PIN">
-              {Array.from({ length: 6 }, (_, i) => (
-                <span key={i} className={`h-5 w-5 rounded-full ${i < pin.length ? "bg-ink" : "bg-line"}`} />
+              {/* One dot per digit typed (a PIN is 4 to 6 digits; the tablet doesn't reveal how many). */}
+              {Array.from({ length: Math.max(4, pin.length) }, (_, i) => (
+                <span key={i} data-testid="pin-dot" className={`h-5 w-5 rounded-full ${i < pin.length ? "bg-ink" : "bg-line"}`} />
               ))}
             </div>
             <div className="grid grid-cols-3 gap-3">

@@ -11,7 +11,7 @@ import { appSecret, verifyPin } from "@/lib/crypto";
 // Parent unlock from the kiosk (SPEC §7 "Getting into Admin from the tablet").
 // These are parent-authentication actions, not kid operations.
 
-export type UnlockResult = { ok: true } | { ok: false; reason: "wrong" | "locked" | "not_kiosk" };
+export type UnlockResult = { ok: true } | { ok: false; reason: "wrong" | "bad_email" | "not_parent" | "wrong_password" | "locked" | "not_kiosk" };
 
 const PIN_MAX_TRIES = 5;
 const PIN_LOCK_MINUTES = 5;
@@ -29,6 +29,13 @@ async function startAdminMode(userId: string, householdId: string) {
   );
 }
 
+async function parentEmails(householdId: string): Promise<string[]> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("household_members").select("user_id").eq("household_id", householdId);
+  const users = await Promise.all((data ?? []).map((m) => admin.auth.admin.getUserById(m.user_id)));
+  return users.map((u) => u.data.user?.email?.toLowerCase() ?? "").filter(Boolean);
+}
+
 async function isMember(householdId: string, userId: string) {
   const { data } = await createAdminClient()
     .from("household_members")
@@ -43,11 +50,15 @@ export async function unlockWithPassword(input: { email: string; password: strin
   const kiosk = await resolveKiosk();
   if (kiosk.status !== "ok") return { ok: false, reason: "not_kiosk" };
   const parsed = z.object({ email: z.email(), password: z.string().min(1).max(200) }).safeParse(input);
-  if (!parsed.success) return { ok: false, reason: "wrong" };
+  if (!parsed.success) return { ok: false, reason: z.email().safeParse(input.email).success ? "wrong_password" : "bad_email" };
+
+  // Say which field is wrong. Only this home's own parents are compared (the tablet already belongs
+  // to it), so this tells nothing about accounts elsewhere.
+  if (!(await parentEmails(kiosk.ctx.householdId)).includes(parsed.data.email.toLowerCase())) return { ok: false, reason: "not_parent" };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword(parsed.data);
-  if (error || !data.user) return { ok: false, reason: "wrong" };
+  if (error || !data.user) return { ok: false, reason: "wrong_password" };
 
   // Only parents of *this* tablet's household may unlock it.
   if (!(await isMember(kiosk.ctx.householdId, data.user.id))) {

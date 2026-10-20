@@ -56,6 +56,7 @@ const ChoreInput = z
     /** A new chore started from a template (its ready-made translations are reused when the text is unchanged). */
     template_key: z.string().min(1).max(40).nullish(),
   })
+  .refine((c) => !c.available_from || !c.available_until || c.available_from <= c.available_until, { message: "b.err.untilBeforeFrom" })
   .and(repeat);
 
 /** Stable ids (kept on edit so ticks survive a rename), sections trimmed to null when blank. */

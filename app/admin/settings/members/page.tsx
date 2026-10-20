@@ -33,7 +33,10 @@ export default async function MembersPage() {
       <SettingsNav active="/admin/settings/members" locale={ctx.locale} />
       <MembersList
         members={withEmail}
-        invites={(invites ?? []).filter((i) => new Date(i.expires_at) > new Date())}
+        // An invite for someone who is already a parent here is done (no Resend / Cancel).
+        invites={(invites ?? []).filter(
+          (i) => new Date(i.expires_at) > new Date() && !withEmail.some((m) => m.email.toLowerCase() === i.email.toLowerCase()),
+        )}
         meId={ctx.user.id}
         isOwner={ctx.isOwner}
         limit={LIMITS.parents}

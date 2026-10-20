@@ -42,7 +42,13 @@ export async function POST(req: Request) {
   const { data, error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
   if (error || !data.user || data.user.id !== who.user.id) return go(`/login?next=${encodeURIComponent(next)}`);
 
-  if (field("mode") !== "kiosk") return go(next);
+  if (field("mode") !== "kiosk") {
+    // The app is in parent mode: a kiosk cookie left from an earlier kids' mode on this device would
+    // make the pages think they're on the kids' tablet (web tab bar under the app's own).
+    await clearKioskCookie();
+    (await cookies()).delete(ADMIN_MODE_COOKIE);
+    return go(next);
+  }
 
   const ctx = await loadParentContext(supabase, data.user);
   if (!ctx) return go("/onboarding/home");

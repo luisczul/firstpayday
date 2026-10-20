@@ -376,11 +376,13 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
     <main lang={locale} className="min-h-dvh pb-10">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-paper/90 backdrop-blur">
-      <header className="flex items-center gap-4 px-6 py-3">
+      {/* Below the status bar when the page runs edge to edge; a long name shortens with "…" instead of
+          pushing the sound and money buttons around. */}
+      <header className="flex items-center gap-4 px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
         <button
           type="button"
           onClick={() => router.push("/kids")}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-card text-ink shadow-[var(--shadow-card)] active:scale-95"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-card text-ink shadow-[var(--shadow-card)] active:scale-95"
           aria-label={tr("kid.back")}
         >
           <svg aria-hidden viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2.75} strokeLinecap="round" strokeLinejoin="round">
@@ -388,10 +390,12 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
             <path d="M11 6l-6 6 6 6" />
           </svg>
         </button>
-        <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={68} />
-        <h1 className="font-display text-[2.7rem] leading-none font-extrabold text-ink">{kid.name}</h1>
+        <span className="shrink-0">
+          <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={68} />
+        </span>
+        <h1 className="min-w-0 flex-1 truncate py-1 font-display text-[2.7rem] leading-none font-extrabold text-ink" title={kid.name}>{kid.name}</h1>
 
-        <div className="ml-auto flex items-center gap-4">
+        <div className="ml-auto flex shrink-0 items-center gap-4">
           <button
             type="button"
             onClick={() => setSoundOn(!soundOn)}
@@ -409,7 +413,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
             className="flex min-h-14 flex-col items-end rounded-3xl bg-card px-5 py-1.5 shadow-[var(--shadow-card)] active:scale-[0.98]"
             aria-label={tr("kid.myMoney")}
           >
-            <span className="font-display text-[2rem] font-extrabold leading-tight text-moss">
+            <span className="font-display text-[2rem] font-extrabold leading-tight whitespace-nowrap text-moss">
               {money(kid.balanceCents)} <span className="font-sans text-lg font-bold text-ink-soft">{tr("kid.inMyBank")}</span>
             </span>
             {kid.pendingCents > 0 ? (

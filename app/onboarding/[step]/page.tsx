@@ -4,6 +4,8 @@ import { HomeStep } from "./HomeStep";
 import { KidsStep } from "./KidsStep";
 import { ChoresStep } from "./ChoresStep";
 import { TabletStep } from "./TabletStep";
+import { JoinInvites } from "./JoinInvites";
+import { pendingInvitesFor } from "@/lib/invites/pending";
 import { parentT } from "@/lib/i18n/parent";
 import { ParentLocaleProvider } from "@/lib/i18n/parent/client";
 import { onboardingLocale } from "../locale";
@@ -19,6 +21,8 @@ export default async function OnboardingStep({ params }: { params: Promise<{ ste
   const ctx = await getParentContext();
   if (!ctx && step !== "home") redirect("/onboarding/home");
 
+  // Invited to an existing home (and signed up without the email's link): offer to join it first.
+  const invites = step === "home" && !ctx && user.email ? await pendingInvitesFor(user.email) : [];
   const index = STEPS.indexOf(step as Step);
   // Re-provided per step: the layout can stay mounted while the household language changes.
   const locale = await onboardingLocale();
@@ -31,6 +35,7 @@ export default async function OnboardingStep({ params }: { params: Promise<{ ste
           <li key={s} className={`h-2 flex-1 rounded-full ${i <= index ? "bg-maple" : "bg-line"}`} aria-current={i === index ? "step" : undefined} />
         ))}
       </ol>
+      {invites.length ? <JoinInvites invites={invites} /> : null}
       {step === "home" ? (
         <HomeStep
           initial={ctx ? { name: ctx.household.name, timezone: ctx.household.timezone, currency: ctx.household.currency, locale: ctx.locale } : null}

@@ -12,6 +12,9 @@ import { CLAIM_WINDOWS, DEFAULT_CLAIM_WINDOW, type ClaimWindow } from "@/lib/sch
 import { MAX_SECTION_LABEL, MAX_SUBTASKS, MAX_SUBTASK_TITLE, type Subtask } from "@/lib/schedule/checklist";
 import { useKeyboardOpen } from "@/lib/useKeyboardOpen";
 
+const localIsoDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 export interface EditableChore {
   id: string | null;
   title: string;
@@ -104,6 +107,8 @@ export function ChoreEditor({
   const [qty, setQty] = useState<number | null>(initial.max_quantity);
   const [days, setDays] = useState<number | null>(initial.repeat_every_days ?? 14);
   const [error, setError] = useState<string | null>(null);
+  // This device's today (yyyy-mm-dd): the date pickers don't offer days that are already over.
+  const [today] = useState(() => localIsoDate(new Date()));
   const [rows, setRows] = useState<StepRow[]>(() => toRows(initial.subtasks ?? []));
   const [pending, start] = useTransition();
   const stepCount = rows.filter((r) => r.kind === "step").length;
@@ -123,10 +128,14 @@ export function ChoreEditor({
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!c.title.trim()) return setError(t("b.err.choreTitle"));
     const cents = parseMoneyToCents(price);
     if (cents === null || cents < 0) return setError(t("b.editor.errPrice"));
     if (qty === null || qty < 1) return setError(t("b.editor.errQty"));
     if (c.repeat_kind === "every_n_days" && (days === null || days < 1)) return setError(t("b.editor.errDays"));
+    if (c.available_from && c.available_until && c.available_until < c.available_from) return setError(t("b.err.untilBeforeFrom"));
+    // A date that is already over would hide the chore right away (an unchanged one is left alone).
+    if (c.available_until && c.available_until < today && c.available_until !== initial.available_until) return setError(t("b.editor.errUntilPast"));
     const input: ChoreFormInput = {
       title: c.title,
       description: c.description || null,
@@ -156,7 +165,8 @@ export function ChoreEditor({
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    // Our own messages (they say what's wrong) instead of the browser's bubbles for dates and the title.
+    <form onSubmit={submit} noValidate className="flex flex-col gap-5">
       {isChecklist ? (
         <p className="rounded-xl border-l-[6px] border-plum bg-plum/10 px-4 py-3 font-bold text-plum">{t("b.editor.routineHeader")}</p>
       ) : null}
@@ -351,10 +361,20 @@ export function ChoreEditor({
 
       <div className="grid grid-cols-2 gap-4">
         <Field label={t("b.editor.from")} hint={t("b.editor.fromHint")}>
-          <Input type="date" value={c.available_from ?? ""} onChange={(e) => set("available_from", e.target.value || null)} />
+          <Input
+            type="date"
+            value={c.available_from ?? ""}
+            min={initial.available_from && initial.available_from < today ? initial.available_from : today}
+            onChange={(e) => set("available_from", e.target.value || null)}
+          />
         </Field>
         <Field label={t("b.editor.until")}>
-          <Input type="date" value={c.available_until ?? ""} onChange={(e) => set("available_until", e.target.value || null)} />
+          <Input
+            type="date"
+            value={c.available_until ?? ""}
+            min={c.available_from && c.available_from > today ? c.available_from : today}
+            onChange={(e) => set("available_until", e.target.value || null)}
+          />
         </Field>
       </div>
 

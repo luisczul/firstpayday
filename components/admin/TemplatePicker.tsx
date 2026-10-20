@@ -47,6 +47,7 @@ export function TemplatePicker({
   excludeKeys = [],
   submitLabel,
   busy,
+  inSheet = false,
   onSubmit,
 }: {
   templates: ChoreTemplate[];
@@ -55,6 +56,8 @@ export function TemplatePicker({
   excludeKeys?: string[];
   submitLabel: string;
   busy?: boolean;
+  /** Inside a Sheet: the bar sits flush with the sheet's bottom edge (over its padding). */
+  inSheet?: boolean;
   onSubmit: (picks: TemplateSelection[]) => void;
 }) {
   const available = useMemo(() => templates.filter((t) => !excludeKeys.includes(t.key)), [templates, excludeKeys]);
@@ -176,7 +179,9 @@ export function TemplatePicker({
       {/* Not pinned while the keyboard is up (typing a price), so it doesn't ride on top of the keyboard. */}
       <div
         data-testid="template-picker-footer"
-        className="unpin-on-keyboard sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur"
+        className={`unpin-on-keyboard sticky flex items-center justify-between gap-3 border-t border-line bg-paper/95 backdrop-blur ${
+          inSheet ? "-bottom-5 -mx-5 -mb-5 px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]" : "bottom-0 -mx-4 px-4 py-3"
+        }`}
       >
         <span className="font-bold text-ink-soft">{tr("b.tpl.selected", { n: selected.length })}</span>
         <Button

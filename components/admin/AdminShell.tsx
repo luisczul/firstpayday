@@ -169,7 +169,7 @@ export function AdminShell(props: {
         {/* Top bar */}
         {props.embedded ? null : (
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/90 px-4 py-2.5 backdrop-blur">
-          <span className="min-w-0 truncate font-display text-lg font-bold text-ink md:hidden">{props.householdName}</span>
+          <span className="min-w-0 truncate font-display text-lg font-bold text-ink md:hidden"><span aria-hidden>🏠 </span>{props.householdName}</span>
           <div className="ml-auto flex items-center gap-2">
             {props.platformHref ? (
               <a href={props.platformHref} data-testid="platform-shortcut-mobile" aria-label="Control panel" title="Control panel" className={`${buttonClass("ghost", "sm")} md:hidden`}>
