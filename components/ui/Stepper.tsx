@@ -18,9 +18,10 @@ export function Stepper({
 }) {
   const clamp = (n: number) => Math.max(min, Math.min(max, n));
   const btn =
-    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-card text-2xl font-extrabold text-ink ring-1 ring-line active:scale-95 disabled:opacity-40";
+    "flex h-12 w-11 shrink-0 items-center justify-center rounded-xl bg-card text-2xl font-extrabold text-ink ring-1 ring-line active:scale-95 disabled:opacity-40";
   return (
-    <div className="flex items-center gap-2">
+    // Shrinks to fit a half-width column on a phone (the + used to run off the screen).
+    <div className="flex w-full max-w-[13rem] min-w-0 items-center gap-1.5">
       <button type="button" aria-label={`Less ${label}`} className={btn} disabled={disabled || (value !== null && value <= min)} onClick={() => onChange(clamp((value ?? min + 1) - 1))}>
         −
       </button>
@@ -36,7 +37,7 @@ export function Stepper({
         onBlur={() => {
           if (value !== null && value < min) onChange(min);
         }}
-        className={`h-12 w-16 rounded-xl bg-card text-center text-xl font-extrabold text-ink ring-1 outline-none focus:ring-2 focus:ring-amber ${value === null ? "ring-2 ring-maple" : "ring-line"}`}
+        className={`h-12 w-16 min-w-0 flex-1 rounded-xl bg-card text-center text-xl font-extrabold text-ink ring-1 outline-none focus:ring-2 focus:ring-amber ${value === null ? "ring-2 ring-maple" : "ring-line"}`}
       />
       <button type="button" aria-label={`More ${label}`} className={btn} disabled={disabled || (value !== null && value >= max)} onClick={() => onChange(clamp((value ?? min - 1) + 1))}>
         +

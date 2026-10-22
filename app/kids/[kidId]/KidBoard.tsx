@@ -378,7 +378,8 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
       <div className="sticky top-0 z-30 bg-paper/90 backdrop-blur">
       {/* Below the status bar when the page runs edge to edge; a long name shortens with "…" instead of
           pushing the sound and money buttons around. */}
-      <header className="flex items-center gap-4 px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3">
+      {/* On a narrow tablet the sound and money buttons drop to a second line, so the name always shows. */}
+      <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3" data-testid="kid-header">
         <button
           type="button"
           onClick={() => router.push("/kids")}
@@ -393,7 +394,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         <span className="shrink-0">
           <KidAvatar name={kid.name} color={kid.color} avatarUrl={kid.avatarUrl} size={68} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate py-1 font-display text-[2.7rem] leading-none font-extrabold text-ink" title={kid.name}>{kid.name}</h1>
+        <h1 className="min-w-0 flex-1 truncate py-1 font-display text-[clamp(2rem,6vw,2.7rem)] leading-none font-extrabold text-ink" title={kid.name}>{kid.name}</h1>
 
         <div className="ml-auto flex shrink-0 items-center gap-4">
           <button

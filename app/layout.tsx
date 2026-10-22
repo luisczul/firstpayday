@@ -4,6 +4,7 @@ import { brand } from "@/lib/brand";
 import { appUrl } from "@/lib/env";
 import { marketing } from "@/lib/i18n/marketing";
 import { getSiteLang } from "@/lib/i18n/marketing/server";
+import { NativePullGuard } from "@/components/app/NativePullGuard";
 import "./globals.css";
 
 // Self-hosted variable fonts (SIL Open Font License): no third-party requests at runtime or build.
@@ -51,7 +52,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = await getSiteLang();
   return (
     <html lang={lang} data-theme="fall" className={`${fraunces.variable} ${nunito.variable}`}>
-      <body className="min-h-dvh antialiased">{children}</body>
+      <body className="min-h-dvh antialiased">
+        {children}
+        <NativePullGuard />
+      </body>
     </html>
   );
 }

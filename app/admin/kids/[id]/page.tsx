@@ -91,11 +91,11 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
         <div className={`grid gap-4 ${writable ? "grid-cols-2 content-start md:grid-cols-1" : "col-span-2 grid-cols-2"}`}>
           <Card>
             <p className="text-sm font-bold text-ink-soft">{t("a.kid.balance")}</p>
-            <p className="font-display text-3xl font-bold text-moss">{money(bal?.balance_cents ?? 0)}</p>
+            <p className="font-display text-[clamp(1.25rem,6vw,1.875rem)] leading-tight font-bold [overflow-wrap:anywhere] text-moss" data-testid="kid-money">{money(bal?.balance_cents ?? 0)}</p>
           </Card>
           <Card>
             <p className="text-sm font-bold text-ink-soft">{t("a.kid.waiting")}</p>
-            <p className="font-display text-3xl font-bold text-amber">{money(bal?.pending_cents ?? 0)}</p>
+            <p className="font-display text-[clamp(1.25rem,6vw,1.875rem)] leading-tight font-bold [overflow-wrap:anywhere] text-amber" data-testid="kid-money">{money(bal?.pending_cents ?? 0)}</p>
           </Card>
         </div>
         {writable ? (

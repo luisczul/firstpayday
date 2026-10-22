@@ -38,9 +38,10 @@ export function MembersList({
         <ul className="divide-y divide-line">
           {members.map((m) => (
             <li key={m.user_id} className="flex flex-wrap items-center gap-3 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="block font-bold">{m.display_name || m.email}</span>
-                {m.display_name ? <span className="block text-xs text-ink-soft">{m.email}</span> : null}
+              <span className="min-w-0 flex-1 basis-[12rem]">
+                {/* Long emails wrap instead of running under the role pill. */}
+                <span className="block font-bold [overflow-wrap:anywhere]" data-testid="member-name">{m.display_name || m.email}</span>
+                {m.display_name ? <span className="block text-xs text-ink-soft [overflow-wrap:anywhere]">{m.email}</span> : null}
               </span>
               <Badge tone={m.role === "owner" ? "warn" : "neutral"}>{roleLabel(m.role)}</Badge>
               {(isOwner && m.user_id !== meId) || m.user_id === meId ? (
@@ -63,8 +64,8 @@ export function MembersList({
           ))}
           {invites.map((i) => (
             <li key={i.id} className="flex flex-wrap items-center gap-3 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="block font-bold text-ink-soft">{i.email}</span>
+              <span className="min-w-0 flex-1 basis-[12rem]">
+                <span className="block font-bold text-ink-soft [overflow-wrap:anywhere]">{i.email}</span>
                 <span className="block text-xs text-ink-soft">
                   {t("b.members.invited", { date: new Date(i.expires_at).toLocaleDateString(intlLocale(locale)) })}
                 </span>

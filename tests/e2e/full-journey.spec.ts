@@ -251,7 +251,8 @@ test("6. PIN unlock on the tablet, wrong PIN locks after 5 tries", async () => {
   for (let attempt = 0; attempt < 5; attempt++) {
     for (const d of "1111") await kid.getByRole("button", { name: d, exact: true }).click();
     await kid.getByRole("button", { name: "✓" }).click();
-    await expect(kid.getByRole("alert")).toBeVisible();
+    // Not Next's (empty) route announcer, which is an alert too.
+    await expect(kid.getByRole("alert").filter({ hasText: /\S/ })).toBeVisible();
   }
   await expect(kid.getByText(/Too many tries/)).toBeVisible();
   await kid.getByRole("button", { name: "Cancel" }).click();
