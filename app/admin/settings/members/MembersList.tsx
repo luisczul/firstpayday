@@ -43,6 +43,8 @@ export function MembersList({
                 <span className="block font-bold [overflow-wrap:anywhere]" data-testid="member-name">{m.display_name || m.email}</span>
                 {m.display_name ? <span className="block text-xs text-ink-soft [overflow-wrap:anywhere]">{m.email}</span> : null}
               </span>
+              {/* Pill and buttons stay together (on a narrow phone they move under the email as one row). */}
+              <div className="ml-auto flex shrink-0 items-center gap-3">
               <Badge tone={m.role === "owner" ? "warn" : "neutral"}>{roleLabel(m.role)}</Badge>
               {(isOwner && m.user_id !== meId) || m.user_id === meId ? (
                 <Button
@@ -60,6 +62,7 @@ export function MembersList({
                   {m.user_id === meId ? t("b.members.leave") : t("b.common.remove")}
                 </Button>
               ) : null}
+              </div>
             </li>
           ))}
           {invites.map((i) => (
@@ -70,6 +73,7 @@ export function MembersList({
                   {t("b.members.invited", { date: new Date(i.expires_at).toLocaleDateString(intlLocale(locale)) })}
                 </span>
               </span>
+              <div className="ml-auto flex shrink-0 items-center gap-3">
               <Badge>{roleLabel(i.role)}</Badge>
               {isOwner ? (
                 <>
@@ -97,6 +101,7 @@ export function MembersList({
                   </Button>
                 </>
               ) : null}
+              </div>
             </li>
           ))}
         </ul>

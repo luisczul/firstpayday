@@ -89,13 +89,14 @@ export default async function KidPage({ params }: { params: Promise<{ id: string
 
       <div className={`grid gap-4 ${writable ? "md:grid-cols-[1fr_1.6fr]" : "grid-cols-2"}`}>
         <div className={`grid gap-4 ${writable ? "grid-cols-2 content-start md:grid-cols-1" : "col-span-2 grid-cols-2"}`}>
+          {/* Amounts may wrap between the currency and the number (Intl uses a no-break space there). */}
           <Card>
             <p className="text-sm font-bold text-ink-soft">{t("a.kid.balance")}</p>
-            <p className="font-display text-[clamp(1.25rem,6vw,1.875rem)] leading-tight font-bold [overflow-wrap:anywhere] text-moss" data-testid="kid-money">{money(bal?.balance_cents ?? 0)}</p>
+            <p className="font-display text-[clamp(1.25rem,6vw,1.875rem)] leading-tight font-bold text-moss" data-testid="kid-money">{money(bal?.balance_cents ?? 0).replace(/\u00a0/g, " ")}</p>
           </Card>
           <Card>
             <p className="text-sm font-bold text-ink-soft">{t("a.kid.waiting")}</p>
-            <p className="font-display text-[clamp(1.25rem,6vw,1.875rem)] leading-tight font-bold [overflow-wrap:anywhere] text-amber" data-testid="kid-money">{money(bal?.pending_cents ?? 0)}</p>
+            <p className="font-display text-[clamp(1.25rem,6vw,1.875rem)] leading-tight font-bold text-amber" data-testid="kid-money">{money(bal?.pending_cents ?? 0).replace(/\u00a0/g, " ")}</p>
           </Card>
         </div>
         {writable ? (

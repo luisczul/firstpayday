@@ -48,7 +48,8 @@ export function KidPicker({ initial }: { initial: { household: KioskHousehold; k
         <p className="mx-auto mt-6 rounded-full bg-plum px-6 py-3 text-xl font-bold text-white">{tr("kid.paused")}</p>
       ) : null}
 
-      <div className="flex flex-1 flex-wrap items-center justify-center gap-x-14 gap-y-10 px-8 py-10">
+      {/* Pictures line up at the top even when one kid's name takes two lines. */}
+      <div className="flex flex-1 flex-wrap content-center items-start justify-center gap-x-14 gap-y-10 px-8 py-10">
         {kids.length === 0 ? <p className="text-2xl font-bold text-ink-soft">{tr("kid.noKids")}</p> : null}
         {kids.map((kid, i) => (
           <motion.button

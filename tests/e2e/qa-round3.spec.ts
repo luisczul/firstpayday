@@ -52,6 +52,8 @@ test("phone: role pill clear of a long email, balances inside their boxes, max q
 
   // FP_022: "CLP 0.00" stays inside the Balance / Waiting for check boxes.
   const { data: kid } = await admin.from("kids").select("id").eq("household_id", householdId).single();
+  // A big amount too (the tester saw 0.00; 12,345.67 is the harder case).
+  await admin.from("ledger_entries").insert({ household_id: householdId, kid_id: kid!.id, kind: "adjustment", amount_cents: 1234567 });
   await page.goto(`/admin/kids/${kid!.id}`);
   for (const m of await page.getByTestId("kid-money").all()) {
     const fits = await m.evaluate((el) => {
@@ -105,24 +107,30 @@ test("in the app: a pull down doesn't reload while a sheet is open or the conten
   await ctx.close();
 });
 
-test("kids' tablet at 600px: the name shows, nothing runs off the right edge (KT_003/KT_004)", async ({ browser }) => {
-  const ctx = await browser.newContext({ viewport: { width: 600, height: 960 }, isMobile: true, hasTouch: true });
+for (const [w, h, name] of [[600, 960, "Daniela"], [800, 1280, "Maximiliano Alejandro"]] as const) {
+test(`kids' tablet at ${w}px: the whole name shows, nothing runs off the right edge (KT_003/KT_004)`, async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
-  const { householdId } = await signUp(page, { kids: ["Daniela"] });
+  const { householdId } = await signUp(page, { kids: [name, "Sid"] });
   await admin.from("households").update({ currency: "CLP" }).eq("id", householdId);
   await page.goto("/admin/approvals");
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: /Kids Mode/ }).first().click();
   await expect(page.getByRole("heading", { name: "Who's here?" })).toBeVisible({ timeout: 30_000 });
-  await page.getByRole("button", { name: /Daniela/ }).click();
-  const heading = page.getByRole("heading", { name: "Daniela" });
+  await page.waitForTimeout(800); // the pictures slide in
+  // KT_003: on Who's here, the pictures line up even when one name takes two lines.
+  const tops = await page.locator("main button").filter({ hasText: /Sid|Daniela|Maximiliano/ }).evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+  if (w === 800) expect(new Set(tops).size).toBe(1);
+  await page.getByRole("button", { name: new RegExp(name) }).click();
+  const heading = page.getByRole("heading", { name });
   await expect(heading).toBeVisible({ timeout: 40_000 });
   // The whole name is readable (not squeezed to nothing).
   const fullWidth = await heading.evaluate((el) => el.scrollWidth <= el.clientWidth && el.clientWidth > 60);
   expect(fullWidth).toBe(true);
   const money = await box(page.getByRole("button", { name: "My money" }));
-  expect(money.x + money.width).toBeLessThanOrEqual(600);
+  expect(money.x + money.width).toBeLessThanOrEqual(w);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
   await ctx.close();
 });
+}
