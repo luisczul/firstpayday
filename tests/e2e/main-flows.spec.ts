@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { pickCurrency } from "./pickCurrency";
 
 // The three main flows (SPEC §15): onboarding → kiosk, kid submits,
 // parent reviews on a phone (send back → fixed → approve).
@@ -37,7 +38,7 @@ test("1. a new parent sets up a household and a kids' tablet", async ({ browser 
 
   await expect(page.getByRole("heading", { name: /Name your home/ })).toBeVisible();
   await page.getByLabel("Home name").fill("E2E family");
-  await page.getByLabel("Currency").selectOption("CAD");
+  await pickCurrency(page, "CAD");
   await page.getByRole("button", { name: /add your kids/ }).click();
 
   await expect(page.getByRole("heading", { name: /Add your kids/ })).toBeVisible();

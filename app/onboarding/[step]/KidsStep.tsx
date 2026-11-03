@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addKids } from "@/app/actions/kids";
 import { AvatarPicker, saveAvatarChoice, type AvatarChoice } from "@/components/admin/AvatarPicker";
 import { Alert, Button, Input } from "@/components/ui";
 import { useParentT } from "@/lib/i18n/parent/client";
+import { useStepSaving } from "../useStepSaving";
 
 const COLORS = ["#E08A1E", "#B8431F", "#6B7A2E", "#7A3B4A", "#2F6F8F", "#C9962B", "#8A5A9E", "#3C8D6E"];
 
@@ -16,7 +17,7 @@ export function KidsStep({ existing }: { existing: { id: string; name: string; c
     existing.length ? [] : [{ name: "", photo: null }],
   );
   const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [pending, setPending] = useStepSaving();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,9 +27,13 @@ export function KidsStep({ existing }: { existing: { id: string; name: string; c
       if (existing.length) return router.push("/onboarding/chores");
       return setError(t("a.onb.kids.atLeastOne"));
     }
-    start(async () => {
+    setPending(true);
+    void (async () => {
       const r = await addKids(named.map((k) => k.name));
-      if (!r.ok) return setError(r.message);
+      if (!r.ok) {
+        setPending(false);
+        return setError(r.message);
+      }
       const { kids, householdId } = r.data!;
       await Promise.all(
         kids.map(async (kid, i) => {
@@ -36,8 +41,9 @@ export function KidsStep({ existing }: { existing: { id: string; name: string; c
           if (photo) await saveAvatarChoice(householdId, kid.id, photo);
         }),
       );
+      // Stays "Saving…" until the next step shows (or the parent comes back to this one).
       router.push("/onboarding/chores");
-    });
+    })();
   };
 
   return (

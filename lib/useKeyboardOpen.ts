@@ -23,9 +23,21 @@ export function useKeyboardOpen(): void {
   useEffect(() => {
     if (!window.matchMedia("(pointer: coarse)").matches) return;
     const root = document.documentElement;
+    const vv = window.visualViewport;
+    // iOS slides the keyboard away over ~0.3s after focus leaves (e.g. "Done"). Re-pinning at once
+    // parked the bar above the still-closing keyboard, so wait until the visible area is full height.
+    const keyboardStillUp = () => !!vv && window.innerHeight - vv.height > 120;
+    let waiting: ReturnType<typeof setTimeout> | undefined;
     const update = () => {
-      if (isTypingElement(document.activeElement)) root.setAttribute("data-keyboard", "");
-      else root.removeAttribute("data-keyboard");
+      clearTimeout(waiting);
+      vv?.removeEventListener("resize", update);
+      if (isTypingElement(document.activeElement)) return root.setAttribute("data-keyboard", "");
+      if (!root.hasAttribute("data-keyboard") || !keyboardStillUp()) return root.removeAttribute("data-keyboard");
+      vv?.addEventListener("resize", update);
+      waiting = setTimeout(() => {
+        vv?.removeEventListener("resize", update);
+        if (!isTypingElement(document.activeElement)) root.removeAttribute("data-keyboard");
+      }, 1000);
     };
     // Re-pin only once the tap that took focus away has landed. Re-pinning on pointerdown slid the
     // bar under the finger, so the tap hit the bar (e.g. "Add chore") instead of the button pressed.
@@ -53,6 +65,8 @@ export function useKeyboardOpen(): void {
     const settled = setTimeout(update, 50);
     return () => {
       clearTimeout(settled);
+      clearTimeout(waiting);
+      vv?.removeEventListener("resize", update);
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointerup", up, true);
       document.removeEventListener("pointercancel", up, true);

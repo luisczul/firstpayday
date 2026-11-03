@@ -7,7 +7,17 @@ const COMMON = ["CAD", "USD", "EUR", "GBP", "MXN", "BRL", "AUD", "NZD", "CHF", "
  * Every currency the browser/server knows that uses cents (2 decimals), so prices like $0.50 work.
  * The household currency is chosen on its own: it never follows the language.
  */
-export function currencyOptions(locale: string): { code: string; label: string; common: boolean }[] {
+/** "₹", "$", "€"… (the code itself when a currency has no symbol of its own). */
+export function currencySymbol(code: string, locale: string): string {
+  try {
+    const parts = new Intl.NumberFormat(intlLocale(locale), { style: "currency", currency: code, currencyDisplay: "narrowSymbol" }).formatToParts(0);
+    return parts.find((p) => p.type === "currency")?.value ?? code;
+  } catch {
+    return code;
+  }
+}
+
+export function currencyOptions(locale: string): { code: string; name: string; label: string; common: boolean }[] {
   let all: string[] = [];
   try {
     all = Intl.supportedValuesOf("currency");
@@ -22,11 +32,14 @@ export function currencyOptions(locale: string): { code: string; label: string; 
       return false;
     }
   };
-  const label = (code: string) => `${code} · ${String(names.of(code))}`;
-  const common = COMMON.map((code) => ({ code, label: label(code), common: true }));
+  const opt = (code: string, common: boolean) => {
+    const name = String(names.of(code));
+    return { code, name, label: `${code} · ${name}`, common };
+  };
+  const common = COMMON.map((code) => opt(code, true));
   const rest = all
     .filter((c) => !(COMMON as readonly string[]).includes(c) && twoDecimals(c))
-    .map((code) => ({ code, label: label(code), common: false }))
+    .map((code) => opt(code, false))
     .sort((a, b) => a.label.localeCompare(b.label, intlLocale(locale)));
   return [...common, ...rest];
 }
@@ -40,9 +53,9 @@ export function isKnownCurrency(code: string): boolean {
   }
 }
 
-export const CURRENCY_COPY: Record<string, { common: string; all: string; hint: string }> = {
-  en: { common: "Most used", all: "All currencies", hint: "Any currency: it's up to you." },
-  fr: { common: "Les plus utilisées", all: "Toutes les devises", hint: "N'importe quelle devise : à vous de choisir." },
-  es: { common: "Las más usadas", all: "Todas las monedas", hint: "Cualquier moneda: tú eliges." },
-  pt: { common: "Mais usadas", all: "Todas as moedas", hint: "Qualquer moeda: você escolhe." },
+export const CURRENCY_COPY: Record<string, { common: string; all: string; hint: string; search: string; none: string }> = {
+  en: { common: "Most used", all: "All currencies", hint: "Any currency: it's up to you.", search: "Search: rupee, INR, ₹…", none: "No currency matches." },
+  fr: { common: "Les plus utilisées", all: "Toutes les devises", hint: "N'importe quelle devise : à vous de choisir.", search: "Rechercher : roupie, INR, ₹…", none: "Aucune devise ne correspond." },
+  es: { common: "Las más usadas", all: "Todas las monedas", hint: "Cualquier moneda: tú eliges.", search: "Buscar: rupia, INR, ₹…", none: "Ninguna moneda coincide." },
+  pt: { common: "Mais usadas", all: "Todas as moedas", hint: "Qualquer moeda: você escolhe.", search: "Buscar: rupia, INR, ₹…", none: "Nenhuma moeda encontrada." },
 };

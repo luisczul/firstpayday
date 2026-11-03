@@ -3,10 +3,11 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { createClient as createPlainClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ADMIN_MODE_COOKIE, KIOSK_COOKIE, adminModeCookieOptions, signAdminMode } from "@/lib/auth/adminMode";
-import { appUrl } from "@/lib/env";
+import { appUrl, publicEnv } from "@/lib/env";
 import { asLocale, localeFromBrowser, type Locale } from "@/lib/i18n";
 import { authCopy } from "@/lib/i18n/authCopy";
 import { SIGNUP_LANG_COOKIE } from "@/lib/i18n/marketing/routes";
@@ -110,7 +111,12 @@ export async function requestReset(_: AuthState, form: FormData): Promise<AuthSt
   const m = authCopy(await visitorLocale(form));
   const email = EmailInput.safeParse(form.get("email"));
   if (!email.success) return { error: m("validEmail") };
-  const supabase = await createClient();
+  // Not the cookie (PKCE) client: a PKCE link only works in the browser that asked for it, and the
+  // iOS app asks from its in-app Safari while the email opens in Mail / Safari, so every link
+  // looked expired. This flow puts the session in the link itself (read by /reset/update).
+  const supabase = createPlainClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+    auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false },
+  });
   await supabase.auth.resetPasswordForEmail(email.data, {
     redirectTo: `${await origin()}/auth/callback?next=/reset/update`,
   });

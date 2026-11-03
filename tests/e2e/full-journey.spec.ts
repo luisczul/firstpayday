@@ -12,6 +12,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from "@pla
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { loadEnv } from "../../scripts/load-env";
+import { pickCurrency } from "./pickCurrency";
 
 loadEnv();
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -93,7 +94,7 @@ test("1. sign up and set up a 3-kid home in under a minute", async ({ browser })
   await kid.getByRole("button", { name: "Create my account" }).click();
 
   await kid.getByLabel("Home name").fill("Test family");
-  await kid.getByLabel("Currency").selectOption("CAD");
+  await pickCurrency(kid, "CAD");
   await kid.getByRole("button", { name: /add your kids/ }).click();
 
   await kid.getByLabel("Kid 1 name").fill("Mateo");

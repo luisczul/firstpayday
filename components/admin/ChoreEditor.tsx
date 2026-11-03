@@ -359,10 +359,12 @@ export function ChoreEditor({
         </div>
       </Field>
 
+      {/* min-w-0: iPhone date boxes are wider than half a phone and ran into each other. */}
       <div className="grid grid-cols-2 gap-4">
         <Field label={t("b.editor.from")} hint={t("b.editor.fromHint")}>
           <Input
             type="date"
+            className="min-w-0"
             value={c.available_from ?? ""}
             min={initial.available_from && initial.available_from < today ? initial.available_from : today}
             onChange={(e) => set("available_from", e.target.value || null)}
@@ -371,6 +373,7 @@ export function ChoreEditor({
         <Field label={t("b.editor.until")}>
           <Input
             type="date"
+            className="min-w-0"
             value={c.available_until ?? ""}
             min={c.available_from && c.available_from > today ? c.available_from : today}
             onChange={(e) => set("available_until", e.target.value || null)}

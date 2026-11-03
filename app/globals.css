@@ -84,6 +84,34 @@ textarea:focus-visible {
   outline: none;
 }
 
+/*
+ * iPad / iPhone web views draw selects and date boxes at their own small native height and ignore
+ * min-height, so they looked thinner than the text fields next to them. Drop the native look and
+ * draw the chevron ourselves. (Selects that already draw their own chevron use .appearance-none.)
+ */
+select:not(.appearance-none) {
+  -webkit-appearance: none;
+  appearance: none;
+  /* A select is as wide as its longest option; on a phone a long chore name pushed it off screen. */
+  max-width: 100%;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%237a5a48' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 0.75rem;
+}
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  /* iOS gives date boxes a wide built-in width, so two side by side overlapped on a phone. */
+  max-width: 100%;
+}
+/* An empty date box on iOS has no text, so it would otherwise shrink to nothing. */
+input[type="date"]::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  text-align: left;
+}
+
 /* Kids Mode: app-like, no text selection or callouts, no rubber-band. */
 .kiosk {
   user-select: none;

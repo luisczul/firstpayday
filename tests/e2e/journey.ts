@@ -14,6 +14,7 @@ import kidEn from "@/lib/i18n/en.json";
 import kidFr from "@/lib/i18n/fr.json";
 import kidEs from "@/lib/i18n/es.json";
 import kidPt from "@/lib/i18n/pt.json";
+import { pickCurrency } from "./pickCurrency";
 
 /**
  * One complete "from zero" run of the product in a language: public home, signup,
@@ -321,7 +322,7 @@ export function defineJourney(lang: Locale) {
     await expect(tablet.getByRole("heading", { name: pt("a.onb.home.title") })).toBeVisible({ timeout: 60_000 });
     await expect(tablet.getByLabel(pt("a.onb.home.language"))).toHaveValue(lang);
     await tablet.getByLabel(pt("a.onb.home.name")).fill(home);
-    await tablet.getByLabel(pt("a.onb.home.currency")).selectOption(cfg.currency);
+    await pickCurrency(tablet, cfg.currency);
     await audit(tablet, "onb-home");
     await tablet.getByRole("button", { name: pt("a.onb.home.next") }).click();
 

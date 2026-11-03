@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { loadEnv } from "../../scripts/load-env";
+import { pickCurrency } from "./pickCurrency";
 
 loadEnv();
 
@@ -19,7 +20,7 @@ test("onboarding saves the chosen timezone, currency and language", async ({ bro
   // Browser says Los Angeles; the parent picks New York, CAD, English.
   await expect(p.getByLabel("Timezone")).toHaveValue("America/Los_Angeles");
   await p.getByLabel("Timezone").selectOption("America/New_York");
-  await p.getByLabel("Currency").selectOption("CAD");
+  await pickCurrency(p, "CAD");
   await p.getByLabel("Language").selectOption("en");
   await p.getByRole("button", { name: /add your kids/ }).click();
   await expect(p.getByRole("heading", { name: /Add your kids/ })).toBeVisible();
@@ -44,10 +45,11 @@ test("currency is independent of the language; billing page is hidden", async ({
   await p.getByRole("checkbox").check();
   await p.getByRole("button", { name: /Crear/ }).click();
   await p.getByLabel(/Nombre del hogar/).fill(name);
-  const currency = p.getByLabel(/Moneda/);
-  await expect(currency.locator("optgroup")).toHaveCount(2);
-  await expect(currency.locator('option[value="CHF"]')).toHaveText(/CHF · franco suizo/i);
-  await currency.selectOption("CHF");
+  await p.getByTestId("currency-picker").click();
+  await p.getByRole("dialog").getByRole("searchbox").fill("franco suizo");
+  await expect(p.getByRole("option", { name: /CHF/ })).toContainText(/franco suizo/i);
+  await p.keyboard.press("Escape");
+  await pickCurrency(p, "CHF");
   await expect(p.getByLabel(/Idioma/)).toHaveValue("es");
   await p.getByRole("button", { name: /niños|hijos/i }).click();
   await expect(p).toHaveURL(/onboarding\/kids/);

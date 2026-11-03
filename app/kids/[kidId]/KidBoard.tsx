@@ -395,7 +395,8 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         </span>
         <h1 className="min-w-0 flex-[1_1_auto] truncate py-1 font-display text-[clamp(2rem,6vw,2.7rem)] leading-none font-extrabold text-ink" title={kid.name}>{kid.name}</h1>
 
-        <div className="ml-auto flex shrink-0 items-center gap-4">
+        {/* On a phone-width screen (a folded Fold) Sound and money stack instead of running off the edge. */}
+        <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-x-4 gap-y-2">
           <button
             type="button"
             onClick={() => setSoundOn(!soundOn)}
@@ -410,11 +411,11 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           <button
             type="button"
             onClick={() => setShowMoney(true)}
-            className="flex min-h-14 flex-col items-end rounded-3xl bg-card px-5 py-1.5 shadow-[var(--shadow-card)] active:scale-[0.98]"
+            className="flex min-h-14 max-w-full flex-col items-end rounded-3xl bg-card px-5 py-1.5 text-right shadow-[var(--shadow-card)] active:scale-[0.98]"
             aria-label={tr("kid.myMoney")}
           >
-            <span className="font-display text-[2rem] font-extrabold leading-tight whitespace-nowrap text-moss">
-              {money(kid.balanceCents)} <span className="font-sans text-lg font-bold text-ink-soft">{tr("kid.inMyBank")}</span>
+            <span className="flex flex-wrap items-baseline justify-end gap-x-1.5 font-display text-[2rem] font-extrabold leading-tight text-moss">
+              <span className="whitespace-nowrap">{money(kid.balanceCents)}</span> <span className="font-sans text-lg font-bold text-ink-soft">{tr("kid.inMyBank")}</span>
             </span>
             {kid.pendingCents > 0 ? (
               <span className="text-lg font-bold text-amber">{tr("kid.waitingForCheck", { amount: money(kid.pendingCents) })}</span>
@@ -528,7 +529,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                   footer={claimFooter(c)}
                   badge={
                     <>
-                      <span className="inline-flex items-center rounded-full bg-amber px-3 py-1 text-sm font-black tracking-wide text-white uppercase">
+                      <span className="inline-flex items-center rounded-full bg-amber px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
                         {tr("kid.claimMine")}
                       </span>
                       {promoBadge(c)}
@@ -632,11 +633,11 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                   footer={stepsFooter(c)}
                   badge={
                     <>
-                      <span className="inline-flex items-center rounded-full bg-plum px-3 py-1 text-sm font-black tracking-wide text-white uppercase">
+                      <span className="inline-flex items-center rounded-full bg-plum px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
                         🔁 {tr("kid.routine")}
                       </span>
                       {newIds.has(c.choreId) ? (
-                        <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide text-white uppercase">
+                        <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
                           ✨ {tr("kid.new")}
                         </span>
                       ) : null}
@@ -666,7 +667,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                   footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
                   badge={
                     <>
-                      <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide text-white uppercase">
+                      <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
                         ✨ {tr("kid.new")}
                       </span>
                       {promoBadge(c)}

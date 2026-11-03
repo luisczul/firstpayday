@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { authCopy } from "@/lib/i18n/authCopy";
 import { marketing } from "@/lib/i18n/marketing";
 import { getSiteLang } from "@/lib/i18n/marketing/server";
 import { AuthShell } from "../../AuthShell";
@@ -15,7 +16,15 @@ export default async function UpdatePasswordPage() {
   const t = marketing(lang).auth;
   return (
     <AuthShell lang={lang} title={t.newPasswordTitle}>
-      <UpdatePasswordForm t={{ newPassword: t.newPassword, passwordHint: t.passwordHint, savePassword: t.savePassword }} />
+      <UpdatePasswordForm
+        t={{
+          newPassword: t.newPassword,
+          passwordHint: t.passwordHint,
+          savePassword: t.savePassword,
+          expired: authCopy(lang)("resetExpired"),
+          sendNew: t.resetButton,
+        }}
+      />
     </AuthShell>
   );
 }

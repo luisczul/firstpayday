@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { addChoresFromTemplates } from "@/app/actions/chores";
@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui";
 import type { ChoreTemplate } from "@/lib/templates";
 import { type Locale } from "@/lib/i18n";
 import { useParentT } from "@/lib/i18n/parent/client";
+import { useStepSaving } from "../useStepSaving";
 
 export function ChoresStep({
   templates,
@@ -24,7 +25,7 @@ export function ChoresStep({
   const router = useRouter();
   const t = useParentT();
   const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [pending, setPending] = useStepSaving();
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4">
@@ -46,13 +47,15 @@ export function ChoresStep({
         locale={locale}
         busy={pending}
         submitLabel={pending ? t("a.onb.chores.adding") : t("a.onb.chores.next")}
-        onSubmit={(picks) =>
-          start(async () => {
-            const r = await addChoresFromTemplates(picks);
-            if (!r.ok) return setError(r.message);
-            router.push("/onboarding/tablet");
-          })
-        }
+        onSubmit={async (picks) => {
+          setPending(true);
+          const r = await addChoresFromTemplates(picks);
+          if (!r.ok) {
+            setPending(false);
+            return setError(r.message);
+          }
+          router.push("/onboarding/tablet");
+        }}
       />
     </div>
   );

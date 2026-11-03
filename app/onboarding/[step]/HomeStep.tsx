@@ -2,7 +2,8 @@
 
 import { CurrencySelect } from "@/components/admin/CurrencySelect";
 import { CURRENCY_COPY } from "@/lib/money/currencies";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useStepSaving } from "../useStepSaving";
 import { saveHomeStep } from "@/app/actions/household";
 import { Alert, Button, Field, Input, Select } from "@/components/ui";
 import { LOCALES, LOCALE_NAMES, isLocale, localeFromBrowser, type Locale } from "@/lib/i18n";
@@ -52,7 +53,7 @@ export function HomeStep({
   // The page follows the language picked below, live.
   const t = useMemo(() => parentT(locale), [locale]);
   const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [pending, setPending] = useStepSaving();
 
   useEffect(() => {
     if (initial) return;
@@ -74,10 +75,15 @@ export function HomeStep({
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    start(async () => {
+    setPending(true);
+    void (async () => {
+      // On success the action moves on to Add your kids; "Saving…" stays until then.
       const r = await saveHomeStep({ name, timezone, currency, locale });
-      if (r && !r.ok) setError(r.message);
-    });
+      if (r && !r.ok) {
+        setPending(false);
+        setError(r.message);
+      }
+    })();
   };
 
   return (

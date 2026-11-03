@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getParentContext, requireParent } from "@/lib/auth/session";
 import { parentT, type ParentKey } from "@/lib/i18n/parent";
 import { loadHistory, type HistoryFilters } from "@/lib/history";
+import { DateRange } from "./DateRange";
 import { formatMoney } from "@/lib/money/format";
 import { Badge, EmptyState, PageHeader, buttonClass } from "@/components/ui";
 import { intlLocale } from "@/lib/i18n";
@@ -56,6 +57,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     from: sp.from || undefined,
     to: sp.to || undefined,
   };
+  // A link or an old app could still send To before From: read it as the same range the other way round.
+  if (filters.from && filters.to && filters.to < filters.from) [filters.from, filters.to] = [filters.to, filters.from];
   const [rows, { data: kids }, { data: chores }] = await Promise.all([
     loadHistory(ctx, filters),
     ctx.supabase.from("kids").select("id, name").eq("household_id", ctx.household.id).order("sort_order"),
@@ -101,13 +104,12 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         <select name="type" defaultValue={filters.type} className={select} aria-label={t("a.hist.type")}>
           {TYPES.map((ty) => <option key={ty} value={ty}>{t(`a.hist.type.${ty}`)}</option>)}
         </select>
-        {/* Visible labels: an empty date box shows nothing at all in Android web views. */}
-        {(["from", "to"] as const).map((k) => (
-          <label key={k} className="flex flex-col gap-0.5 text-xs font-bold text-ink-soft">
-            📅 {t(k === "from" ? "a.hist.from" : "a.hist.to")}
-            <input type="date" name={k} defaultValue={filters[k]} className={`${select} min-w-36`} />
-          </label>
-        ))}
+        <DateRange
+          from={filters.from}
+          to={filters.to}
+          labels={{ from: t("a.hist.from"), to: t("a.hist.to") }}
+          className={`${select} min-w-36`}
+        />
         <button className={buttonClass("primary", "sm")}>{t("a.hist.filter")}</button>
         {qs ? <Link href="/admin/history" className={buttonClass("ghost", "sm")}>{t("a.hist.clear")}</Link> : null}
       </form>

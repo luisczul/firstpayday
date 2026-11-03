@@ -14,6 +14,10 @@ export async function GET(request: NextRequest) {
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
 
+  // A password reset link carries its session after "#", which never reaches the server; the
+  // redirect keeps the "#…" part and /reset/update reads it.
+  if (!code && !tokenHash && safeNext === "/reset/update") return NextResponse.redirect(new URL(safeNext, request.url));
+
   let ok = false;
   if (code) ok = !(await supabase.auth.exchangeCodeForSession(code)).error;
   else if (tokenHash && type) ok = !(await supabase.auth.verifyOtp({ type, token_hash: tokenHash })).error;

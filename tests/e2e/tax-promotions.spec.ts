@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { loadEnv } from "../../scripts/load-env";
+import { pickCurrency } from "./pickCurrency";
 
 loadEnv();
 const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
@@ -35,7 +36,7 @@ test("setup: family tax turned on at the last onboarding step", async ({ browser
   await kid.getByRole("checkbox").check();
   await kid.getByRole("button", { name: "Create my account" }).click();
   await kid.getByLabel("Home name").fill("Tax family");
-  await kid.getByLabel("Currency").selectOption("CAD");
+  await pickCurrency(kid, "CAD");
   await kid.getByLabel("Language").selectOption("en");
   await kid.getByRole("button", { name: /add your kids/ }).click();
   await kid.getByLabel("Kid 1 name").fill("Nora");
