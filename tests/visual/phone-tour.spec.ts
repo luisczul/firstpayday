@@ -1,5 +1,6 @@
 import { test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { pickCurrency } from "../e2e/pickCurrency";
 
 // Screenshots of every parent screen at iPhone size, for design review (local only).
 const OUT = process.env.SHOTS_DIR ?? "test-results/phone-tour";
@@ -17,7 +18,7 @@ test("phone tour", async ({ browser }) => {
   await p.getByRole("button", { name: "Create my account" }).click();
   await p.getByLabel("Home name").waitFor(); await shot("04-home");
   await p.getByLabel("Home name").fill("Tour family");
-  await p.getByLabel("Currency").selectOption("CAD");
+  await pickCurrency(p, "CAD");
   await p.getByRole("button", { name: /add your kids/ }).click();
   await p.getByLabel("Kid 1 name").fill("Ana"); await shot("05-kids");
   await p.getByRole("button", { name: /pick chores/ }).click();

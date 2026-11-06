@@ -25,19 +25,43 @@ export function useKeyboardOpen(): void {
     const root = document.documentElement;
     const vv = window.visualViewport;
     // iOS slides the keyboard away over ~0.3s after focus leaves (e.g. "Done"). Re-pinning at once
-    // parked the bar above the still-closing keyboard, so wait until the visible area is full height.
-    const keyboardStillUp = () => !!vv && window.innerHeight - vv.height > 120;
+    // parked the bar above the still-closing keyboard, so wait until the screen is full height again.
+    // Safari only shrinks the visible area, but the iPhone app shrinks the whole web view (innerHeight
+    // too), so "full height" is the tallest the window has been without a keyboard (QA FPI_003).
+    let fullHeight = window.innerHeight;
+    const visibleHeight = () => Math.min(window.innerHeight, vv?.height ?? window.innerHeight);
+    const keyboardStillUp = () => fullHeight - visibleHeight() > 120;
+    const resized = () => {
+      if (!root.hasAttribute("data-keyboard") && !isTypingElement(document.activeElement)) fullHeight = window.innerHeight;
+    };
+    // Turning the phone changes what full height is.
+    const turned = () => (fullHeight = 0);
     let waiting: ReturnType<typeof setTimeout> | undefined;
-    const update = () => {
+    let settling: ReturnType<typeof setTimeout> | undefined;
+    const stopWaiting = () => {
       clearTimeout(waiting);
-      vv?.removeEventListener("resize", update);
+      clearTimeout(settling);
+      vv?.removeEventListener("resize", wait);
+      window.removeEventListener("resize", wait);
+    };
+    const unpinned = () => {
+      stopWaiting();
+      if (!isTypingElement(document.activeElement)) root.removeAttribute("data-keyboard");
+    };
+    // The keyboard is moving: re-check once the screen has stopped changing size for a moment.
+    const wait = () => {
+      clearTimeout(settling);
+      settling = setTimeout(() => (keyboardStillUp() ? undefined : unpinned()), 150);
+    };
+    const update = () => {
+      stopWaiting();
+      if (fullHeight === 0 || window.innerHeight > fullHeight) fullHeight = Math.max(window.innerHeight, vv?.height ?? 0);
       if (isTypingElement(document.activeElement)) return root.setAttribute("data-keyboard", "");
-      if (!root.hasAttribute("data-keyboard") || !keyboardStillUp()) return root.removeAttribute("data-keyboard");
-      vv?.addEventListener("resize", update);
-      waiting = setTimeout(() => {
-        vv?.removeEventListener("resize", update);
-        if (!isTypingElement(document.activeElement)) root.removeAttribute("data-keyboard");
-      }, 1000);
+      if (!root.hasAttribute("data-keyboard")) return;
+      vv?.addEventListener("resize", wait);
+      window.addEventListener("resize", wait);
+      wait();
+      waiting = setTimeout(unpinned, 1000);
     };
     // Re-pin only once the tap that took focus away has landed. Re-pinning on pointerdown slid the
     // bar under the finger, so the tap hit the bar (e.g. "Add chore") instead of the button pressed.
@@ -60,13 +84,16 @@ export function useKeyboardOpen(): void {
     document.addEventListener("pointercancel", up, true);
     document.addEventListener("focusin", focused);
     document.addEventListener("focusout", later);
+    window.addEventListener("resize", resized);
+    window.addEventListener("orientationchange", turned);
     // A field may already have focus (autoFocus fires before this effect runs).
     update();
     const settled = setTimeout(update, 50);
     return () => {
       clearTimeout(settled);
-      clearTimeout(waiting);
-      vv?.removeEventListener("resize", update);
+      stopWaiting();
+      window.removeEventListener("resize", resized);
+      window.removeEventListener("orientationchange", turned);
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointerup", up, true);
       document.removeEventListener("pointercancel", up, true);

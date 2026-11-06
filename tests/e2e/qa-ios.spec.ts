@@ -180,3 +180,89 @@ test("FPI_003: Add selected waits for the iPhone keyboard to finish closing befo
   });
   await expect(page.locator("html")).not.toHaveAttribute("data-keyboard", "");
 });
+
+test("FPI_003 (round 5): in the iPhone app the whole web view shrinks with the keyboard; the bar still waits for it to close", async ({ browser }) => {
+  const page = await (await browser.newContext(phone)).newPage();
+  const { home } = await signUp(page);
+  const { data: hh } = await admin.from("households").select("id").eq("name", home).single();
+  await admin.from("chores").delete().eq("household_id", hh!.id);
+  await page.goto("/admin/chores");
+  await expect(async () => {
+    await page.getByRole("button", { name: /Add from templates/ }).click();
+    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 2_000 });
+  }).toPass();
+  await page.getByRole("dialog").getByRole("textbox").first().click();
+  await expect(page.locator("html")).toHaveAttribute("data-keyboard", "");
+  // The app (unlike Safari) makes the window itself shorter: innerHeight and the visible area both shrink.
+  await page.evaluate(() => {
+    const vv = window.visualViewport!;
+    Object.defineProperty(window, "innerHeight", { configurable: true, get: () => 367 });
+    Object.defineProperty(vv, "height", { configurable: true, get: () => 367 });
+    window.dispatchEvent(new Event("resize"));
+    (document.activeElement as HTMLElement).blur();
+  });
+  await page.waitForTimeout(400);
+  // Focus left but the keyboard is still sliding away: the bar stays unpinned.
+  await expect(page.locator("html")).toHaveAttribute("data-keyboard", "");
+  await page.evaluate(() => {
+    delete (window as { innerHeight?: number }).innerHeight;
+    delete (window.visualViewport as unknown as { height?: number }).height;
+    window.dispatchEvent(new Event("resize"));
+  });
+  await expect(page.locator("html")).not.toHaveAttribute("data-keyboard", "");
+});
+
+test("FPI_007: the currency sheet closes with ✕, a tap on the background or a swipe down, and shows the selected currency first", async ({ browser }) => {
+  const page = await (await browser.newContext(phone)).newPage();
+  await page.goto("/signup");
+  await page.getByLabel("Email").fill(`qa5-${randomUUID().slice(0, 8)}@example.test`);
+  await page.getByLabel("Password").fill(`qa5-${randomUUID()}`);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Create my account" }).click();
+  await expect(page.getByLabel("Home name")).toBeVisible({ timeout: 30_000 });
+  const picker = page.getByTestId("currency-picker");
+  const dialog = page.getByRole("dialog");
+
+  // Tap on the dimmed background, above the sheet.
+  await picker.click();
+  await expect(dialog).toBeVisible();
+  await page.getByTestId("currency-backdrop").click({ position: { x: 180, y: 30 } });
+  await expect(dialog).toBeHidden();
+  await page.waitForTimeout(300);
+  await expect(dialog).toBeHidden();
+
+  // ✕
+  await picker.click();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Swipe down on the handle.
+  await picker.click();
+  const handle = await page.getByTestId("currency-handle").boundingBox();
+  const x = handle!.x + handle!.width / 2;
+  const y = handle!.y + handle!.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 60, { steps: 4 });
+  await page.mouse.move(x, y + 200, { steps: 4 });
+  await page.mouse.up();
+  await expect(dialog).toBeHidden();
+
+  // A short drag springs back instead.
+  await picker.click();
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 30, { steps: 3 });
+  await page.mouse.up();
+  await expect(dialog).toBeVisible();
+
+  // Pick one that isn't in Most used: it shows first, under Selected, next time.
+  await dialog.getByRole("searchbox").fill("rupee");
+  await dialog.getByRole("option", { name: /INR/ }).click();
+  await expect(dialog).toBeHidden();
+  await expect(picker).toContainText("INR");
+  await picker.click();
+  await expect(dialog.getByRole("heading", { name: "Selected" })).toBeVisible();
+  await expect(dialog.getByRole("option").first()).toContainText("INR");
+  await expect(dialog.getByRole("option").first()).toHaveAttribute("aria-selected", "true");
+});

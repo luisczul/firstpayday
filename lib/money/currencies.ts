@@ -53,9 +53,9 @@ export function isKnownCurrency(code: string): boolean {
   }
 }
 
-export const CURRENCY_COPY: Record<string, { common: string; all: string; hint: string; search: string; none: string }> = {
-  en: { common: "Most used", all: "All currencies", hint: "Any currency: it's up to you.", search: "Search: rupee, INR, ₹…", none: "No currency matches." },
-  fr: { common: "Les plus utilisées", all: "Toutes les devises", hint: "N'importe quelle devise : à vous de choisir.", search: "Rechercher : roupie, INR, ₹…", none: "Aucune devise ne correspond." },
-  es: { common: "Las más usadas", all: "Todas las monedas", hint: "Cualquier moneda: tú eliges.", search: "Buscar: rupia, INR, ₹…", none: "Ninguna moneda coincide." },
-  pt: { common: "Mais usadas", all: "Todas as moedas", hint: "Qualquer moeda: você escolhe.", search: "Buscar: rupia, INR, ₹…", none: "Nenhuma moeda encontrada." },
+export const CURRENCY_COPY: Record<string, { common: string; all: string; hint: string; search: string; none: string; selected: string }> = {
+  en: { common: "Most used", all: "All currencies", hint: "Any currency: it's up to you.", search: "Search: rupee, INR, ₹…", none: "No currency matches.", selected: "Selected" },
+  fr: { common: "Les plus utilisées", all: "Toutes les devises", hint: "N'importe quelle devise : à vous de choisir.", search: "Rechercher : roupie, INR, ₹…", none: "Aucune devise ne correspond.", selected: "Sélectionnée" },
+  es: { common: "Las más usadas", all: "Todas las monedas", hint: "Cualquier moneda: tú eliges.", search: "Buscar: rupia, INR, ₹…", none: "Ninguna moneda coincide.", selected: "Seleccionada" },
+  pt: { common: "Mais usadas", all: "Todas as moedas", hint: "Qualquer moeda: você escolhe.", search: "Buscar: rupia, INR, ₹…", none: "Nenhuma moeda encontrada.", selected: "Selecionada" },
 };

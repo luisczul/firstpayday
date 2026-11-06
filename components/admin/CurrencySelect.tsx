@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CURRENCY_COPY, currencyOptions, currencySymbol } from "@/lib/money/currencies";
 import { useParentT } from "@/lib/i18n/parent/client";
 
@@ -10,7 +11,13 @@ const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCas
 /**
  * Household currency picker: every 2-decimal currency, named in the parent's language. A long
  * native list was hard to scroll through on a phone (QA FPI_001), so it opens a sheet with a
- * search box (name, code or symbol), the most used ones first, then A to Z with a letter index.
+ * search box (name, code or symbol), the selected one and the most used ones first, then A to Z
+ * with a letter index. The sheet closes with ✕, a tap on the dimmed background, Escape, or a swipe
+ * down on its handle.
+ *
+ * The sheet is rendered on <body>, not where the button is: the button sits inside a form field's
+ * <label>, and a tap anywhere inside a label "clicks" its button, so tapping the background
+ * reopened the sheet straight away (QA FPI_007).
  */
 export function CurrencySelect({ value, onChange, locale }: { value: string; onChange: (code: string) => void; locale: string }) {
   const t = useParentT();
@@ -29,10 +36,17 @@ export function CurrencySelect({ value, onChange, locale }: { value: string; onC
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  // Swipe down on the handle to close: how far the sheet has been dragged.
+  const [drag, setDrag] = useState<{ start: number; dy: number } | null>(null);
+  const close = () => {
+    setOpen(false);
+    setQuery("");
+    setDrag(null);
+  };
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -51,8 +65,7 @@ export function CurrencySelect({ value, onChange, locale }: { value: string; onC
 
   const pick = (code: string) => {
     onChange(code);
-    setOpen(false);
-    setQuery("");
+    close();
   };
   const row = (o: (typeof options)[number], id?: string) => (
     <button
@@ -85,16 +98,31 @@ export function CurrencySelect({ value, onChange, locale }: { value: string; onC
         <span aria-hidden className="shrink-0 text-ink-soft">▾</span>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 md:items-center" onClick={() => setOpen(false)}>
+      {open ? createPortal(
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 md:items-center" data-testid="currency-backdrop" onClick={close}>
           <div
             role="dialog"
             aria-modal="true"
             aria-label={copy.all}
             onClick={(e) => e.stopPropagation()}
-            className="flex h-[85dvh] w-full flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-pop)] md:h-[70vh] md:max-w-lg md:rounded-3xl"
+            style={drag ? { transform: `translateY(${Math.max(0, drag.dy)}px)`, transition: "none" } : undefined}
+            className="flex h-[85dvh] w-full flex-col rounded-t-3xl bg-paper pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-pop)] transition-transform md:h-[70vh] md:max-w-lg md:rounded-3xl"
           >
-            <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+            {/* Handle: drag it down to close (phones). */}
+            <div
+              data-testid="currency-handle"
+              className="flex shrink-0 cursor-grab touch-none justify-center pt-2 pb-1 md:hidden"
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setDrag({ start: e.clientY, dy: 0 });
+              }}
+              onPointerMove={(e) => drag && setDrag({ start: drag.start, dy: e.clientY - drag.start })}
+              onPointerUp={() => (drag && drag.dy > 80 ? close() : setDrag(null))}
+              onPointerCancel={() => setDrag(null)}
+            >
+              <span aria-hidden className="h-1.5 w-10 rounded-full bg-line" />
+            </div>
+            <div className="flex items-center gap-2 border-b border-line px-4 pt-1 pb-3 md:pt-3">
               <input
                 type="search"
                 autoFocus={!window.matchMedia("(pointer: coarse)").matches}
@@ -105,7 +133,7 @@ export function CurrencySelect({ value, onChange, locale }: { value: string; onC
                 enterKeyHint="search"
                 className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-card px-3 text-base text-ink focus:border-amber focus:ring-2 focus:ring-amber/40 focus:outline-none"
               />
-              <button type="button" onClick={() => setOpen(false)} className="min-h-11 min-w-11 rounded-full text-xl text-ink-soft hover:bg-paper-deep" aria-label={t("a.common.close")}>
+              <button type="button" onClick={close} className="min-h-11 min-w-11 rounded-full text-xl text-ink-soft hover:bg-paper-deep" aria-label={t("a.common.close")}>
                 ✕
               </button>
             </div>
@@ -115,6 +143,12 @@ export function CurrencySelect({ value, onChange, locale }: { value: string; onC
                   matches.length ? matches.map((o) => row(o)) : <p className="px-3 py-6 text-center font-bold text-ink-soft">{copy.none}</p>
                 ) : (
                   <>
+                    {current && !current.common ? (
+                      <>
+                        <h3 className="px-3 pt-2 pb-1 text-xs font-black tracking-wide text-ink-soft uppercase">{copy.selected}</h3>
+                        {row(current)}
+                      </>
+                    ) : null}
                     <h3 className="px-3 pt-2 pb-1 text-xs font-black tracking-wide text-ink-soft uppercase">{copy.common}</h3>
                     {options.filter((o) => o.common).map((o) => row(o))}
                     <h3 className="px-3 pt-4 pb-1 text-xs font-black tracking-wide text-ink-soft uppercase">{copy.all}</h3>
@@ -149,7 +183,8 @@ export function CurrencySelect({ value, onChange, locale }: { value: string; onC
               ) : null}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </>
   );
