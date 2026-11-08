@@ -203,8 +203,13 @@ export function buildBoard(input: {
     if (!prev || s.submitted_at > prev) lastDone.set(s.chore_id, s.submitted_at);
   }
 
-  const claimByChore = new Map<string, BoardClaimRow>();
-  for (const c of input.claims ?? []) if (isClaimActive(c, now)) claimByChore.set(c.chore_id, c);
+  const claimsByChore = new Map<string, BoardClaimRow[]>();
+  for (const c of input.claims ?? []) {
+    if (!isClaimActive(c, now)) continue;
+    const list = claimsByChore.get(c.chore_id);
+    if (list) list.push(c);
+    else claimsByChore.set(c.chore_id, [c]);
+  }
 
   const sections: BoardSections = { inProgress: [], new: [], fix: [], ready: [], waiting: [], soon: [] };
   const sorted = [...chores].sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title));
@@ -232,16 +237,25 @@ export function buildBoard(input: {
         break;
       case "available": {
         const claimable = isClaimableChore(chore);
-        const claim = claimable ? claimByChore.get(chore.id) : undefined;
-        if (claim) {
-          const mine = claim.kid_id === kidId;
-          card.claim = { id: claim.id, kidId: claim.kid_id, kidName: claim.kid_name, mine, quantity: claim.quantity, expiresAt: claim.expires_at };
-          // Mine: "In progress" at the top. A sibling's: stays in place, locked.
-          if (mine) {
-            sections.inProgress.push(card);
-            break;
-          }
+        const claims = claimable ? (claimsByChore.get(chore.id) ?? []) : [];
+        const mine = claims.find((c) => c.kid_id === kidId);
+        const asCard = (c: BoardClaimRow): BoardCardClaim => ({
+          id: c.id, kidId: c.kid_id, kidName: c.kid_name, mine: c.kid_id === kidId, quantity: c.quantity, expiresAt: c.expires_at,
+        });
+        // Mine: "In progress" at the top.
+        if (mine) {
+          card.claim = asCard(mine);
+          sections.inProgress.push(card);
+          break;
+        }
+        // Siblings' claims hold only the units they took (kiosk_claim_chore): with several units,
+        // what's left stays open for this kid. A one-unit chore (or nothing left) stays locked.
+        const others = claims.filter((c) => c.kid_id !== kidId);
+        const free = card.maxQuantity - others.reduce((n, c) => n + c.quantity, 0);
+        if (others.length && (chore.max_quantity <= 1 || free <= 0)) {
+          card.claim = asCard(others[0]!);
         } else {
+          if (others.length) card.maxQuantity = free;
           card.claimable = claimable;
         }
         (fresh ? sections.new : sections.ready).push(card);

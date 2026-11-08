@@ -119,6 +119,36 @@ describe("claiming (kiosk, service role)", () => {
     expect(sub).toMatchObject({ quantity: 1, amount_cents: 200 });
   });
 
+  it("several units: a claim holds only its units; raising the max frees the new ones for a sibling", async () => {
+    const c = await parent("c");
+    // One unit: Camila's claim locks it for Liam.
+    const leaves = await c.chore("Leaves");
+    expect((await claim(c, c.camila, leaves)).error).toBeNull();
+    expect((await claim(c, c.liam, leaves)).error?.message).toContain("chore_claimed");
+    expect((await submit(c, c.liam, leaves)).error?.message).toContain("chore_claimed");
+    // The parent makes it 2: one unit is free for Liam, but not two.
+    expect((await c.client.from("chores").update({ max_quantity: 2, unit_label: "bag" }).eq("id", leaves)).error).toBeNull();
+    expect((await claim(c, c.liam, leaves, 2)).error?.message).toContain("quantity");
+    const { data: mine, error } = await claim(c, c.liam, leaves, 1);
+    expect(error).toBeNull();
+    expect(mine?.quantity).toBe(1);
+    // Both units are held now: Liam sends his in, Camila sends hers in.
+    const { data: s1, error: e1 } = await submit(c, c.liam, leaves, 1);
+    expect(e1).toBeNull();
+    const { data: s2, error: e2 } = await admin.rpc("kiosk_create_submission", {
+      p_household_id: c.householdId, p_kid_id: c.camila, p_chore_id: leaves, p_quantity: 1,
+      p_idempotency_key: randomUUID(), p_device_id: randomUUID(), p_expected_last_id: s1!.id,
+    });
+    expect(e2).toBeNull();
+    expect(s2?.quantity).toBe(1);
+
+    // Sending in without claiming: only what's left after siblings' claims.
+    const bags = await c.chore("Bags", { max_quantity: 2, unit_label: "bag" });
+    expect((await claim(c, c.camila, bags, 1)).error).toBeNull();
+    expect((await submit(c, c.liam, bags, 2)).error?.message).toMatch(/chore_claimed|already_taken/);
+    expect((await submit(c, c.liam, bags, 1)).error).toBeNull();
+  });
+
   it("give it back, or time runs out: free again for everyone", async () => {
     const terrace = await a.chore("Terrace");
     const { data } = await claim(a, a.liam, terrace);

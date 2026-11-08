@@ -256,3 +256,27 @@ test("chore editor: time limit per chore, only for whole-house chores", async ()
   expect(hoursLeft(c!.expires_at)).toBeGreaterThan(1.95);
   expect(hoursLeft(c!.expires_at)).toBeLessThan(2.05);
 });
+
+test("raising the max: Camila holds 1 leaf pile, the parent makes it 2, Liam can take the other one", async () => {
+  // Start clean: nobody holds anything.
+  await admin.from("chore_claims").update({ released_at: new Date().toISOString(), release_reason: "parent" }).eq("household_id", householdId).is("released_at", null);
+  const { data: leaves } = await admin
+    .from("chores")
+    .insert({ household_id: householdId, title: "Pick up leaves", price_cents: 300, repeat_kind: "weekly", scope: "household", max_quantity: 1 })
+    .select("id")
+    .single();
+  const claimed = await kid.request.post("/api/kiosk/claim", { data: { kidId: kidId.Camila, choreId: leaves!.id, quantity: 1 } });
+  expect(claimed.ok()).toBe(true);
+
+  await openBoard("Liam");
+  await expect(kid.getByTestId("claim-locked").filter({ hasText: "Camila is on it" })).toBeVisible();
+
+  await admin.from("chores").update({ max_quantity: 2, unit_label: "pile" }).eq("id", leaves!.id);
+  await openBoard("Liam");
+  await expect(kid.getByTestId("claim-locked").filter({ hasText: "Camila is on it" })).toHaveCount(0);
+  await claimFromBoard("Pick up leaves");
+  await expect(kid.getByText("It's yours! Finish it before time runs out.")).toBeVisible();
+  await expect(inProgress().getByRole("button", { name: "Pick up leaves" })).toBeVisible();
+  const mine = (await activeClaims("Liam")).filter((c) => c.chore_id === leaves!.id && !c.released_at);
+  expect(mine.map((c) => c.quantity)).toEqual([1]);
+});

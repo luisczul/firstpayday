@@ -73,6 +73,25 @@ describe("buildBoard claims overlay", () => {
     expect(garage.claim).toMatchObject({ mine: false, kidName: "Liam" });
   });
 
+  it("several units: a sibling's claim holds only its units, the rest stay open", () => {
+    // "Leaves" was 1 unit when Liam took it; the parent raised it to 2: Camila can take the other one.
+    const leaves = [chore({ max_quantity: 2, unit_label: "bag" })];
+    const board = buildBoard({ ...base, chores: leaves, kidId: "camila", claims: [claim({ quantity: 1 })] });
+    expect(board.ready[0]).toMatchObject({ choreId: "garage", claimable: true, claim: null, maxQuantity: 1 });
+    // Both units taken: locked.
+    const full = buildBoard({ ...base, chores: leaves, kidId: "camila", claims: [claim({ quantity: 2 })] });
+    expect(full.ready[0]).toMatchObject({ claimable: false, claim: { mine: false, kidName: "Liam" } });
+    // Units already sent in count too: 1 done + 1 claimed = nothing left.
+    const done: BoardSubmissionRow = {
+      id: "s1", chore_id: "garage", kid_id: "noah", status: "pending", quantity: 1, amount_cents: 200,
+      chore_title_snapshot: "Garage sweep", submitted_at: "2026-09-26T18:00:00Z", reviewed_at: null, review_comment: null,
+    };
+    const used = buildBoard({ ...base, submissions: [done], chores: leaves, kidId: "camila", claims: [claim({ quantity: 1 })] });
+    expect(used.ready[0]).toMatchObject({ claimable: false, claim: { kidName: "Liam" } });
+    // The claimer still sees it In progress.
+    expect(buildBoard({ ...base, chores: leaves, kidId: "liam", claims: [claim({ quantity: 1 })] }).inProgress.map((c) => c.choreId)).toEqual(["garage"]);
+  });
+
   it("a locked chore that's New stays in New", () => {
     const board = buildBoard({ ...base, kidLastSeenBoardAt: null, chores: [chore({ created_at: "2026-09-26T12:00:00Z" })], kidId: "camila", claims: [claim({})] });
     expect(board.new[0]!.claim?.mine).toBe(false);
