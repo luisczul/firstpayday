@@ -242,7 +242,17 @@ export function defineJourney(lang: Locale) {
       if (original?.width !== vp.width) await page.setViewportSize(vp);
       await page.waitForTimeout(250);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-      if (overflow > 1) add("overflow", `${size}: ${overflow}px wider than the screen`);
+      if (overflow > 1) {
+        // Name the outermost element that sticks out, so the report says what to fix.
+        const culprit = await page.evaluate(() => {
+          const W = window.innerWidth;
+          const el = Array.from(document.querySelectorAll("body *")).find((e) => e.getBoundingClientRect().right > W + 1);
+          if (!el) return "";
+          const b = el.getBoundingClientRect();
+          return ` (${el.tagName.toLowerCase()}${el.getAttribute("data-testid") ? `[${el.getAttribute("data-testid")}]` : ""} "${(el.textContent ?? "").trim().slice(0, 30)}" right=${Math.round(b.right)} width=${Math.round(b.width)} class=${String(el.className).slice(0, 80)})`;
+        });
+        add("overflow", `${size}: ${overflow}px wider than the screen${culprit}`);
+      }
       shotNo++;
       await page.screenshot({ path: `${dir}/${String(shotNo).padStart(2, "0")}-${name}-${size}.png`, fullPage: true });
     }
@@ -391,11 +401,12 @@ export function defineJourney(lang: Locale) {
     await openBoard(kidA);
     await expect(tablet.getByText(kt("kid.inMyBank"))).toBeVisible();
 
-    // Routines have their own section
-    const routines = tablet.locator("section", { has: tablet.getByRole("heading", { name: kt("kid.section.routines") }) });
-    await expect(routines).toBeVisible();
-    for (const key of ["morning_routine", "daily_routine", "evening_routine"]) await expect(routines.getByRole("button", { name: new RegExp(esc(titles[key]!)) })).toBeVisible();
-    await expect(routines.getByText(new RegExp(`${esc(kt("kid.routine"))}`)).first()).toBeVisible();
+    // Routines share the one "Ready to do" grid with every other chore, marked with a Routine badge.
+    const todo = tablet.locator("section", { has: tablet.getByRole("heading", { name: new RegExp(`^${esc(kt("kid.section.ready"))}`) }) });
+    await expect(todo).toBeVisible();
+    await expect(tablet.getByRole("heading", { name: kt("kid.section.routines") })).toHaveCount(0);
+    for (const key of ["morning_routine", "daily_routine", "evening_routine"]) await expect(todo.getByRole("button", { name: new RegExp(esc(titles[key]!)) })).toBeVisible();
+    await expect(todo.getByText(new RegExp(`${esc(kt("kid.routine"))}`)).first()).toBeVisible();
 
     // Category pills in the kid's language
     for (const c of ["car_garage", "kitchen", "cleaning"]) await expect(pill(c)).toBeVisible();

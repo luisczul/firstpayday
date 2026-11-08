@@ -344,6 +344,9 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   const newShown = sorted(sections.new.filter((c) => !isRoutine(c) && inCategory(c)));
   const readyShown = sorted(sections.ready.filter((c) => !isRoutine(c) && inCategory(c)));
   const soonShown = sorted(sections.soon.filter(inCategory));
+  // Everything a kid can do now sits in ONE grid (no half-empty rows): routines, new and the rest.
+  // Parent's order: routines first, then new, then the others; a sort applies to the whole grid.
+  const todoShown = sort === "parent" ? [...routinesShown, ...newShown, ...readyShown] : sorted([...routinesShown, ...newShown, ...readyShown]);
   const catLabel = (k: string) => `${CATEGORY_LABELS[k]?.emoji ?? "⭐"} ${CATEGORY_LABELS[k]?.[locale] ?? k}`;
   // One full grid (no section per category, no half-empty rows): each card says its category in color.
   const catTag = (c: BoardCard) => ({ label: catLabel(c.category), color: CATEGORY_COLORS[c.category] ?? CATEGORY_COLORS.other! });
@@ -371,7 +374,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
     : null;
 
   return (
-    <main lang={locale} className="min-h-dvh pb-10">
+    <main lang={locale} className="min-h-dvh overflow-x-clip pb-10">
       {/* Header */}
       <div className="sticky top-0 z-30 bg-paper/90 backdrop-blur">
       {/* Below the status bar when the page runs edge to edge. When the name and the buttons don't fit on
@@ -616,95 +619,52 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
         ) : null}
       </AnimatePresence>
 
-      {routinesShown.length > 0 ? (
-        <SectionRow title={tr("kid.section.routines")} count={routinesShown.length} tone="routine">
-          <AnimatePresence mode="popLayout">
-            {routinesShown.map((c) => (
-              <motion.div key={c.choreId} {...cardMotion} className="h-full">
-                <ChoreCard
-                  fluid
-                  routine
-                  chore={c}
-                  variant={newIds.has(c.choreId) ? "new" : "ready"}
-                  currency={household.currency}
-                  locale={locale}
-                  perLabel={perLabel(c)}
-                  onPress={() => open(c, "submit")}
-                  footer={stepsFooter(c)}
-                  badge={
-                    <>
-                      <span className="inline-flex items-center rounded-full bg-plum px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
-                        🔁 {tr("kid.routine")}
-                      </span>
-                      {newIds.has(c.choreId) ? (
-                        <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
-                          ✨ {tr("kid.new")}
-                        </span>
-                      ) : null}
-                      {promoBadge(c)}
-                    </>
-                  }
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </SectionRow>
-      ) : null}
-
-      {newShown.length > 0 ? (
-        <SectionRow title={tr("kid.section.new")} count={newShown.length} tone="new">
-          <AnimatePresence mode="popLayout">
-            {newShown.map((c) => (
-              <motion.div key={c.choreId} {...cardMotion} className="h-full">
-                <ChoreCard
-                  fluid
-                  chore={c}
-                  variant={lockedBy(c) ? "soon" : "new"}
-                  currency={household.currency}
-                  locale={locale}
-                  perLabel={perLabel(c)}
-                  onPress={() => press(c)}
-                  footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
-                  tag={catTag(c)}
-                  badge={
-                    <>
-                      <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
-                        ✨ {tr("kid.new")}
-                      </span>
-                      {promoBadge(c)}
-                    </>
-                  }
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </SectionRow>
-      ) : null}
-
       {search.trim() && routinesShown.length + newShown.length + readyShown.length + soonShown.length === 0 ? (
         <p className="px-6 py-10 text-center font-display text-3xl font-bold text-ink-soft md:px-8">
           🔍 {tr("kid.searchNone", { q: search.trim() })}
         </p>
       ) : null}
-      {readyShown.length > 0 ? (
-        <SectionRow title={category === "all" ? tr("kid.section.ready") : catLabel(category)} count={readyShown.length}>
+      {todoShown.length > 0 ? (
+        <SectionRow title={category === "all" ? tr("kid.section.ready") : catLabel(category)} count={todoShown.length}>
           <AnimatePresence mode="popLayout">
-            {readyShown.map((c) => (
-              <motion.div key={c.choreId} {...cardMotion} className="h-full">
-                <ChoreCard
-                  fluid
-                  chore={c}
-                  variant={lockedBy(c) ? "soon" : "ready"}
-                  currency={household.currency}
-                  locale={locale}
-                  perLabel={perLabel(c)}
-                  onPress={() => press(c)}
-                  footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
-                  badge={lockedBy(c) ? null : promoBadge(c)}
-                  tag={catTag(c)}
-                />
-              </motion.div>
-            ))}
+            {todoShown.map((c) => {
+              const routine = isRoutine(c);
+              const fresh = newIds.has(c.choreId);
+              const locked = lockedBy(c);
+              return (
+                <motion.div key={c.choreId} {...cardMotion} className="h-full">
+                  <ChoreCard
+                    fluid
+                    routine={routine}
+                    chore={c}
+                    variant={locked ? "soon" : fresh ? "new" : "ready"}
+                    currency={household.currency}
+                    locale={locale}
+                    perLabel={perLabel(c)}
+                    onPress={() => (routine ? open(c, "submit") : press(c))}
+                    footer={locked ? lockedFooter(c) : stepsFooter(c)}
+                    tag={catTag(c)}
+                    badge={
+                      locked ? null : (
+                        <>
+                          {routine ? (
+                            <span className="inline-flex items-center rounded-full bg-plum px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
+                              🔁 {tr("kid.routine")}
+                            </span>
+                          ) : null}
+                          {fresh ? (
+                            <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
+                              ✨ {tr("kid.new")}
+                            </span>
+                          ) : null}
+                          {promoBadge(c)}
+                        </>
+                      )
+                    }
+                  />
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </SectionRow>
       ) : null}

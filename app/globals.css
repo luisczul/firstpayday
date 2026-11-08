@@ -196,3 +196,19 @@ input[type="date"]::-webkit-date-and-time-value {
 html[data-keyboard] .unpin-on-keyboard {
   position: static;
 }
+
+/* Kid board grid: as many cards per row as fit, at most 6 (2 on a phone). */
+.kid-grid > * {
+  min-width: 0; /* a long price or word never pushes the page wider than the screen */
+}
+.kid-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(max(150px, calc((100% - 5 * 0.75rem) / 6)), 1fr));
+}
+@media (min-width: 640px) {
+  .kid-grid {
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(max(160px, calc((100% - 5 * 1rem) / 6)), 1fr));
+  }
+}

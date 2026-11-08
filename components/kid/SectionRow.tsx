@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-/** One section of the kid board: a heading and a vertically-flowing grid of cards. */
+/** One section of the kid board: a heading and a grid of up to 6 cards per row (.kid-grid, globals.css). */
 export function SectionRow({
   title,
   count,
@@ -28,7 +28,7 @@ export function SectionRow({
           <span className="rounded-full bg-ink/10 px-3 py-0.5 font-sans text-lg font-extrabold text-ink-soft">{count}</span>
         ) : null}
       </h2>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(225px,1fr))] gap-4 pb-4">{children}</div>
+      <div className="kid-grid pb-4">{children}</div>
     </section>
   );
 }

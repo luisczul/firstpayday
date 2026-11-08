@@ -70,12 +70,11 @@ test("categories filter the board; Camila sees French", async () => {
   await kid.getByRole("button", { name: /All/ }).first().click();
   await expect(kid.getByRole("button", { name: "Laundry manager", exact: true })).toBeVisible();
 
-  // Price sort: cheapest first, then biggest first.
-  // Routines have their own section; check the first regular chore section.
-  const regular = kid.locator("main section", { hasNot: kid.getByRole("heading", { name: /routines/i }) }).first();
+  // Price sort: cheapest first, then biggest first, across the whole grid (routines included).
+  const regular = kid.locator("main section", { has: kid.getByRole("heading", { name: /^Ready to do/ }) });
   const firstPrice = async () => Number((await regular.getByRole("button").first().innerText()).match(/\$(\d+(?:\.\d+)?)/)![1]);
   await kid.getByRole("button", { name: "Sort by price" }).click();
-  expect(await firstPrice()).toBe(0.5); // Make your bed
+  expect(await firstPrice()).toBe(0.1); // a routine
   await kid.getByRole("button", { name: "Sort by price" }).click();
   expect(await firstPrice()).toBe(5);
   await kid.waitForTimeout(1500);

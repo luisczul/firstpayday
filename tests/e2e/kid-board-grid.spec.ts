@@ -50,6 +50,13 @@ test("setup: a home with one chore in every category", async ({ browser }) => {
     })),
   );
   expect(error).toBeNull();
+  // A routine (chore with steps) goes in the same grid.
+  const { error: rErr } = await admin.from("chores").insert({
+    household_id: hh!.id, title: "Morning routine job", price_cents: 100, repeat_kind: "daily", scope: "per_kid",
+    category: "other", sort_order: 99, created_at: "2026-01-01T00:00:00Z",
+    subtasks: [{ id: "a", title: "Brush teeth" }, { id: "b", title: "Make bed" }],
+  });
+  expect(rErr).toBeNull();
 });
 
 for (const [name, viewport] of [["tablet", { width: 1180, height: 820 }], ["phone", { width: 390, height: 844 }]] as const) {
@@ -77,13 +84,20 @@ for (const [name, viewport] of [["tablet", { width: 1180, height: 820 }], ["phon
     await expect(kid.getByRole("heading", { name: /^Ready to do/ })).toHaveCount(1);
     for (const c of CATEGORIES) await expect(kid.getByRole("heading", { name: new RegExp(`^${CATEGORY_LABELS[c]!.en}`) })).toHaveCount(0);
     const tags = kid.getByTestId("card-category");
-    await expect(tags).toHaveCount(CATEGORIES.length);
+    await expect(tags).toHaveCount(CATEGORIES.length + 1);
+    await expect(kid.getByRole("heading", { name: /My routines|New!/ })).toHaveCount(0);
     await expect(kid.getByRole("button", { name: "Outdoor job", exact: true }).getByTestId("card-category")).toHaveText("🌳 Outdoor");
     // The grid is full: on the tablet, several cards share the first row.
     if (name === "tablet") {
       const tops = await kid.getByRole("button", { name: / job$/ }).evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-      expect(tops.filter((t) => t === tops[0]).length).toBeGreaterThanOrEqual(4);
+      expect(tops.filter((t) => t === tops[0]).length).toBe(6);
+    } else {
+      const tops = await kid.getByRole("button", { name: / job$/ }).evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+      expect(tops.filter((t) => t === tops[0]).length).toBe(2);
     }
+    // Every card in the one grid: 8 chores + the routine, all under "Ready to do".
+    const todo = kid.locator("section", { has: kid.getByRole("heading", { name: /^Ready to do/ }) });
+    await expect(todo.getByRole("button", { name: / job$/ })).toHaveCount(CATEGORIES.length + 1);
     await kid.evaluate(() => window.scrollTo(0, 0));
     await kid.waitForTimeout(300);
     await kid.screenshot({ path: `test-results/shots/kid-grid-${name}.png` });

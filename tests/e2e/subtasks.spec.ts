@@ -224,15 +224,15 @@ test("next day: the checklist is back and every step starts fresh", async () => 
   await expect(sheet.getByRole("button", { name: /I did it/ })).toBeDisabled();
 });
 
-test("routines have their own section and look, apart from regular chores", async () => {
+test("routines sit in the same grid as regular chores, with their own look", async () => {
   await openBoard();
-  const routines = kid.locator("section", { has: kid.getByRole("heading", { name: /My routines/ }) });
-  await expect(routines).toBeVisible();
-  await expect(routines.getByRole("button", { name: /Daily routine/ })).toBeVisible();
-  await expect(routines.getByText(/🔁 Routine/).first()).toBeVisible();
-  // Regular chores are not in the routines section, and routines aren't mixed into the others.
-  await expect(routines.getByRole("button", { name: /Garbage boss/ })).toHaveCount(0);
-  const others = kid.locator("section", { hasNot: kid.getByRole("heading", { name: /My routines/ }) });
-  await expect(others.getByRole("button", { name: /Daily routine/ })).toHaveCount(0);
+  await expect(kid.getByRole("heading", { name: /My routines/ })).toHaveCount(0);
+  const todo = kid.locator("section", { has: kid.getByRole("heading", { name: /^Ready to do/ }) });
+  await expect(todo.getByRole("button", { name: /Daily routine/ })).toBeVisible();
+  await expect(todo.getByRole("button", { name: /Garbage boss/ })).toBeVisible();
+  await expect(todo.getByRole("button", { name: /Daily routine/ }).getByText(/🔁 Routine/)).toBeVisible();
+  // A routine card stands apart: lavender background and a plum border.
+  const bg = await todo.getByRole("button", { name: /Daily routine/ }).evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(bg).toBe("rgb(246, 238, 249)");
   await kid.screenshot({ path: "/tmp/claude-501/shots/routines-board.png", fullPage: false });
 });

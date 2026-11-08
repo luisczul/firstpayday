@@ -64,16 +64,16 @@ export function ChoreCard({
       <span aria-hidden className="absolute inset-y-0 left-0 w-3" style={{ background: color }} />
       {routine ? <span aria-hidden className="absolute inset-x-0 top-0 h-2 bg-plum" /> : null}
       {/* Icon on the left, price on the right, on one line. */}
-      <span className={`flex h-full flex-col pl-7 pr-5 ${big ? "pt-6 pb-7" : "pt-3.5 pb-4"}`}>
-        <span className="mb-3 flex items-start justify-between gap-3">
+      <span className={`flex h-full flex-col ${fluid && !big ? "pl-5 pr-3" : "pl-7 pr-5"} ${big ? "pt-6 pb-7" : "pt-3.5 pb-4"}`}>
+        <span className="mb-3 flex items-start justify-between gap-2">
           <span
             aria-hidden
-            className={`inline-flex shrink-0 items-center justify-center rounded-2xl ${big ? "h-24 w-24 text-6xl" : "h-14 w-14 text-[2rem]"}`}
+            className={`inline-flex shrink-0 items-center justify-center rounded-2xl ${big ? "h-24 w-24 text-6xl" : fluid ? "h-12 w-12 text-[1.7rem]" : "h-14 w-14 text-[2rem]"}`}
             style={{ background: `${color}1f` }}
           >
             {chore.emoji || "⭐"}
           </span>
-          <span className="z-10 flex flex-col items-end gap-2">
+          <span className="z-10 flex min-w-0 flex-col items-end gap-2">
             {priceSlot ?? (
               <span className="inline-flex items-center rounded-full bg-gold px-3 py-1 text-base font-black text-ink shadow-[0_2px_0_rgb(59_36_24/0.15)]">
                 {formatPrice(chore.priceCents, currency, locale)}
@@ -82,10 +82,24 @@ export function ChoreCard({
                 ) : null}
               </span>
             )}
-            {badge ?? null}
+            {/* Fixed-width cards keep badges under the price; grid cards put them on their own line. */}
+            {fluid ? null : (badge ?? null)}
           </span>
         </span>
-        {tag ? (
+        {fluid && (badge || tag) ? (
+          <span className="mb-2 flex flex-wrap items-center gap-1.5">
+            {badge ?? null}
+            {tag ? (
+              <span
+                className="inline-flex max-w-full truncate rounded-full px-3 py-0.5 text-sm font-extrabold text-white"
+                style={{ background: tag.color }}
+                data-testid="card-category"
+              >
+                {tag.label}
+              </span>
+            ) : null}
+          </span>
+        ) : tag ? (
           <span
             className="mb-2 inline-flex max-w-full self-start truncate rounded-full px-3 py-0.5 text-sm font-extrabold text-white"
             style={{ background: tag.color }}
@@ -94,7 +108,7 @@ export function ChoreCard({
             {tag.label}
           </span>
         ) : null}
-        <span className={`font-display font-bold leading-tight text-ink ${big ? "text-4xl" : "text-[1.35rem]"}`}>
+        <span className={`font-display font-bold leading-tight text-ink [overflow-wrap:anywhere] ${big ? "text-4xl" : fluid ? "text-[1.2rem]" : "text-[1.35rem]"}`}>
           {chore.title}
         </span>
         {chore.description ? (
@@ -109,7 +123,7 @@ export function ChoreCard({
     </>
   );
 
-  const shell = `relative block overflow-hidden rounded-[var(--radius-card)] ${routine ? "bg-[#F6EEF9]" : "bg-card"} text-left shadow-[var(--shadow-card)] ring-1 ring-line ${
+  const shell = `relative block overflow-hidden rounded-[var(--radius-card)] ${routine ? "bg-[#F6EEF9] ring-[3px] ring-plum" : "bg-card ring-1 ring-line"} text-left shadow-[var(--shadow-card)] ${
     big ? "w-full min-h-[340px]" : variant === "admin" ? "w-full min-h-[220px]" : fluid ? "w-full h-full min-h-[216px]" : "w-[272px] h-[280px] shrink-0"
   } ${dim ? "opacity-70 saturate-[0.6]" : ""}`;
 

@@ -265,8 +265,8 @@ test("7. THREE WEEKS LATER: chores come back, trial over, 3 kids → read-only",
 
   await openBoard("Mateo");
   // Baseboards (every 14 days) is back and flagged New; weekly chores are back too.
-  await expect(kid.getByRole("heading", { name: /New!/ })).toBeVisible();
   await expect(kid.getByRole("button", { name: "Baseboards", exact: true })).toHaveCount(1);
+  await expect(kid.getByRole("button", { name: "Baseboards", exact: true })).toContainText("New!");
   await expect(kid.getByRole("button", { name: "Sous-chef night", exact: true })).toHaveCount(1);
   if (process.env.BILLING_ENABLED !== "true") {
     // Billing is switched off for now: 3 kids, trial long over, still fully usable.
