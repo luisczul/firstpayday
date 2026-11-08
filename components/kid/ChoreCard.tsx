@@ -33,6 +33,7 @@ export function ChoreCard({
   priceSlot,
   fluid,
   routine,
+  tag,
 }: {
   chore: ChoreCardData;
   variant?: ChoreCardVariant;
@@ -51,6 +52,8 @@ export function ChoreCard({
   fluid?: boolean;
   /** A routine (chore with steps): lavender card with a plum top band so it stands apart. */
   routine?: boolean;
+  /** Category tag above the title ("🌳 Outdoor"), in the category's color. */
+  tag?: { label: string; color: string };
 }) {
   const color = chore.color ?? "#E08A1E";
   const dim = variant === "waiting" || variant === "soon";
@@ -82,6 +85,15 @@ export function ChoreCard({
             {badge ?? null}
           </span>
         </span>
+        {tag ? (
+          <span
+            className="mb-2 inline-flex max-w-full self-start truncate rounded-full px-3 py-0.5 text-sm font-extrabold text-white"
+            style={{ background: tag.color }}
+            data-testid="card-category"
+          >
+            {tag.label}
+          </span>
+        ) : null}
         <span className={`font-display font-bold leading-tight text-ink ${big ? "text-4xl" : "text-[1.35rem]"}`}>
           {chore.title}
         </span>

@@ -17,6 +17,18 @@ export const CATEGORY_LABELS: Record<string, Record<Locale, string> & { emoji: s
   other: { en: "Other", fr: "Autres", es: "Otras", pt: "Outras", emoji: "⭐" },
 };
 
+/** Tag color per category on the kids' cards (dark enough for white text, AA). */
+export const CATEGORY_COLORS: Record<string, string> = {
+  car_garage: "#44546E",
+  outdoor: "#3B7228",
+  kitchen: "#B03F1C",
+  cleaning: "#16707F",
+  laundry: "#6A4C9C",
+  organizing: "#8A5418",
+  home_maintenance: "#7A3B4A",
+  other: "#5B5651",
+};
+
 /** Seasonal window for a template's season in a given year (month/day inclusive). */
 const SEASONS: Record<string, { from: [number, number]; until: [number, number] }> = {
   fall: { from: [9, 1], until: [11, 30] },

@@ -18,7 +18,7 @@ import { intlLocale, translator, weekdayName, type Locale } from "@/lib/i18n";
 import { claimDeadline, claimTimeLeft } from "@/lib/schedule/claims";
 import type { BoardCard } from "@/lib/board/buildBoard";
 import type { KioskBoard, KidHistoryItem } from "@/lib/kiosk/operations";
-import { CATEGORIES, CATEGORY_LABELS } from "@/lib/templates";
+import { CATEGORIES, CATEGORY_COLORS, CATEGORY_LABELS } from "@/lib/templates";
 import { sortCards, type CardSort } from "@/lib/board/sortCards";
 
 type Pending = { card: BoardCard; mode: "submit" | "resubmit"; key: string };
@@ -344,11 +344,9 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
   const newShown = sorted(sections.new.filter((c) => !isRoutine(c) && inCategory(c)));
   const readyShown = sorted(sections.ready.filter((c) => !isRoutine(c) && inCategory(c)));
   const soonShown = sorted(sections.soon.filter(inCategory));
-  const readyGroups =
-    category === "all"
-      ? CATEGORIES.map((k) => ({ key: k, cards: readyShown.filter((c) => c.category === k) })).filter((g) => g.cards.length)
-      : [{ key: category, cards: readyShown }].filter((g) => g.cards.length);
   const catLabel = (k: string) => `${CATEGORY_LABELS[k]?.emoji ?? "⭐"} ${CATEGORY_LABELS[k]?.[locale] ?? k}`;
+  // One full grid (no section per category, no half-empty rows): each card says its category in color.
+  const catTag = (c: BoardCard) => ({ label: catLabel(c.category), color: CATEGORY_COLORS[c.category] ?? CATEGORY_COLORS.other! });
 
   const cardMotion = reduceMotion
     ? {}
@@ -423,16 +421,19 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           </button>
         </div>
       </header>
+      </div>
+      {/* Sort and category buttons wrap onto more rows (no sideways scroll); they scroll away with the
+          page so the sticky header stays short. */}
       {available.length > 1 ? (
         <nav
           aria-label={tr("kid.categories")}
-          className="no-scrollbar flex gap-2.5 overflow-x-auto px-6 pb-3 md:px-8"
+          className="flex flex-wrap gap-2 px-6 pb-3 sm:gap-2.5 md:px-8"
         >
           <button
             type="button"
             onClick={() => setSort((x) => (x === "asc" ? "desc" : x === "desc" ? "parent" : "asc"))}
             aria-label={tr("kid.sortLabel")}
-            className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
+            className={`flex min-h-12 shrink-0 items-center gap-1.5 rounded-full px-4 text-base font-extrabold whitespace-nowrap sm:min-h-14 sm:gap-2 sm:px-5 sm:text-lg transition active:scale-95 ${
               sort === "asc" || sort === "desc" ? "bg-gold text-ink shadow-[0_4px_0_#b8860b]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
             }`}
           >
@@ -444,14 +445,14 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
               type="button"
               aria-pressed={sort === s}
               onClick={() => setSort((x) => (x === s ? "parent" : s))}
-              className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
+              className={`flex min-h-12 shrink-0 items-center gap-1.5 rounded-full px-4 text-base font-extrabold whitespace-nowrap sm:min-h-14 sm:gap-2 sm:px-5 sm:text-lg transition active:scale-95 ${
                 sort === s ? "bg-gold text-ink shadow-[0_4px_0_#b8860b]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
               }`}
             >
               {s === "added" ? `✨ ${tr("kid.sortAdded")}` : `🕒 ${tr("kid.sortDone")}`}
             </button>
           ))}
-          <span aria-hidden className="my-2 w-px shrink-0 bg-line" />
+          <span aria-hidden className="basis-full" />
           {(categoriesShown.length > 1 ? ["all", ...categoriesShown] : []).map((k) => {
             const on = category === k;
             return (
@@ -460,7 +461,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                 type="button"
                 onClick={() => setCategory(k)}
                 aria-pressed={on}
-                className={`flex min-h-14 shrink-0 items-center gap-2 rounded-full px-5 text-lg font-extrabold whitespace-nowrap transition active:scale-95 ${
+                className={`flex min-h-12 shrink-0 items-center gap-1.5 rounded-full px-4 text-base font-extrabold whitespace-nowrap sm:min-h-14 sm:gap-2 sm:px-5 sm:text-lg transition active:scale-95 ${
                   on ? "bg-maple text-white shadow-[0_4px_0_#8a3217]" : "bg-card text-ink shadow-[var(--shadow-card)] ring-1 ring-line"
                 }`}
               >
@@ -470,7 +471,6 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           })}
         </nav>
       ) : null}
-      </div>
 
       {household.paused ? (
         <p className="mx-8 mt-2 rounded-3xl bg-plum px-6 py-4 text-center text-2xl font-bold text-white">{tr("kid.paused")}</p>
@@ -665,6 +665,7 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                   perLabel={perLabel(c)}
                   onPress={() => press(c)}
                   footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
+                  tag={catTag(c)}
                   badge={
                     <>
                       <span className="inline-flex animate-pulse items-center rounded-full bg-maple px-3 py-1 text-sm font-black tracking-wide whitespace-nowrap text-white uppercase">
@@ -685,10 +686,10 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
           🔍 {tr("kid.searchNone", { q: search.trim() })}
         </p>
       ) : null}
-      {readyGroups.map((g) => (
-        <SectionRow key={g.key} title={category === "all" ? catLabel(g.key) : tr("kid.section.ready")} count={g.cards.length}>
+      {readyShown.length > 0 ? (
+        <SectionRow title={category === "all" ? tr("kid.section.ready") : catLabel(category)} count={readyShown.length}>
           <AnimatePresence mode="popLayout">
-            {g.cards.map((c) => (
+            {readyShown.map((c) => (
               <motion.div key={c.choreId} {...cardMotion} className="h-full">
                 <ChoreCard
                   fluid
@@ -700,12 +701,13 @@ export function KidBoard({ initial }: { initial: KioskBoard }) {
                   onPress={() => press(c)}
                   footer={lockedBy(c) ? lockedFooter(c) : stepsFooter(c)}
                   badge={lockedBy(c) ? null : promoBadge(c)}
+                  tag={catTag(c)}
                 />
               </motion.div>
             ))}
           </AnimatePresence>
         </SectionRow>
-      ))}
+      ) : null}
 
       {nothingToDo ? (
         <div className="mx-8 my-6 flex flex-col items-center rounded-[2rem] bg-card px-8 py-10 text-center shadow-[var(--shadow-card)]">
